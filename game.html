@@ -1,0 +1,601 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Interactive Stories</title>
+<link rel="stylesheet" href="./game.css">
+<script src="./scenario-loader.js"></script>
+<script src="./state/GameState.js"></script>
+<script src="./state/StateManager.js"></script>
+<script src="./scenario-ui.js"></script>
+</head>
+<body>
+
+<div class="tooltip" id="tooltip">
+  <div class="tt-name" id="tt-name"></div>
+  <div class="tt-sub"  id="tt-sub"></div>
+  <div class="tt-body" id="tt-body"></div>
+  <hr  class="tt-divider" id="tt-div" style="display:none">
+  <div id="tt-rows"></div>
+  <div id="tt-tags"></div>
+</div>
+
+<div class="shell">
+
+  <!-- 좌측 -->
+  <div class="left-col">
+    <div class="panel" id="commander-panel" style="flex:0 0 auto;"></div>
+
+    <div class="panel scroll-panel" style="flex:3;">
+      <div class="panel-label">주요 인물</div>
+      <div class="scroll-inner" id="character-list"></div>
+    </div>
+
+    <div class="panel scroll-panel" style="flex:1;">
+      <div class="panel-label">세력 현황</div>
+      <div class="scroll-inner" id="faction-bars"></div>
+    </div>
+  </div>
+
+  <!-- 중앙 -->
+  <div class="center-col">
+    <div class="panel scene-panel">
+      <div class="scene-header">
+        <div class="scene-badge" id="chapter-badge">1장</div>
+        <div class="scene-badge" id="scene-badge">SCENE 1</div>
+        <div class="chapter-info" id="chapter-info">—</div>
+      </div>
+      <div class="time-badge">
+        <svg width="13" height="13" viewBox="0 0 12 12" fill="none">
+          <circle cx="6" cy="6" r="5" stroke="currentColor" stroke-width="1"/>
+          <path d="M6 3v3l2 1.5" stroke="currentColor" stroke-width="1" stroke-linecap="round"/>
+        </svg>
+        <span id="timestamp-text"></span>
+      </div>
+      <div class="scene-body" id="scene-body"></div>
+    </div>
+  </div>
+
+  <!-- 우측 -->
+  <div class="right-col">
+    <div class="panel" style="flex:2; display:flex; flex-direction:column; min-height:0;">
+      <div class="panel-label">배경 지도</div>
+      <div class="map-wrap" id="map-container"></div>
+    </div>
+
+    <div class="panel scroll-panel" style="flex:2; min-height:0;">
+      <div class="panel-label">동시 진행 사건</div>
+      <div class="scroll-inner" id="event-list"></div>
+    </div>
+
+    <div class="panel" style="flex:3; display:flex; flex-direction:column; min-height:0;">
+      <div class="panel-label">선택지</div>
+      <div class="choice-list" id="choice-list"></div>
+      <hr class="divider">
+      <div class="input-wrap">
+        <textarea placeholder="직접 명령을 입력하거나 선택지를 고르세요..." id="cmd" maxlength="2000"></textarea>
+        <button class="send-btn" id="send-btn" onclick="submitTurn()" disabled>전송</button>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// ── 툴팁 DOM 참조 ─────────────────────────────────────────────────
+const tooltip = document.getElementById('tooltip');
+const ttName  = document.getElementById('tt-name');
+const ttSub   = document.getElementById('tt-sub');
+const ttBody  = document.getElementById('tt-body');
+const ttDiv   = document.getElementById('tt-div');
+const ttRows  = document.getElementById('tt-rows');
+const ttTags  = document.getElementById('tt-tags');
+
+// 기본 태그 스타일 (시나리오별 tagExtras로 보강됨)
+const BASE_TAG_STYLE = {
+  '확인됨': ['#e6f1fb','#185fa5'], '추정됨': ['#faeeda','#854f0b'],
+  '불명':   ['#f0efea','#6b6a65'], '아군':   ['#eaf3de','#3b6d11'],
+  '동맹':   ['#e6f1fb','#185fa5'], '적대':   ['#fcebeb','#a32d2d'],
+  '함락':   ['#f0efea','#6b6a65'], '중립':   ['#f0efea','#6b6a65'],
+};
+let tagStyle = { ...BASE_TAG_STYLE };
+
+function pos(e) {
+  const tw=215, th=200, vw=window.innerWidth, vh=window.innerHeight;
+  let x=e.clientX+14, y=e.clientY+14;
+  if(x+tw>vw-8) x=e.clientX-tw-8;
+  if(y+th>vh-8) y=e.clientY-th-8;
+  tooltip.style.left=x+'px'; tooltip.style.top=y+'px';
+}
+
+function showGeneric(el, e) {
+  ttName.textContent=el.dataset.name||'';
+  ttSub.textContent=el.dataset.sub||'';
+  ttBody.textContent=el.dataset.body||'';
+  ttDiv.style.display='none'; ttRows.innerHTML='';
+  const tag=el.dataset.tags||'';
+  const [bg,fg]=tagStyle[tag]||['#f0efea','#6b6a65'];
+  ttTags.innerHTML=tag?`<span class="tt-tag" style="background:${bg};color:${fg}">${tag}</span>`:'';
+  tooltip.classList.add('active'); pos(e);
+}
+
+function showMap(el, e) {
+  ttName.textContent=el.dataset.city||'';
+  ttSub.textContent=''; ttBody.textContent='';
+  ttDiv.style.display='block';
+  ttRows.innerHTML=[['세력',el.dataset.faction],['지형',el.dataset.terrain],
+    ['주둔군',el.dataset.garrison],['지휘관',el.dataset.commander],['상태',el.dataset.status]]
+    .filter(([,v])=>v).map(([k,v])=>`<div class="tt-row"><span class="tt-row-key">${k}</span><span class="tt-row-val">${v}</span></div>`).join('');
+  ttTags.innerHTML=el.dataset.note?`<div class="tt-note">${el.dataset.note}</div>`:'';
+  tooltip.classList.add('active'); pos(e);
+}
+
+function showEvent(el, e) {
+  ttName.textContent=el.dataset.name||'';
+  ttSub.textContent=el.dataset.sub||'';
+  ttBody.textContent=el.dataset.body||'';
+  ttDiv.style.display='block';
+  ttRows.innerHTML=(el.dataset.rows||'').split('|').filter(Boolean).map(r=>{
+    const [k,...vs]=r.split(':');
+    return `<div class="tt-row"><span class="tt-row-key">${k}</span><span class="tt-row-val">${vs.join(':')||''}</span></div>`;
+  }).join('');
+  ttTags.innerHTML='';
+  tooltip.classList.add('active'); pos(e);
+}
+
+// ── 툴팁 바인딩 ────────────────────────────────────────────────────
+function rebindTooltips() {
+  document.querySelectorAll('[data-name]').forEach(el => {
+    el.addEventListener('mouseenter', e => showGeneric(el, e));
+    el.addEventListener('mousemove',  e => pos(e));
+    el.addEventListener('mouseleave', () => tooltip.classList.remove('active'));
+  });
+  document.querySelectorAll('.map-marker').forEach(el => {
+    el.addEventListener('mouseenter', e => { showMap(el, e); });
+    el.addEventListener('mousemove',  e => pos(e));
+    el.addEventListener('mouseleave', () => { tooltip.classList.remove('active'); });
+  });
+  document.querySelectorAll('.event-item').forEach(el => {
+    el.addEventListener('mouseenter', e => showEvent(el, e));
+    el.addEventListener('mousemove',  e => pos(e));
+    el.addEventListener('mouseleave', () => tooltip.classList.remove('active'));
+  });
+}
+
+// ── 씬 헤더 렌더링 ─────────────────────────────────────────────────
+function renderSceneHeader(progress, scenarioTitle = '') {
+  const chapterBadge = document.getElementById('chapter-badge');
+  const sceneBadge   = document.getElementById('scene-badge');
+  const chapterInfo  = document.getElementById('chapter-info');
+  if (chapterBadge) chapterBadge.textContent = `${progress.chapter}장`;
+  if (sceneBadge)   sceneBadge.textContent   = progress.isChapterEnd ? '장 종결' : `SCENE ${progress.scene}`;
+  if (chapterInfo)  chapterInfo.textContent  = progress.chapterTitle || scenarioTitle;
+}
+
+function renderTimestamp(progress) {
+  const span = document.getElementById('timestamp-text');
+  if (span && progress.timestamp) span.textContent = progress.timestamp;
+}
+
+// ── 지휘관 패널 ────────────────────────────────────────────────────
+function renderCommanderPanel(state) {
+  const panel = document.getElementById('commander-panel');
+  if (!panel || !_ui) return;
+  const { name, sub, fields } = _ui.commanderInfo(state);
+  panel.innerHTML = `
+    <div class="panel-label">지휘관</div>
+    <div class="profile-block">
+      <div class="avatar">${name.slice(0, 2)}</div>
+      <div>
+        <div class="profile-name">${name}</div>
+        <div class="profile-sub">${sub}</div>
+      </div>
+    </div>
+    ${fields.map(f => `<div class="stat-row"><span class="stat-key">${f.key}</span><span class="stat-val">${f.val}</span></div>`).join('')}`;
+  rebindTooltips();
+}
+
+// ── 주요 인물 ──────────────────────────────────────────────────────
+function renderCharacterList(state) {
+  const container = document.getElementById('character-list');
+  if (!container || !_ui) return;
+  const chars = state.getActiveCharacters();
+  if (chars.length === 0) {
+    container.innerHTML = '<div class="char-row" style="color:var(--text-tertiary);font-size:12px;padding:8px 4px;">등록된 인물이 없습니다.</div>';
+    rebindTooltips(); return;
+  }
+  container.innerHTML = chars.map(c => {
+    const dotColor         = _ui.charDotColor(c, state);
+    const { cls, label }   = _ui.charRelInfo(c, state);
+    const body = c.desc || c.notes || '';
+    const tag  = c.status_tag || '';
+    return `<div class="char-row">
+      <div class="char-dot" style="background:${dotColor};"></div>
+      <div class="char-name-wrap">
+        <span class="char-name" data-name="${c.name}" data-sub="${c.epithet||''}" data-body="${body}" data-tags="${tag}">${c.name}</span>
+      </div>
+      <div class="rel-badge ${cls}">${label}</div>
+    </div>`;
+  }).join('');
+  rebindTooltips();
+}
+
+// ── 세력 현황 바 ──────────────────────────────────────────────────
+function renderFactionBars(state) {
+  const container = document.getElementById('faction-bars');
+  if (!container || !_ui) return;
+  const widthMap = { extreme:'100%','very high':'85%',high:'70%',medium:'50%',low:'30%','very low':'15%',impotent:'5%' };
+  container.innerHTML = Array.from(state.factions.values()).map(f => {
+    const width = widthMap[f.strength] || '20%';
+    const color = _ui.factionBarColor(f);
+    const tag   = _ui.factionBarTag(f);
+    const short = f.name.split(' ')[0];
+    return `<div class="faction-item">
+      <span class="faction-name" data-name="${f.name}" data-sub="${f.type||''}" data-body="${f.notes||''}" data-tags="${tag}">${short}</span>
+      <div class="faction-bar-wrap"><div class="faction-bar" style="width:${width};background:${color};"></div></div>
+    </div>`;
+  }).join('');
+  rebindTooltips();
+}
+
+// ── 지도 마커 갱신 ────────────────────────────────────────────────
+function renderMapMarkers(state) {
+  if (!_ui) return;
+  document.querySelectorAll('.map-marker[data-id]').forEach(marker => {
+    const loc = state.locations.get(marker.dataset.id);
+    if (!loc) return;
+    const { color, statusText } = _ui.mapMarkerStyle(loc, state);
+    marker.querySelectorAll('circle').forEach(c => {
+      if (c.getAttribute('fill')   && c.getAttribute('fill')   !== 'none')  c.setAttribute('fill',   color);
+      if (c.getAttribute('stroke') && c.getAttribute('stroke') !== 'none' &&
+          c.getAttribute('stroke') !== 'white')                              c.setAttribute('stroke', color);
+    });
+    const factionName = state.factions.get(loc.controller)?.name || loc.controller;
+    marker.dataset.faction = factionName;
+    marker.dataset.status  = statusText;
+    if (loc.terrain) marker.dataset.terrain = loc.terrain;
+    if (loc.notes)   marker.dataset.note    = loc.notes;
+  });
+  rebindTooltips();
+}
+
+// ── 동시 진행 사건 ────────────────────────────────────────────────
+function renderEventList(state) {
+  const container = document.getElementById('event-list');
+  if (!container || !_ui) return;
+  const events = _ui.getEvents(state);
+  if (events.length === 0) {
+    container.innerHTML = '<div style="color:var(--text-tertiary);font-size:12px;padding:8px 4px;">진행 중인 사건이 없습니다.</div>';
+    rebindTooltips(); return;
+  }
+  container.innerHTML = events.map(ev => `<div class="event-item"
+    data-name="${ev.name}" data-sub="${ev.sub}" data-body="${ev.body}" data-rows="${ev.rows}">
+    <div class="event-header">
+      <div class="event-dot" style="background:${ev.dot};"></div>
+      <div class="event-title">${ev.name}</div>
+    </div>
+    <div class="event-meta">
+      <span class="event-region">${ev.region}</span>
+      <span class="event-badge ${ev.badge}">${ev.badgeText}</span>
+    </div>
+  </div>`).join('');
+  rebindTooltips();
+}
+
+// ── 전체 UI 갱신 ──────────────────────────────────────────────────
+function renderAll(state) {
+  renderSceneHeader(state.progress, state.scenarioTitle);
+  renderTimestamp(state.progress);
+  renderCommanderPanel(state);
+  renderCharacterList(state);
+  renderFactionBars(state);
+  renderMapMarkers(state);
+  renderEventList(state);
+}
+
+// ── 전역 상태 참조 ────────────────────────────────────────────────
+let _manager = null;
+let _state   = null;
+let _ui      = null;
+
+// ── 초기화 ────────────────────────────────────────────────────────
+(async () => {
+  _manager = new StateManager();
+  _state   = _manager.load();
+
+  // 시나리오 ID 결정 (두 가지 키 모두 지원, 없으면 null → 빈 패널)
+  const scenarioId = _state
+    ? _state.scenarioId
+    : (sessionStorage.getItem('scenario') || sessionStorage.getItem('scenarioId') || null);
+
+  if (!scenarioId) return; // 진입 경로 없음 → 빈 패널·비활성 버튼 그대로 유지
+
+  // 시나리오 UI 설정 로드
+  _ui = window.getScenarioUI(scenarioId);
+  tagStyle = { ...BASE_TAG_STYLE, ..._ui.tagExtras };
+
+  // 지도 SVG 주입
+  const mapContainer = document.getElementById('map-container');
+  if (mapContainer && _ui.mapSvg) mapContainer.innerHTML = _ui.mapSvg;
+
+  if (!_state) {
+    const scenarios     = await ScenarioLoader.fetchAll();
+    const scenario      = scenarios.find(s => s.id === scenarioId);
+    const protagonistId = sessionStorage.getItem('selectedCharacterId')
+      || sessionStorage.getItem('selectedCharacter')
+      || _ui.defaultProtagonistId
+      || scenario?.protagonist
+      || null;
+
+    if (scenario) {
+      _state = _manager.init(scenario, protagonistId);
+      _ui.initDispositions(_state);
+      _manager.save();
+    }
+  }
+
+  if (_state) {
+    renderAll(_state);
+
+    const hist          = _state.getHistory();
+    const lastAssistant = [...hist].reverse().find(h => h.role === 'assistant');
+
+    if (lastAssistant) {
+      // 이전 세션 복원
+      if (_state.progress.isChapterEnd) {
+        renderChapterClose(lastAssistant.content);
+      } else {
+        renderSceneBody(markdownToHtml(extractNarrative(lastAssistant.content)));
+        renderChoices(extractChoices(lastAssistant.content));
+      }
+    } else {
+      // 첫 진입 — 시나리오별 오프닝 콘텐츠
+      const opening = _ui.getOpeningContent(_state);
+      if (opening) {
+        renderSceneBody(opening.html);
+        renderChoices(opening.choices);
+        const tsSpan = document.getElementById('timestamp-text');
+        if (tsSpan && opening.timestamp) tsSpan.textContent = opening.timestamp;
+      }
+    }
+  }
+  document.getElementById('send-btn').disabled = false;
+  rebindTooltips();
+})();
+
+// ── 선택지 ────────────────────────────────────────────────────────
+function selectChoice(btn) {
+  document.querySelectorAll('.choice-btn').forEach(b => b.classList.remove('selected'));
+  btn.classList.add('selected');
+  document.getElementById('cmd').value = btn.textContent.trim();
+}
+
+// ── 씬 본문·선택지 렌더러 ─────────────────────────────────────────
+function renderSceneBody(html) {
+  const el = document.getElementById('scene-body');
+  if (el) el.innerHTML = html;
+}
+
+function renderChoices(choices) {
+  const list = document.getElementById('choice-list');
+  if (!list) return;
+  if (!choices.length) { list.innerHTML = ''; return; }
+  list.innerHTML = choices
+    .map(c => `<button class="choice-btn" onclick="selectChoice(this)">${c}</button>`)
+    .join('');
+}
+
+function showLoading() {
+  renderSceneBody('<div class="scene-loading">생성 중…</div>');
+  renderChoices([]);
+}
+
+// ── 마크다운 → HTML 변환 (씬 본문용 경량 변환기) ──────────────────
+function inline(text) {
+  return text
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+}
+
+function markdownToHtml(md) {
+  if (!md) return '';
+  const lines = md.split('\n');
+  const out   = [];
+  let inList  = false;
+  let inTable = false;
+
+  const flushList  = () => { if (inList)  { out.push('</ul>');            inList  = false; } };
+  const flushTable = () => { if (inTable) { out.push('</tbody></table>'); inTable = false; } };
+
+  for (const raw of lines) {
+    const line = raw.trim();
+    if (!line) { flushList(); flushTable(); continue; }
+    if (/^---+$/.test(line)) { flushList(); flushTable(); out.push('<hr class="divider">'); continue; }
+    if (line.startsWith('|')) {
+      flushList();
+      if (/^\|[\s:|-]+\|/.test(line)) continue;
+      const cells = line.split('|').slice(1, -1).map(c => c.trim());
+      if (!inTable) {
+        inTable = true;
+        out.push('<table class="summary-table"><thead><tr>');
+        cells.forEach(c => out.push(`<th>${inline(c)}</th>`));
+        out.push('</tr></thead><tbody>');
+      } else {
+        out.push('<tr>');
+        cells.forEach(c => out.push(`<td>${inline(c)}</td>`));
+        out.push('</tr>');
+      }
+      continue;
+    }
+    flushTable();
+    if (/^- ./.test(line)) {
+      if (!inList) { out.push('<ul style="padding-left:16px;margin:6px 0;">'); inList = true; }
+      out.push(`<li style="margin:3px 0;">${inline(line.slice(2))}</li>`);
+      continue;
+    }
+    flushList();
+    out.push(`<p>${inline(line)}</p>`);
+  }
+  flushList(); flushTable();
+  return out.join('');
+}
+
+// ── 응답 텍스트 파싱 헬퍼 ────────────────────────────────────────
+function extractNarrative(text) {
+  let body = text.replace(/^##[^\n]*\n/, '').trim();
+  // **시각:** 줄은 UI 배지에만 표시하고 본문에서 제거
+  body = body.replace(/^\*\*시각:\*\*[^\n]*\n?/m, '').trim();
+  const cutIdx = body.search(/\*{0,2}결정 시점\*{0,2}/);
+  if (cutIdx !== -1) body = body.slice(0, cutIdx).trim();
+  return body;
+}
+
+function extractChoices(text) {
+  const cutIdx = text.search(/\*{0,2}결정\s*(시점|기로)\*{0,2}/);
+  const section = cutIdx !== -1 ? text.slice(cutIdx) : text;
+  return section
+    .split('\n')
+    .filter(l => /^(-|\d+[.)]) .{4,}/.test(l.trim()))
+    .map(l => l.trim().replace(/^(-|\d+[.)]) /, '').trim());
+}
+
+// ── 챕터 종결 화면 렌더링 ─────────────────────────────────────────
+function renderChapterClose(text) {
+  const body = text.replace(/^##[^\n]*\n/, '').trim();
+
+  const summaryIdx = body.search(/\*\*\d+장 요약\*\*/);
+  const assessIdx  = body.search(/\*\*총평\*\*/);
+  const embersIdx  = body.search(/\*\*잔불\*\*/);
+
+  const narrative    = summaryIdx !== -1 ? body.slice(0, summaryIdx).trim() : body;
+  const summaryBlock = summaryIdx !== -1 && assessIdx !== -1 ? body.slice(summaryIdx, assessIdx).trim() : '';
+  const assessBlock  = assessIdx  !== -1 && embersIdx !== -1 ? body.slice(assessIdx,  embersIdx).trim() : '';
+  const embersBlock  = embersIdx  !== -1 ? body.slice(embersIdx).trim() : '';
+
+  const embersLines = embersBlock
+    .split('\n')
+    .filter(l => /^- .+/.test(l.trim()))
+    .map(l => `<li>${inline(l.trim().slice(2))}</li>`)
+    .join('');
+
+  renderSceneBody(`
+    ${markdownToHtml(narrative)}
+    ${summaryBlock ? `<p class="panel-label" style="margin:16px 0 6px;">요약</p>${markdownToHtml(summaryBlock.replace(/\*\*\d+장 요약\*\*\n?/, ''))}` : ''}
+    ${assessBlock  ? `<p class="panel-label" style="margin:16px 0 6px;">총평</p>${markdownToHtml(assessBlock.replace(/\*\*총평\*\*\n?/, ''))}` : ''}
+    ${embersLines  ? `<p class="panel-label" style="margin:16px 0 6px;">잔불</p><ul class="embers-list">${embersLines}</ul>` : ''}
+  `);
+
+  const list = document.getElementById('choice-list');
+  if (list) list.innerHTML = '<button class="next-chapter-btn" onclick="startNextChapter()">다음 장으로 →</button>';
+}
+
+function startNextChapter() {
+  if (!_state) return;
+  renderSceneBody('<p style="color:var(--text-tertiary);font-family:sans-serif;font-size:13px;">다음 장의 방향을 입력하세요. (시간 경과·사건·개입 사항)</p>');
+  const list = document.getElementById('choice-list');
+  if (list) list.innerHTML = '';
+  document.getElementById('cmd')?.focus();
+}
+
+// ── 턴 전진 ───────────────────────────────────────────────────────
+const API_BASE = 'http://localhost:8000';
+
+async function submitTurn() {
+  const cmd = document.getElementById('cmd').value.trim();
+  if (!cmd || !_state || !_manager) return;
+
+  document.getElementById('cmd').value = '';
+  document.querySelectorAll('.choice-btn').forEach(b => b.classList.remove('selected'));
+  showLoading();
+
+  try {
+    const res = await fetch(`${API_BASE}/api/turn`, {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        command: cmd,
+        state:   _state.toJSON(),
+        history: _state.getHistory(),
+      }),
+    });
+
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ detail: `HTTP ${res.status}` }));
+      throw new Error(err.detail);
+    }
+
+    const { content, state_updates: su } = await res.json();
+
+    _state.pushHistory('user', cmd);
+    _state.pushHistory('assistant', content);
+
+    Object.assign(_state.progress, {
+      scene:        su.scene,
+      chapter:      su.chapter,
+      chapterTitle: su.chapter_title || _state.progress.chapterTitle,
+      timestamp:    su.timestamp     || _state.progress.timestamp,
+      isChapterEnd: su.is_chapter_end,
+    });
+
+    // 새 인물 추가
+    if (Array.isArray(su.new_characters)) {
+      for (const c of su.new_characters) {
+        if (c.id && !_state.characters.has(c.id)) _state.addCharacter(c);
+      }
+    }
+    // 사망 처리
+    if (Array.isArray(su.dead_characters)) {
+      for (const id of su.dead_characters) {
+        if (_state.characters.has(id)) _state.killCharacter(id);
+      }
+    }
+    // 새 세력 추가
+    if (Array.isArray(su.new_factions)) {
+      for (const f of su.new_factions) {
+        if (f.id && !_state.factions.has(f.id)) _state.addFaction(f);
+      }
+    }
+    // 세력 강도 변경
+    if (Array.isArray(su.faction_strength_changes)) {
+      for (const fc of su.faction_strength_changes) {
+        const faction = _state.factions.get(fc.id);
+        if (faction && fc.strength) faction.strength = fc.strength;
+      }
+    }
+    // 새 거점 추가
+    if (Array.isArray(su.new_locations)) {
+      for (const l of su.new_locations) {
+        if (l.id && !_state.locations.has(l.id)) _state.addLocation(l);
+      }
+    }
+    // 거점 지배 세력 변경
+    if (Array.isArray(su.location_changes)) {
+      for (const lc of su.location_changes) {
+        const loc = _state.locations.get(lc.id);
+        if (loc && lc.controller) loc.controller = lc.controller;
+      }
+    }
+
+    _manager._state = _state;
+    _manager.save();
+
+    renderAll(_state);
+
+    if (_state.progress.isChapterEnd) {
+      renderChapterClose(content);
+    } else {
+      renderSceneBody(markdownToHtml(extractNarrative(content)));
+      renderChoices(extractChoices(content));
+    }
+
+  } catch (err) {
+    renderSceneBody(
+      `<p style="color:var(--text-secondary);font-family:sans-serif;font-size:12px;padding:6px 0;">` +
+      `⚠ 서버 연결 오류: ${err.message}</p>`
+    );
+  }
+}
+</script>
+</body>
+</html>

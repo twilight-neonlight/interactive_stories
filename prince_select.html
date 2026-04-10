@@ -1,0 +1,506 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>뇌제의 후계자 — 왕자 선택</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=IM+Fell+English:ital@0;1&family=Noto+Serif+KR:wght@300;400;600&display=swap');
+
+:root {
+  --bg-primary:    #ffffff;
+  --bg-secondary:  #f5f4f0;
+  --bg-tertiary:   #eeece7;
+  --text-primary:  #1a1a18;
+  --text-secondary:#6b6a65;
+  --text-tertiary: #9b9a95;
+  --border-light:  rgba(0,0,0,0.08);
+  --border-mid:    rgba(0,0,0,0.14);
+  --border-strong: rgba(0,0,0,0.26);
+  --gold:          #a07830;
+  --gold-soft:     rgba(160,120,48,0.10);
+  --radius-md: 8px;
+  --radius-lg: 12px;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg-primary:    #1e1e1c;
+    --bg-secondary:  #272724;
+    --bg-tertiary:   #161614;
+    --text-primary:  #e8e7e2;
+    --text-secondary:#9b9a95;
+    --text-tertiary: #6b6a65;
+    --border-light:  rgba(255,255,255,0.07);
+    --border-mid:    rgba(255,255,255,0.12);
+    --border-strong: rgba(255,255,255,0.22);
+    --gold:          #c4964a;
+    --gold-soft:     rgba(196,150,74,0.10);
+  }
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body {
+  min-height: 100vh;
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+  font-family: 'Noto Serif KR', 'Georgia', serif;
+}
+
+body::before {
+  content: '';
+  position: fixed; inset: 0; z-index: 0; pointer-events: none;
+  background-image:
+    radial-gradient(ellipse 70% 40% at 50% 0%, rgba(160,120,48,0.05) 0%, transparent 60%),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23n)' opacity='0.025'/%3E%3C/svg%3E");
+}
+
+.page {
+  position: relative; z-index: 1;
+  min-height: 100vh;
+  display: flex; flex-direction: column;
+  align-items: center;
+  padding: 52px 24px 80px;
+}
+
+/* ─── 뒤로가기 ─── */
+.back-btn {
+  position: absolute; top: 24px; left: 24px;
+  display: flex; align-items: center; gap: 6px;
+  font-family: 'Cinzel', serif;
+  font-size: 10px; letter-spacing: 0.16em; text-transform: uppercase;
+  color: var(--text-tertiary);
+  background: none; border: none; cursor: pointer;
+  padding: 6px 0;
+  transition: color 0.15s;
+  text-decoration: none;
+}
+.back-btn:hover { color: var(--text-secondary); }
+.back-btn svg { flex-shrink: 0; }
+
+/* ─── 헤더 ─── */
+.scenario-header {
+  text-align: center;
+  margin-bottom: 48px;
+  animation: fadeDown 0.6s ease both;
+}
+
+.scenario-label {
+  font-family: 'Cinzel', serif;
+  font-size: 9.5px; letter-spacing: 0.28em; text-transform: uppercase;
+  color: var(--gold); margin-bottom: 10px; display: block;
+}
+
+.scenario-title {
+  font-family: 'Cinzel', serif;
+  font-size: clamp(22px, 4vw, 34px);
+  font-weight: 700; color: var(--text-primary);
+  letter-spacing: 0.06em; margin-bottom: 8px;
+}
+
+.scenario-period {
+  font-family: 'IM Fell English', serif;
+  font-style: italic; font-size: 14px;
+  color: var(--text-secondary);
+}
+
+.header-rule {
+  width: 80px; height: 1px;
+  background: linear-gradient(90deg, transparent, var(--gold), transparent);
+  margin: 16px auto 0;
+}
+
+/* ─── 선택 지문 ─── */
+.prompt-text {
+  font-family: 'IM Fell English', serif;
+  font-style: italic;
+  font-size: 15px; line-height: 1.9;
+  color: var(--text-secondary);
+  text-align: center;
+  max-width: 560px;
+  margin-bottom: 44px;
+  animation: fadeUp 0.6s ease 0.1s both;
+}
+
+/* ─── 왕자 그리드 ─── */
+.princes {
+  width: 100%; max-width: 860px;
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 14px;
+  margin-bottom: 32px;
+}
+
+@media (max-width: 600px) {
+  .princes { grid-template-columns: 1fr; }
+}
+
+/* ─── 왕자 카드 ─── */
+.prince-card {
+  background: var(--bg-primary);
+  border: 1px solid var(--border-mid);
+  border-radius: var(--radius-lg);
+  padding: 24px 22px 20px;
+  cursor: pointer;
+  position: relative; overflow: hidden;
+  transition: border-color 0.2s, transform 0.18s, box-shadow 0.2s;
+  animation: fadeUp 0.55s ease both;
+  outline: none;
+}
+.prince-card:nth-child(1) { animation-delay: 0.15s; }
+.prince-card:nth-child(2) { animation-delay: 0.22s; }
+.prince-card:nth-child(3) { animation-delay: 0.29s; }
+.prince-card:nth-child(4) { animation-delay: 0.36s; }
+
+/* 상단 컬러 바 */
+.prince-card::before {
+  content: '';
+  position: absolute; top: 0; left: 0; right: 0;
+  height: 3px;
+  background: var(--prince-color, var(--border-mid));
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.prince-card::after {
+  content: '';
+  position: absolute; inset: 0;
+  background: var(--prince-color-soft, transparent);
+  opacity: 0;
+  transition: opacity 0.2s;
+  border-radius: inherit;
+}
+
+.prince-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 22px rgba(0,0,0,0.07);
+  border-color: var(--border-strong);
+}
+.prince-card:hover::before,
+.prince-card:hover::after { opacity: 1; }
+
+.prince-card:focus-visible {
+  box-shadow: 0 0 0 3px rgba(160,120,48,0.3);
+  border-color: var(--gold);
+}
+
+/* 선택 상태 */
+.prince-card.selected {
+  border-color: var(--prince-color, var(--gold));
+  box-shadow: 0 0 0 1px var(--prince-color, var(--gold));
+}
+.prince-card.selected::before,
+.prince-card.selected::after { opacity: 1; }
+
+/* ─── 카드 내부 ─── */
+.pc-inner { position: relative; z-index: 1; }
+
+.pc-top {
+  display: flex; align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+
+.pc-emblem {
+  width: 44px; height: 44px; border-radius: 50%;
+  background: var(--prince-color-soft, var(--bg-secondary));
+  border: 1px solid var(--border-light);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 20px;
+  flex-shrink: 0;
+}
+
+.pc-location {
+  font-family: 'Cinzel', serif;
+  font-size: 9px; letter-spacing: 0.16em; text-transform: uppercase;
+  color: var(--text-tertiary);
+  text-align: right; line-height: 1.5;
+  padding-top: 2px;
+}
+
+.pc-name {
+  font-family: 'Cinzel', serif;
+  font-size: 17px; font-weight: 600;
+  color: var(--text-primary);
+  letter-spacing: 0.04em;
+  margin-bottom: 3px;
+}
+
+.pc-epithet {
+  font-family: 'IM Fell English', serif;
+  font-style: italic; font-size: 12.5px;
+  color: var(--prince-color, var(--gold));
+  margin-bottom: 12px;
+}
+
+.pc-divider {
+  height: 1px; background: var(--border-light); margin-bottom: 12px;
+}
+
+.pc-desc {
+  font-size: 12.5px; color: var(--text-secondary);
+  line-height: 1.8; margin-bottom: 14px;
+}
+
+/* 특성 태그 */
+.pc-traits {
+  display: flex; flex-wrap: wrap; gap: 5px;
+  margin-bottom: 14px;
+}
+.trait {
+  font-family: sans-serif; font-size: 10px;
+  padding: 2px 8px; border-radius: 10px;
+  border: 1px solid var(--border-light);
+  color: var(--text-tertiary); background: var(--bg-secondary);
+}
+
+/* 거점 정보 */
+.pc-base {
+  display: flex; gap: 6px; align-items: baseline;
+}
+.pc-base-label {
+  font-family: sans-serif; font-size: 10px;
+  color: var(--text-tertiary); white-space: nowrap;
+}
+.pc-base-val {
+  font-family: sans-serif; font-size: 11px;
+  color: var(--text-secondary); font-weight: 600;
+}
+
+/* ─── 준비 중 카드 ─── */
+.prince-card.wip {
+  opacity: 0.45;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+.wip-badge {
+  position: absolute; top: 10px; right: 10px; z-index: 2;
+  font-family: sans-serif; font-size: 9px; letter-spacing: 0.12em;
+  text-transform: uppercase;
+  background: var(--bg-tertiary); color: var(--text-tertiary);
+  border: 1px solid var(--border-mid);
+  border-radius: 4px; padding: 2px 7px;
+}
+
+/* ─── 선택 확인 버튼 ─── */
+.confirm-wrap {
+  width: 100%; max-width: 860px;
+  display: flex; justify-content: flex-end; gap: 10px;
+  animation: fadeUp 0.55s ease 0.42s both;
+}
+
+.confirm-btn {
+  font-family: 'Cinzel', serif;
+  font-size: 12px; letter-spacing: 0.10em;
+  padding: 11px 28px;
+  border-radius: var(--radius-md);
+  border: none; cursor: pointer;
+  background: var(--text-primary); color: var(--bg-primary);
+  font-weight: 600;
+  transition: opacity 0.15s, transform 0.15s;
+  opacity: 0.35; pointer-events: none;
+}
+.confirm-btn.ready {
+  opacity: 1; pointer-events: all;
+}
+.confirm-btn.ready:hover {
+  opacity: 0.85; transform: translateY(-1px);
+}
+
+/* ─── 런치 오버레이 ─── */
+.launch-overlay {
+  position: fixed; inset: 0; z-index: 100;
+  background: var(--bg-primary);
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  gap: 18px; opacity: 0; pointer-events: none;
+  transition: opacity 0.35s ease;
+}
+.launch-overlay.active { opacity: 1; pointer-events: all; }
+.launch-spinner {
+  width: 36px; height: 36px;
+  border: 2px solid var(--border-light);
+  border-top-color: var(--gold);
+  border-radius: 50%;
+  animation: spin 0.9s linear infinite;
+}
+.launch-text {
+  font-family: 'IM Fell English', serif; font-style: italic;
+  font-size: 15px; color: var(--text-secondary); letter-spacing: 0.04em;
+}
+
+/* ─── 애니메이션 ─── */
+@keyframes fadeDown {
+  from { opacity: 0; transform: translateY(-14px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(14px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+</style>
+<script src="./scenario-loader.js"></script>
+</head>
+<body>
+
+<div class="page">
+
+  <!-- 뒤로가기 -->
+  <a href="scenario_select.html" class="back-btn">
+    <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+      <path d="M8 2L4 6l4 4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>
+    시나리오 목록
+  </a>
+
+  <!-- 헤더 -->
+  <header class="scenario-header">
+    <span class="scenario-label">뇌제의 후계자</span>
+    <h1 class="scenario-title">왕자를 선택하라</h1>
+    <p class="scenario-period">1403년 — 오스만 제국 공위 시대 개막</p>
+    <div class="header-rule"></div>
+  </header>
+
+  <!-- 선택 지문 -->
+  <p class="prompt-text">
+    바야지트 1세가 티무르의 포로로 사망했다. 왕좌는 비어 있고, 네 왕자는 저마다 다른 땅에서 칼을 갈고 있다. 당신은 누구의 눈으로 이 시대를 바라볼 것인가.
+  </p>
+
+  <!-- 왕자 카드 — JS가 동적으로 채웁니다 -->
+  <div class="princes" id="princeList" role="list"></div><!-- /princeList -->
+
+  <!-- 확인 버튼 -->
+  <div class="confirm-wrap">
+    <button class="confirm-btn" id="confirmBtn" onclick="confirmSelection()">
+      이 왕자로 시작 →
+    </button>
+  </div>
+
+</div><!-- /page -->
+
+<!-- 런치 오버레이 -->
+<div class="launch-overlay" id="launchOverlay">
+  <div class="launch-spinner"></div>
+  <div class="launch-text" id="launchText">시나리오를 초기화하는 중…</div>
+</div>
+
+<script>
+const ScenarioLoader = window.ScenarioLoader;
+
+let selectedCharacter = null;
+
+// 현재 플레이 가능한 왕자 ID 목록
+const AVAILABLE_CHARACTERS = ['mehmed'];
+
+// ── 왕자 카드 동적 렌더링 ──────────────────────
+async function renderCharacters() {
+  const characters = await ScenarioLoader.fetchCharacters('ottoman-interregnum');
+  const list = document.getElementById('princeList');
+
+  characters.forEach((c, i) => {
+    const isAvailable = AVAILABLE_CHARACTERS.includes(c.id);
+    const card = document.createElement('div');
+    card.className = 'prince-card' + (isAvailable ? '' : ' wip');
+    card.setAttribute('role', 'listitem');
+    card.setAttribute('tabindex', '0');
+    card.style.cssText = `--prince-color:${c.color}; --prince-color-soft:${c.colorSoft};`;
+    card.style.animationDelay = `${0.15 + i * 0.07}s`;
+    card.dataset.characterId = c.id;
+    card.dataset.characterName = c.name;
+
+    const locationHtml = c.location.replace('\n', '<br>');
+    const traits = (c.traits || []).map(t => `<span class="trait">${t}</span>`).join('');
+    const wipBadge = isAvailable ? '' : '<div class="wip-badge">준비 중</div>';
+
+    card.innerHTML = `
+      ${wipBadge}
+      <div class="pc-inner">
+        <div class="pc-top">
+          <div class="pc-emblem">${c.icon}</div>
+          <div class="pc-location">${locationHtml}</div>
+        </div>
+        <div class="pc-name">${c.name}</div>
+        <div class="pc-epithet">${c.epithet}</div>
+        <div class="pc-divider"></div>
+        <div class="pc-desc">${c.desc}</div>
+        <div class="pc-traits">${traits}</div>
+        <div class="pc-base">
+          <span class="pc-base-label">거점</span>
+          <span class="pc-base-val">${c.base}</span>
+        </div>
+      </div>`;
+
+    if (isAvailable) {
+      card.addEventListener('click', () => selectCharacter(card));
+      card.addEventListener('keydown', e => {
+        if (e.key === 'Enter' || e.key === ' ') selectCharacter(card);
+      });
+    } else {
+      card.addEventListener('click', () => showComingSoon(c.name));
+      card.addEventListener('keydown', e => {
+        if (e.key === 'Enter' || e.key === ' ') showComingSoon(c.name);
+      });
+    }
+    list.appendChild(card);
+  });
+}
+
+function selectCharacter(card) {
+  document.querySelectorAll('.prince-card').forEach(c => c.classList.remove('selected'));
+  card.classList.add('selected');
+  selectedCharacter = { id: card.dataset.characterId, name: card.dataset.characterName };
+
+  const btn = document.getElementById('confirmBtn');
+  btn.classList.add('ready');
+  btn.textContent = `${selectedCharacter.name}(으)로 시작 →`;
+}
+
+window.confirmSelection = function() {
+  if (!selectedCharacter) return;
+
+  document.getElementById('launchText').textContent =
+    `${selectedCharacter.name}의 이야기를 불러오는 중…`;
+  document.getElementById('launchOverlay').classList.add('active');
+
+  sessionStorage.setItem('selectedCharacterId', selectedCharacter.id);
+  sessionStorage.setItem('selectedCharacterName', selectedCharacter.name);
+  sessionStorage.setItem('scenario', 'ottoman-interregnum');
+  sessionStorage.removeItem('is_gameState'); // 이전 저장 세션 초기화
+
+  setTimeout(() => {
+    window.location.href = 'game.html';
+  }, 1200);
+};
+
+function showComingSoon(name) {
+  const toast = document.createElement('div');
+  toast.innerHTML = `<strong>${name}</strong> 시나리오는 아직 준비 중입니다`;
+  Object.assign(toast.style, {
+    position: 'fixed', bottom: '32px', left: '50%',
+    transform: 'translateX(-50%) translateY(8px)',
+    background: 'var(--bg-primary)', border: '1px solid var(--border-strong)',
+    borderRadius: '8px', padding: '11px 22px',
+    fontFamily: "'Noto Serif KR',serif", fontSize: '13px',
+    color: 'var(--text-secondary)',
+    boxShadow: '0 4px 18px rgba(0,0,0,0.10)',
+    opacity: '0', transition: 'opacity 0.22s, transform 0.22s',
+    zIndex: '300', whiteSpace: 'nowrap',
+  });
+  document.body.appendChild(toast);
+  requestAnimationFrame(() => {
+    toast.style.opacity = '1';
+    toast.style.transform = 'translateX(-50%) translateY(0)';
+  });
+  setTimeout(() => {
+    toast.style.opacity = '0';
+    toast.style.transform = 'translateX(-50%) translateY(8px)';
+    setTimeout(() => toast.remove(), 300);
+  }, 2400);
+}
+
+renderCharacters();
+</script>
+</body>
+</html>

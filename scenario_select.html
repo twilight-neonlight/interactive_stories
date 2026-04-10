@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Interactive Stories — 시나리오 선택</title>
+<link rel="stylesheet" href="styles.css">
+<script src="./scenario-loader.js"></script>
+</head>
+<body>
+
+<div class="page">
+
+  <!-- 헤더 -->
+  <header class="site-header">
+    <span class="site-label">Interactive Wargame & Political Simulation</span>
+    <h1 class="site-title">Interactive <em>Stories</em></h1>
+    <p class="site-sub">역사의 분기점에서, 당신의 선택이 세계를 바꾼다</p>
+    <div class="header-rule"></div>
+  </header>
+
+  <!-- 시나리오 목록 — JS가 동적으로 채웁니다 -->
+  <div class="scenarios" id="scenarioList" role="list">
+
+    <!-- 커스텀 시나리오 (항상 마지막 고정) -->
+    <div class="card card-custom"
+         role="listitem"
+         tabindex="0"
+         style="--card-accent:#6b6a65; --card-accent-soft:rgba(107,106,101,0.05); --card-icon-bg:var(--bg-secondary);"
+         data-title="직접 시나리오 입력"
+         onclick="launchCustom(this)"
+         onkeydown="if(event.key==='Enter'||event.key===' ')launchCustom(this)">
+      <div class="card-inner">
+        <div class="card-icon" style="font-size:16px;">✦</div>
+        <div class="card-body">
+          <div class="card-eyebrow">커스텀</div>
+          <div class="card-title">직접 시나리오 입력</div>
+          <div class="card-meta">역사 기반 또는 창작 세계 — 자유 설정</div>
+          <div class="card-desc">시대, 세계관, 지휘관을 직접 설정해 새로운 시나리오를 시작하세요. 역사적 배경이나 완전한 창작 세계 모두 지원합니다.</div>
+        </div>
+        <div class="card-arrow">+</div>
+      </div>
+    </div>
+
+  </div><!-- /scenarioList -->
+</div><!-- /page -->
+
+<!-- 커스텀 시나리오 모달 -->
+<div id="customModal" style="
+  display:none; position:fixed; inset:0; z-index:200;
+  background:rgba(0,0,0,0.45); backdrop-filter:blur(3px);
+  align-items:center; justify-content:center; padding:20px;">
+  <div style="
+    background:var(--bg-primary); border:1px solid var(--border-strong);
+    border-radius:var(--radius-lg); padding:32px 28px; max-width:520px; width:100%;
+    position:relative; animation:fadeUp 0.25s ease;">
+    <div style="font-family:'Cinzel',serif;font-size:10px;letter-spacing:0.20em;
+      text-transform:uppercase;color:var(--text-tertiary);margin-bottom:12px;">
+      커스텀 시나리오
+    </div>
+    <div style="font-family:'Cinzel',serif;font-size:18px;font-weight:600;
+      margin-bottom:6px;color:var(--text-primary);">시나리오 설정 입력</div>
+    <div style="font-family:'IM Fell English',serif;font-style:italic;font-size:13px;
+      color:var(--text-secondary);margin-bottom:20px;line-height:1.6;">
+      시대, 세계관, 지휘관 이름, 목표, 주요 위협을 간략히 적어주세요.
+    </div>
+    <textarea id="customInput" rows="6" placeholder="예) 1453년 봄, 콘스탄티노폴리스. 나는 마지막 비잔틴 황제 콘스탄티노스 11세다. 오스만 군이 성벽을 포위하고 있으며…" style="
+      width:100%; font-family:'Noto Serif KR','Georgia',serif; font-size:13px;
+      background:var(--bg-secondary); border:1px solid var(--border-mid);
+      border-radius:var(--radius-md); padding:12px 14px; color:var(--text-primary);
+      resize:vertical; outline:none; line-height:1.8;
+      transition:border-color 0.15s;"></textarea>
+    <div style="display:flex;gap:8px;margin-top:14px;justify-content:flex-end;">
+      <button onclick="closeCustom()" style="
+        font-family:'Noto Serif KR',serif;font-size:13px;
+        padding:9px 18px; border:1px solid var(--border-mid);
+        border-radius:var(--radius-md); background:transparent;
+        color:var(--text-secondary); cursor:pointer;">
+        취소
+      </button>
+      <button onclick="startCustom()" style="
+        font-family:'Cinzel',serif;font-size:12px;letter-spacing:0.08em;
+        padding:9px 22px; border:none;
+        border-radius:var(--radius-md); background:var(--text-primary);
+        color:var(--bg-primary); cursor:pointer; font-weight:600;">
+        시작
+      </button>
+    </div>
+    <button onclick="closeCustom()" style="
+      position:absolute;top:14px;right:16px;
+      background:none;border:none;cursor:pointer;
+      font-size:17px;color:var(--text-tertiary);line-height:1;">×</button>
+  </div>
+</div>
+
+<!-- 런치 오버레이 -->
+<div class="launch-overlay" id="launchOverlay">
+  <div class="launch-spinner"></div>
+  <div class="launch-text" id="launchText">시나리오를 불러오는 중…</div>
+</div>
+
+<script>
+const ScenarioLoader = window.ScenarioLoader;
+
+// ── 시나리오 카드 동적 렌더링 ──────────────────
+async function renderScenarios() {
+  const grouped = await ScenarioLoader.fetchGrouped();
+  const list    = document.getElementById('scenarioList');
+  const anchor  = list.querySelector('.card-custom'); // 커스텀 카드 앞에 삽입
+
+  grouped.forEach(({ section, scenarios }, groupIdx) => {
+    // 섹션 구분선
+    const divider = document.createElement('div');
+    divider.className = 'section-divider';
+    divider.innerHTML = `<span>${section.label}</span>`;
+    list.insertBefore(divider, anchor);
+
+    // 시나리오 카드
+    scenarios.forEach((s, i) => {
+      const card = buildCard(s, groupIdx * 10 + i);
+      list.insertBefore(card, anchor);
+    });
+  });
+}
+
+function buildCard(s, index) {
+  // 이동 목적지 결정
+  let href = '#';
+  if (s.protagonistMode === 'select' && s.characterSelectPage) {
+    href = s.characterSelectPage;
+  } else if (s.protagonistMode === 'fixed' && s.href && s.status === 'ready') {
+    href = s.href;
+  }
+
+  const wipBadge = s.status === 'wip' ? '<span class="badge-new">준비 중</span>' : '';
+  const tags = (s.tags || []).map(t => `<span class="tag">${t}</span>`).join('');
+
+  const card = document.createElement('div');
+  card.className = 'card';
+  card.setAttribute('role', 'listitem');
+  card.setAttribute('tabindex', '0');
+  card.style.cssText = `--card-accent:${s.color}; --card-accent-soft:${s.colorSoft}; --card-icon-bg:${s.iconBg || s.colorSoft};`;
+  card.style.animationDelay = `${0.10 + index * 0.08}s`;
+  card.dataset.id    = s.id;
+  card.dataset.title = s.title;
+  card.dataset.href  = href;
+  card.innerHTML = `
+    <div class="card-inner">
+      <div class="card-icon">${s.icon}</div>
+      <div class="card-body">
+        <div class="card-eyebrow">${s.eyebrow}</div>
+        <div class="card-title">${s.title}${wipBadge}</div>
+        <div class="card-meta">${s.meta}</div>
+        <div class="card-desc">${s.desc}</div>
+        <div class="card-tags">${tags}</div>
+      </div>
+      <div class="card-arrow">→</div>
+    </div>`;
+  card.addEventListener('click', () => launchScenario(card));
+  card.addEventListener('keydown', e => {
+    if (e.key === 'Enter' || e.key === ' ') launchScenario(card);
+  });
+  return card;
+}
+
+renderScenarios();
+
+// ── 런치 / 커스텀 / 토스트 ────────────────────
+window.launchScenario = function(card) {
+  const id    = card.dataset.id;
+  const title = card.dataset.title;
+  const href  = card.dataset.href;
+
+  card.classList.add('launching');
+
+  if (!href || href === '#') {
+    showComingSoon(title);
+    setTimeout(() => card.classList.remove('launching'), 800);
+    return;
+  }
+
+  // 새 시나리오 진입 시 이전 게임 상태 초기화
+  sessionStorage.removeItem('is_gameState');
+  sessionStorage.setItem('scenarioId', id);
+
+  document.getElementById('launchText').textContent = `"${title}" 불러오는 중…`;
+  document.getElementById('launchOverlay').classList.add('active');
+  setTimeout(() => { window.location.href = href; }, 700);
+};
+
+window.launchCustom = function() {
+  document.getElementById('customModal').style.display = 'flex';
+  setTimeout(() => document.getElementById('customInput').focus(), 60);
+};
+
+window.closeCustom = function() {
+  document.getElementById('customModal').style.display = 'none';
+};
+
+window.startCustom = function() {
+  const text = document.getElementById('customInput').value.trim();
+  if (!text) {
+    document.getElementById('customInput').style.borderColor = 'var(--accent)';
+    setTimeout(() => document.getElementById('customInput').style.borderColor = '', 1000);
+    return;
+  }
+  closeCustom();
+  document.getElementById('launchText').textContent = '시나리오를 초기화하는 중…';
+  document.getElementById('launchOverlay').classList.add('active');
+  sessionStorage.setItem('customScenario', text);
+  setTimeout(() => { window.location.href = 'game.html?custom=1'; }, 800);
+};
+
+function showComingSoon(title) {
+  const toast = document.createElement('div');
+  toast.textContent = `"${title}"은(는) 아직 준비 중입니다`;
+  Object.assign(toast.style, {
+    position: 'fixed', bottom: '32px', left: '50%',
+    transform: 'translateX(-50%) translateY(8px)',
+    background: 'var(--bg-primary)', border: '1px solid var(--border-strong)',
+    borderRadius: '8px', padding: '11px 20px',
+    fontFamily: "'Noto Serif KR',serif", fontSize: '13px',
+    color: 'var(--text-secondary)',
+    boxShadow: '0 4px 18px rgba(0,0,0,0.10)',
+    opacity: '0', transition: 'opacity 0.22s, transform 0.22s',
+    zIndex: '300', whiteSpace: 'nowrap',
+  });
+  document.body.appendChild(toast);
+  requestAnimationFrame(() => {
+    toast.style.opacity = '1';
+    toast.style.transform = 'translateX(-50%) translateY(0)';
+  });
+  setTimeout(() => {
+    toast.style.opacity = '0';
+    toast.style.transform = 'translateX(-50%) translateY(8px)';
+    setTimeout(() => toast.remove(), 300);
+  }, 2200);
+}
+
+document.getElementById('customModal').addEventListener('click', function(e) {
+  if (e.target === this) closeCustom();
+});
+</script>
+</body>
+</html>
