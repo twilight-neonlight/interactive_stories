@@ -331,6 +331,7 @@ let _ui      = null;
     if (scenario) {
       _state = _manager.init(scenario, protagonistId);
       _ui.initDispositions(_state);
+      _ui.onInit?.(_state);
       _manager.save();
     }
   }

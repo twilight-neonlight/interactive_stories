@@ -317,6 +317,25 @@ const CONFIGS = {
       };
     },
     initDispositions(_state) { /* 시나리오 데이터에 이미 설정됨 */ },
+
+    onInit(state) {
+      const MERCIA_NOBLES = [
+        { name: '에셀문트',   epithet: '흐위체 수장',   desc: '머시아 서남부 흐위체 지역의 실력자. 장기전 지속에 공개적으로 회의적이며, 탬워스 귀족층 사이에 영향력이 크다.' },
+        { name: '케올울프',   epithet: '머시아 유력 귀족', desc: '트렌트 강 유역 영지를 가진 중부 귀족. 조용하지만 결정적인 순간에 왕의 뜻을 꺾은 전례가 있다.' },
+        { name: '울프레드',   epithet: '동부 귀족 대표',  desc: '레스터 방면 귀족 연합의 대표. 포위전 장기화로 영지 수비 공백을 우려하고 있다. 일부 바이킹과 접촉한다는 소문이 있다.' },
+        { name: '베오르흐트', epithet: '왕실 고문',       desc: '선왕 대부터 왕실을 보좌해 온 고위 귀족. 겉으로는 버그레드를 지지하나 속내를 드러내지 않는다.' },
+        { name: '무첼름',     epithet: '북부 국경 영주',  desc: '덴마크군과 가장 가까운 최전방 영지를 보유한 귀족. 현실론자로, 협상 타결을 가장 강하게 압박하고 있다.' },
+      ];
+      const pick = MERCIA_NOBLES[Math.floor(Math.random() * MERCIA_NOBLES.length)];
+      state.addCharacter({
+        id:          'mercia-noble',
+        name:        pick.name,
+        epithet:     pick.epithet,
+        disposition: '중립',
+        status_tag:  '불명',
+        desc:        pick.desc,
+      });
+    },
   },
 
   // ── 뇌제의 후계자 ─────────────────────────────────────────────
@@ -410,6 +429,42 @@ const CONFIGS = {
         else if (PRINCES.includes(id)) char.disposition = '적대';
         else char.disposition = char.disposition ?? '중립';
       }
+    },
+
+    onInit(state) {
+      const STAFF_POOL = {
+        mehmed: [
+          { name: '이브라힘 파샤',   epithet: '수석 고문',     desc: '아마스야 행정을 오래 보좌해온 실무형 관료. 흑해 교역로 수입 관리에 밝으며, 마흐메트의 신중한 노선을 지지한다.' },
+          { name: '타히르 베이',     epithet: '지방 귀족 대표', desc: '아나톨리아 북부 지방 귀족 연합의 대변인. 독자적인 영지 이해관계를 갖고 있어 마흐메트의 결정에 조건부로 따른다.' },
+          { name: '유수프 에펜디',   epithet: '율법학자',       desc: '아마스야 울레마(이슬람 법학자) 집단의 대표. 정통성 확보와 민심 관리를 조언하며, 신중한 외교를 일관되게 권고한다.' },
+        ],
+        suleyman: [
+          { name: '알리 베이',       epithet: '루멜리아 총독',  desc: '에디르네를 실질적으로 운영하는 행정가. 귀족 네트워크에 두루 연결돼 있으나, 술레이만보다 귀족 전체의 이익을 우선한다.' },
+          { name: '야코보 그릴로',   epithet: '제노바 상인 대표', desc: '제노바 무역 거점의 대리인. 술레이만의 외교 자산이지만, 상업적 이익이 보장되는 한에서만 협력한다.' },
+          { name: '하산 아가',       epithet: '친위대 지휘관',  desc: '루멜리아 병력의 실질적 지휘를 맡은 군인. 전략보다 전술에 강하며, 아나톨리아 개입에 신중한 입장이다.' },
+        ],
+        isa: [
+          { name: '케말 베이',       epithet: '부르사 수비대장', desc: '아나톨리아 서부 방어를 책임지는 장수. 충성스럽지만 병력 열세를 누구보다 잘 안다. 현실론적 조언을 아끼지 않는다.' },
+          { name: '니코스 팔라이올로고스', epithet: '비잔틴 망명 귀족', desc: '비잔틴 황실 방계 출신으로 이사에게 망명해온 인물. 콘스탄티노폴리스 내부 사정에 밝으나 신뢰성은 미지수.' },
+        ],
+        musa: [
+          { name: '도안 베이',       epithet: '가지 수장',      desc: '아나톨리아 유목 전사 집단의 지도자. 무사의 가장 믿을 만한 군사 자산이지만, 장기 행정보다 약탈과 전투를 선호한다.' },
+          { name: '메흐메트 아가',   epithet: '참모장',         desc: '앙카라 전투 생존자. 포로 시절 무사를 수행한 측근. 전술적 감각이 뛰어나지만 외교엔 어둡다.' },
+          { name: '압둘라 에펜디',   epithet: '부족 연합 중재자', desc: '여러 유목 부족 사이를 오가며 무사의 연대를 조율하는 인물. 부족 간 이해관계 충돌 시 유일한 조정 창구.' },
+        ],
+      };
+
+      const pool = STAFF_POOL[state.protagonist];
+      if (!pool) return;
+      const pick = pool[Math.floor(Math.random() * pool.length)];
+      state.addCharacter({
+        id:          'protagonist-staff',
+        name:        pick.name,
+        epithet:     pick.epithet,
+        disposition: '우호',
+        status_tag:  '확인됨',
+        desc:        pick.desc,
+      });
     },
   },
 };

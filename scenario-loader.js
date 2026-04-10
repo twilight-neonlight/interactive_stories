@@ -44,7 +44,8 @@ const LOCAL_SCENARIOS = [
       { id: 'tamworth',    name: '탬워스 (Tamworth)',            controller: 'mercia',             terrain: '내륙 평지 — 앤커 강 합류부',                    strategic_value: '머시아 왕궁 소재지. 왕국의 행정·상징적 중심.',                                notes: '노팅엄이 함락되면 다음 침공 목표가 될 가능성 높음.' },
       { id: 'repton',      name: '레프턴 (Repton)',              controller: 'mercia',             terrain: '트렌트 강 남안 — 수도원 언덕',                  strategic_value: '머시아 왕실 묘지이자 수도원. 정신적·종교적 거점.',                              notes: '역사적으로 873년 덴마크군이 동계 야영지로 삼음. 현재는 아직 머시아 영토.' },
       { id: 'leicester',   name: '레스터 (Ligera ceaster)',      controller: 'mercia',             terrain: '내륙 평지 — 소어 강변 로마 도로망 교차점',       strategic_value: '노팅엄-탬워스 사이 보급로 결절점. 덴마크군 남하 시 전초기지 역할.' },
-      { id: 'winchester',  name: '윈체스터 (Venta Belgarum)',    controller: 'wessex',             terrain: '남부 구릉 — 이첸 강변',                         strategic_value: '웨섹스 수도. 지원군 철수 시 원정 능력 상실의 상징.',                           notes: '웨섹스 지원군은 2주 내 귀환 압박을 받고 있음.' },
+      { id: 'winchester',  name: '윈체스터 (Venta Belgarum)',    controller: 'wessex',             terrain: '남부 구릉 — 이첸 강변',                         strategic_value: '고대 로마의 유산 위에 세워진, 웨섹스 왕국의 수도이자 심장 ',                           notes: '고대 로마시대에 세워진 도시로, 7세기 경 건립된 올드 민스터(Old Minster) 성당은 웨섹스 왕실의 권위를 상징한다.' },
+      { id: 'norfolk',     name: '노포크 (Norfolc)',              controller: 'east-anglia',        terrain: '동해안 저지대 — 습지·하구 밀집 지형',            strategic_value: '동앵글리아의 북부 관문. 북해 연안 상륙 경로와 직결되며 덴마크군 증원 시 최초 상륙 후보지.' },
     ],
     factions: [
       { id: 'great-heathen-army', name: '대군세 (Micel Hæþen Here)', type: 'tribe',   strength: 'very high', disposition: '적대', notes: '이바르·할프단 형제 공동 지휘. 요크를 병참 기지로 노팅엄에 농성 중. 보급선이 길어 장기전보다 단기 결착 선호. 협상 창구가 열려 있으나 조건이 가혹함.' },
@@ -54,12 +55,11 @@ const LOCAL_SCENARIOS = [
       { id: 'east-anglia',        name: '동앵글리아 왕국',           type: 'kingdom', strength: 'low',       disposition: '중립', notes: '아직 침공받지 않았으나 방어력이 약함. 덴마크군 철수 협상 시 완충지대로 활용 가능. 868년 현재 에드문드 왕 통치 중.' },
     ],
     characters: [
-      { id: 'burgred',       name: '버그레드',     epithet: '머시아 왕',           disposition: '우호', status_tag: '확인됨', title: '왕', troops: '~12,000', supply: '약 8일치', desc: '머시아 왕. 웨섹스와의 동맹을 기반으로 노팅엄 포위전을 지휘 중.' },
+      { id: 'burgred',       name: '버그레드',     epithet: '머시아 왕',           disposition: '플레이어', status_tag: '확인됨', title: '왕', troops: '~12,000', supply: '약 8일치', desc: '머시아 왕. 웨섹스와의 동맹을 기반으로 노팅엄 포위전을 지휘 중.' },
       { id: 'aethelred',     name: '애설레드',     epithet: '웨섹스 왕',           disposition: '우호', status_tag: '확인됨', desc: '머시아와 동맹 유지 중. 장기 파견에 부담, 2주 이상 체류 어렵다는 입장.' },
       { id: 'alfred',        name: '알프레드',     epithet: '웨섹스 왕자',         disposition: '우호', status_tag: '추정됨', desc: '애설레드의 동생. 신중한 전술가로 알려짐. 성향 추정 단계.' },
       { id: 'ivar',          name: '이바르',       epithet: '대군세 지휘관',       disposition: '적대', status_tag: '불명',   desc: '노팅엄 점거 후 농성. 협상 전령을 보냈으나 의도 불명.' },
       { id: 'halfdan',       name: '하프단',       epithet: '대군세 공동 지휘관',  disposition: '적대', status_tag: '추정됨', desc: '이바르의 형제. 공격적 성향. 노팅엄 내부 추정.' },
-      { id: 'mercia-nobles', name: '머시아 귀족단', epithet: '왕국 내 유력 귀족들', disposition: '중립', status_tag: '불명',   desc: '장기전에 불만 누적. 일부 바이킹과 접촉 소문 있음.' },
       { id: 'ubba',          name: '우바',         epithet: '대군세 지휘관',       disposition: '적대', status_tag: '불명',   desc: '이바르·하프단의 형제. 현재 위치 불명.' },
     ],
   },
