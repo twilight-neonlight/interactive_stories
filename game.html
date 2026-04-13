@@ -242,6 +242,9 @@ function renderFactionBars(state) {
 // ── 지도 마커 갱신 ────────────────────────────────────────────────
 function renderMapMarkers(state) {
   if (!_ui) return;
+  const svg = document.querySelector('#map-container svg');
+
+  // 기존 마커 색상·상태 갱신
   document.querySelectorAll('.map-marker[data-id]').forEach(marker => {
     const loc = state.locations.get(marker.dataset.id);
     if (!loc) return;
@@ -257,6 +260,54 @@ function renderMapMarkers(state) {
     if (loc.terrain) marker.dataset.terrain = loc.terrain;
     if (loc.notes)   marker.dataset.note    = loc.notes;
   });
+
+  // SVG 마커가 없고 좌표가 있는 location은 동적으로 마커 생성
+  if (svg) {
+    state.locations.forEach((loc, id) => {
+      if (loc.x == null || loc.y == null) return;
+      if (svg.querySelector(`.map-marker[data-id="${id}"]`)) return;
+
+      const { color, statusText } = _ui.mapMarkerStyle(loc, state);
+      const factionName = state.factions.get(loc.controller)?.name || loc.controller || '—';
+      const NS = 'http://www.w3.org/2000/svg';
+      const cx = loc.x, cy = loc.y;
+
+      const g = document.createElementNS(NS, 'g');
+      g.setAttribute('class', 'map-marker');
+      g.setAttribute('data-id', id);
+      g.dataset.city    = loc.name;
+      g.dataset.faction = factionName;
+      g.dataset.terrain = loc.terrain || '';
+      g.dataset.status  = statusText;
+      g.dataset.note    = loc.notes || '';
+
+      const outer = document.createElementNS(NS, 'circle');
+      outer.setAttribute('class', 'outer');
+      outer.setAttribute('cx', cx); outer.setAttribute('cy', cy);
+      outer.setAttribute('r', '4');
+      outer.setAttribute('fill', color); outer.setAttribute('opacity', '0.22');
+      outer.setAttribute('stroke', color); outer.setAttribute('stroke-width', '0.6');
+
+      const inner = document.createElementNS(NS, 'circle');
+      inner.setAttribute('cx', cx); inner.setAttribute('cy', cy);
+      inner.setAttribute('r', '2.8');
+      inner.setAttribute('fill', color);
+
+      g.appendChild(outer);
+      g.appendChild(inner);
+      svg.appendChild(g);
+
+      const label = document.createElementNS(NS, 'text');
+      label.setAttribute('x', cx + 5); label.setAttribute('y', cy + 2);
+      label.setAttribute('font-size', '6');
+      label.setAttribute('font-family', 'sans-serif');
+      label.setAttribute('fill', '#444');
+      label.setAttribute('data-dynamic-label', id);
+      label.textContent = loc.name.split(' ')[0]; // 첫 단어만 (한자·괄호 제외)
+      svg.appendChild(label);
+    });
+  }
+
   rebindTooltips();
 }
 
