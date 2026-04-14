@@ -1,0 +1,18 @@
+{
+  "id": "voice-of-god",
+  "title": "신의 목소리",
+  "section": "history",
+  "eyebrow": "1429년 봄 · 프랑스 왕국",
+  "meta": "잔 다르크 — 오를레앙 포위전 돌파",
+  "desc": "영국군이 오를레앙을 포위한 지 반년이 지났다. 한 농민 소녀가 신의 계시를 들었다고 주장하며 군대 앞에 섰다. 전장을 돌파하는 것만이 문제가 아니다 — 프랑스 내부의 견제를 버텨내야 한다.",
+  "tags": ["군사", "정치", "백년전쟁", "프랑스"],
+  "icon": "⚜",
+  "color": "#3a7abf",
+  "colorSoft": "rgba(58,122,191,0.06)",
+  "iconBg": "rgba(58,122,191,0.08)",
+  "status": "wip",
+  "protagonistMode": "fixed",
+  "locations": [],
+  "factions": [],
+  "characters": []
+}

@@ -15,6 +15,17 @@ import os
 import re
 import json
 
+# ── 시나리오 데이터 로드 ──────────────────────────
+SCENARIOS_DIR = Path(__file__).parent / "scenarios"
+
+def _load_scenarios() -> list[dict]:
+    scenarios = []
+    for path in sorted(SCENARIOS_DIR.glob("*.json")):
+        scenarios.append(json.loads(path.read_text(encoding="utf-8")))
+    return scenarios
+
+SCENARIOS: list[dict] = _load_scenarios()
+
 # ── 환경 변수 로드 ────────────────────────────────
 load_dotenv()
 GOOGLE_API_KEY = os.environ.get("GOOGLE_API_KEY")
@@ -218,6 +229,21 @@ def build_scenario_context(state: dict) -> str:
 @app.get("/health")
 def health():
     return {"status": "ok"}
+
+
+@app.get("/api/scenarios")
+def list_scenarios():
+    """시나리오 목록 반환 (카드 렌더링용 메타데이터 포함, 게임 데이터 포함)."""
+    return SCENARIOS
+
+
+@app.get("/api/scenarios/{scenario_id}")
+def get_scenario(scenario_id: str):
+    """단일 시나리오 전체 데이터 반환."""
+    scenario = next((s for s in SCENARIOS if s["id"] == scenario_id), None)
+    if not scenario:
+        raise HTTPException(status_code=404, detail=f"시나리오 '{scenario_id}'를 찾을 수 없습니다.")
+    return scenario
 
 @app.post("/api/turn")
 async def process_turn(req: TurnRequest):
