@@ -366,16 +366,16 @@ let _ui      = null;
   _ui = window.getScenarioUI(scenarioId);
   tagStyle = { ...BASE_TAG_STYLE, ..._ui.tagExtras };
 
-  // 지도 SVG 주입
+  // 시나리오 전체 데이터 fetch (지도 SVG + opening + npc_pool 포함)
   const mapContainer = document.getElementById('map-container');
-  if (mapContainer && _ui.mapSvg) mapContainer.innerHTML = _ui.mapSvg;
+  const scenario = await ScenarioLoader.fetchOne(scenarioId);
+
+  // 지도 SVG 주입 (백엔드에서 로드)
+  if (mapContainer && scenario?.map_svg) mapContainer.innerHTML = scenario.map_svg;
 
   if (!_state) {
-    const scenarios     = await ScenarioLoader.fetchAll();
-    const scenario      = scenarios.find(s => s.id === scenarioId);
     const protagonistId = sessionStorage.getItem('selectedCharacterId')
       || sessionStorage.getItem('selectedCharacter')
-      || _ui.defaultProtagonistId
       || scenario?.protagonist
       || null;
 

@@ -29,9 +29,17 @@ def _load_scenarios() -> list[dict]:
         if not meta_path.exists():
             continue
         scenario = json.loads(meta_path.read_text(encoding="utf-8"))
+        # JSON 배열 파일
         for key in ("locations", "factions", "characters", "events"):
             path = scenario_dir / f"{key}.json"
             scenario[key] = json.loads(path.read_text(encoding="utf-8")) if path.exists() else []
+        # JSON 오브젝트 파일
+        for key, filename in (("opening", "opening.json"), ("npc_pool", "npc-pool.json")):
+            path = scenario_dir / filename
+            scenario[key] = json.loads(path.read_text(encoding="utf-8")) if path.exists() else {}
+        # SVG 지도 (텍스트 그대로)
+        map_path = scenario_dir / "map.svg"
+        scenario["map_svg"] = map_path.read_text(encoding="utf-8") if map_path.exists() else ""
         scenarios.append(scenario)
     return scenarios
 

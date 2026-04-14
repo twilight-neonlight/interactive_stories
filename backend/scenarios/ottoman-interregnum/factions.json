@@ -1,58 +1,37 @@
 [
   {
-    "id": "suleyman",
-    "name": "술레이만 첼레비파",
-    "type": "faction",
-    "strength": "very high",
-    "disposition": "중립",
+    "id": "suleyman", "name": "술레이만 첼레비파", "type": "faction",
+    "strength": "very high", "disposition": "중립", "color": "#3a7abf",
     "notes": "루멜리아 전역과 비잔틴·제노바 외교망 보유. 귀족·봉신 의존 구조라 중앙집권이 약함. 협상 가능하나 양보 시 내부 반발 위험."
   },
   {
-    "id": "isa",
-    "name": "이사 첼레비파",
-    "type": "faction",
-    "strength": "very low",
-    "disposition": "중립",
+    "id": "isa", "name": "이사 첼레비파", "type": "faction",
+    "strength": "very low", "disposition": "중립", "color": "#888780",
     "notes": "부르사를 거점으로 하나 사방이 압박. 생존 압박이 커서 외교 제안에 반응적. 조기 탈락 가능성이 있어 단기 동맹 상대로 적합."
   },
   {
-    "id": "musa",
-    "name": "무사 첼레비파",
-    "type": "faction",
-    "strength": "medium",
-    "disposition": "중립",
+    "id": "musa", "name": "무사 첼레비파", "type": "faction",
+    "strength": "medium", "disposition": "중립", "color": "#8b2020",
     "notes": "아나톨리아 가지·유목 세력 기반. 외교보다 전쟁을 선호해 협상 비용이 높음. 전투력 강하나 장기 행정 능력 부재."
   },
   {
-    "id": "mehmed",
-    "name": "마흐메트 첼레비파",
-    "type": "faction",
-    "strength": "low",
-    "disposition": "중립",
+    "id": "mehmed", "name": "마흐메트 첼레비파", "type": "faction",
+    "strength": "low", "disposition": "중립", "color": "#C5932A",
     "notes": "아마스야 요새와 흑해 교역 수입 보유. 신중하고 장기적 시각. 단독으론 열세지만 연합 구성 시 가장 지속적인 파트너."
   },
   {
-    "id": "byzantine",
-    "name": "비잔틴 제국",
-    "type": "empire",
-    "strength": "very low",
-    "disposition": "중립",
+    "id": "byzantine", "name": "비잔틴 제국", "type": "empire",
+    "strength": "very low", "disposition": "중립", "color": "#7F77DD",
     "notes": "마누엘 2세가 모든 왕자와 동시 접촉해 분열을 유지. 지지 선언은 외교 자산이나 군사 지원은 제한적. 내정 간섭 의도 있음."
   },
   {
-    "id": "karamanids",
-    "name": "카라만 왕조",
-    "type": "emirate",
-    "strength": "medium",
-    "disposition": "적대",
+    "id": "karamanids", "name": "카라만 왕조", "type": "emirate",
+    "strength": "medium", "disposition": "적대", "color": "#E24B4A",
     "notes": "티무르 이후 아나톨리아 패권을 노리는 가장 강력한 베이릭. 오스만 내전을 기회로 영역 확장 시도. 어느 왕자가 강해져도 결국 충돌 불가피."
   },
   {
-    "id": "anatolian-beyliks",
-    "name": "아나톨리아 베이릭들",
-    "type": "tribe",
-    "strength": "very low",
-    "disposition": "중립",
+    "id": "anatolian-beyliks", "name": "아나톨리아 베이릭들", "type": "tribe",
+    "strength": "very low", "disposition": "중립", "color": "#a09878",
     "notes": "티무르가 복원한 소규모 공국들. 개별 포섭 가능하나 집단 행동은 어려움. 가지 전사 충원의 공급처."
   }
 ]

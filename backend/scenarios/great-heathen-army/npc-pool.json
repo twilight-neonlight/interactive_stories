@@ -1,0 +1,29 @@
+{
+  "default": [
+    {
+      "id": "mercia-noble", "name": "에셀문트", "epithet": "흐위체 수장",
+      "disposition": "중립", "status_tag": "불명",
+      "desc": "머시아 서남부 흐위체 지역의 실력자. 장기전 지속에 공개적으로 회의적이며, 탬워스 귀족층 사이에 영향력이 크다."
+    },
+    {
+      "id": "mercia-noble", "name": "케올울프", "epithet": "머시아 유력 귀족",
+      "disposition": "중립", "status_tag": "불명",
+      "desc": "트렌트 강 유역 영지를 가진 중부 귀족. 조용하지만 결정적인 순간에 왕의 뜻을 꺾은 전례가 있다."
+    },
+    {
+      "id": "mercia-noble", "name": "울프레드", "epithet": "동부 귀족 대표",
+      "disposition": "중립", "status_tag": "불명",
+      "desc": "레스터 방면 귀족 연합의 대표. 포위전 장기화로 영지 수비 공백을 우려하고 있다. 일부 바이킹과 접촉한다는 소문이 있다."
+    },
+    {
+      "id": "mercia-noble", "name": "베오르흐트", "epithet": "왕실 고문",
+      "disposition": "중립", "status_tag": "불명",
+      "desc": "선왕 대부터 왕실을 보좌해 온 고위 귀족. 겉으로는 버그레드를 지지하나 속내를 드러내지 않는다."
+    },
+    {
+      "id": "mercia-noble", "name": "무첼름", "epithet": "북부 국경 영주",
+      "disposition": "중립", "status_tag": "불명",
+      "desc": "덴마크군과 가장 가까운 최전방 영지를 보유한 귀족. 현실론자로, 협상 타결을 가장 강하게 압박하고 있다."
+    }
+  ]
+}

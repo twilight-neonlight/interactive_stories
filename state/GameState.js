@@ -96,6 +96,11 @@ class GameState {
     /** @type {Map<string, StateLocation>} */
     this.locations  = new Map();
 
+    // 시나리오 정적 데이터 (새 게임 시작 시에만 사용, 직렬화하지 않음)
+    this.mapSvg  = scenario.map_svg  ?? '';
+    this.opening = scenario.opening  ?? {};
+    this.npcPool = scenario.npc_pool ?? {};
+
     // 시나리오 초기값을 깊은 복사해서 Map으로 변환
     for (const char of scenario.characters ?? []) {
       this.characters.set(char.id, {
