@@ -332,6 +332,7 @@ let _ui      = null;
 
 // ── 초기화 ────────────────────────────────────────────────────────
 (async () => {
+  try {
   _manager = new StateManager();
   _state   = _manager.load();
 
@@ -346,9 +347,21 @@ let _ui      = null;
   _ui = window.getScenarioUI(scenarioId);
   tagStyle = { ...BASE_TAG_STYLE, ..._ui.tagExtras };
 
-  // 시나리오 전체 데이터 fetch (지도 SVG + opening + npc_pool 포함)
+  // 시나리오 전체 데이터 fetch (opening + npc_pool 포함)
   const mapContainer = document.getElementById('map-container');
-  const scenario = await ScenarioLoader.fetchOne(scenarioId);
+  let scenario;
+  try {
+    scenario = await ScenarioLoader.fetchOne(scenarioId);
+  } catch (fetchErr) {
+    const msg = fetchErr.message || String(fetchErr);
+    renderSceneBody(`<p style="color:var(--text-secondary);font-size:13px;">
+      <strong>백엔드 서버에 연결할 수 없습니다.</strong><br><br>
+      <code style="font-size:11px;background:var(--bg-secondary);padding:2px 6px;border-radius:4px;">cd backend &amp;&amp; uvicorn main:app --reload --port 8000</code><br><br>
+      서버를 시작한 뒤 페이지를 새로고침하세요.<br>
+      <span style="font-size:11px;color:var(--text-tertiary);">${msg}</span>
+    </p>`);
+    return;
+  }
 
   // 지도 이미지 + 마커 레이어 주입
   if (mapContainer) {
@@ -397,6 +410,14 @@ let _ui      = null;
   }
   document.getElementById('send-btn').disabled = false;
   rebindTooltips();
+  } catch (err) {
+    console.error('[game.html init error]', err);
+    renderSceneBody(`<p style="color:var(--text-secondary);font-size:13px;">
+      <strong>초기화 중 오류가 발생했습니다.</strong><br><br>
+      <span style="font-size:11px;color:var(--text-tertiary);">${err.message || err}</span><br><br>
+      브라우저 콘솔(F12)에서 자세한 내용을 확인하세요.
+    </p>`);
+  }
 })();
 
 // ── 선택지 ────────────────────────────────────────────────────────
