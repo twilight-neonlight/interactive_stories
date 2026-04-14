@@ -275,6 +275,21 @@ body::before {
   transform: translateX(3px);
 }
 
+/* ─── 부분 공개 배지 ─── */
+.badge-partial {
+  font-family: 'Cinzel', serif;
+  font-size: 8px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  padding: 2px 7px;
+  border-radius: 4px;
+  background: rgba(58,122,191,0.08);
+  color: #4a8fd4;
+  border: 1px solid rgba(58,122,191,0.22);
+  margin-left: 8px;
+  vertical-align: middle;
+}
+
 /* ─── NEW 배지 ─── */
 .badge-new {
   font-family: 'Cinzel', serif;

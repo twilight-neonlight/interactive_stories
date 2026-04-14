@@ -77,7 +77,7 @@ const LOCAL_SCENARIOS = [
     color: '#C5932A',
     colorSoft: 'rgba(197,147,42,0.07)',
     iconBg: 'rgba(197,147,42,0.09)',
-    status: 'wip',
+    status: 'partial',
     protagonistMode: 'select',
     characterSelectPage: 'prince_select.html',
     locations: [
@@ -119,23 +119,6 @@ const LOCAL_SCENARIOS = [
     color: '#3a7abf',
     colorSoft: 'rgba(58,122,191,0.06)',
     iconBg: 'rgba(58,122,191,0.08)',
-    status: 'wip',
-    protagonistMode: 'fixed',
-  },
-
-  // ── empty-throne ───────────────────────────
-  {
-    id: 'empty-throne',
-    title: '공허의 왕좌',
-    section: 'fantasy',
-    eyebrow: '판타지 · 창작 세계',
-    meta: '마법 붕괴 시대 — 다섯 제후의 전쟁',
-    desc: '신의 죽음과 함께 마법의 원천이 말라붙기 시작했다. 마법에 의존하던 제국은 균열을 보이고, 다섯 제후는 각자의 방식으로 공백을 채우려 한다. 새로운 질서의 설계자가 될 것인가.',
-    tags: ['판타지', '정치', '마법', '세계 붕괴'],
-    icon: '👁',
-    color: '#5B4FBB',
-    colorSoft: 'rgba(91,79,187,0.07)',
-    iconBg: 'rgba(91,79,187,0.09)',
     status: 'wip',
     protagonistMode: 'fixed',
   },
@@ -182,6 +165,6 @@ window.ScenarioLoader = {
         section,
         scenarios: all.filter(s => s.section === section.id),
       }))
-      .filter(group => group.scenarios.length > 0);
+      ;
   },
 };

@@ -115,11 +115,22 @@ async function renderScenarios() {
     divider.innerHTML = `<span>${section.label}</span>`;
     list.insertBefore(divider, anchor);
 
-    // 시나리오 카드
-    scenarios.forEach((s, i) => {
-      const card = buildCard(s, groupIdx * 10 + i);
-      list.insertBefore(card, anchor);
-    });
+    // 시나리오 카드 (없으면 플레이스홀더)
+    if (scenarios.length === 0) {
+      const placeholder = document.createElement('div');
+      placeholder.style.cssText = `
+        text-align:center; padding:40px 0 36px;
+        font-family:'Noto Serif KR',serif; font-size:14px;
+        color:var(--text-tertiary); letter-spacing:0.05em;
+        pointer-events:none; user-select:none;`;
+      placeholder.textContent = '- 추후 작성 예정 -';
+      list.insertBefore(placeholder, anchor);
+    } else {
+      scenarios.forEach((s, i) => {
+        const card = buildCard(s, groupIdx * 10 + i);
+        list.insertBefore(card, anchor);
+      });
+    }
   });
 }
 
@@ -132,7 +143,9 @@ function buildCard(s, index) {
     href = s.href;
   }
 
-  const wipBadge = s.status === 'wip' ? '<span class="badge-new">준비 중</span>' : '';
+  const wipBadge = s.status === 'wip'     ? '<span class="badge-new">준비 중</span>'
+                 : s.status === 'partial' ? '<span class="badge-partial">일부 공개</span>'
+                 : '';
   const tags = (s.tags || []).map(t => `<span class="tag">${t}</span>`).join('');
 
   const card = document.createElement('div');
