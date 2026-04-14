@@ -1,0 +1,63 @@
+[
+  {
+    "id": "nottingham",
+    "x": 92, "y": 80,
+    "name": "노팅엄 (Snotengaham)",
+    "controller": "great-heathen-army",
+    "terrain": "강변 평지 — 트렌트 강 북안, 목책 요새",
+    "strategic_value": "트렌트 강 도하 거점. 점령한 채 농성 중이므로 직접 공략 없이는 남진 불가.",
+    "notes": "덴마크군이 겨울을 나기 위해 점거. 성벽보다 강과 늪이 천연 방어선."
+  },
+  {
+    "id": "york",
+    "x": 115, "y": 42,
+    "name": "요크 (Jorvik)",
+    "controller": "great-heathen-army",
+    "terrain": "평원 — 우즈 강·포스 강 합류 지점",
+    "strategic_value": "865년 함락 후 덴마크 북잉글랜드 수도. 병참·병력 보충의 핵심 기지.",
+    "notes": "괴뢰왕 에그버트가 통치 중. 공략 시 전선 확대 불가피."
+  },
+  {
+    "id": "tamworth",
+    "x": 72, "y": 90,
+    "name": "탬워스 (Tamworth)",
+    "controller": "mercia",
+    "terrain": "내륙 평지 — 앤커 강 합류부",
+    "strategic_value": "머시아 왕궁 소재지. 왕국의 행정·상징적 중심.",
+    "notes": "노팅엄이 함락되면 다음 침공 목표가 될 가능성 높음."
+  },
+  {
+    "id": "repton",
+    "x": 80, "y": 98,
+    "name": "레프턴 (Repton)",
+    "controller": "mercia",
+    "terrain": "트렌트 강 남안 — 수도원 언덕",
+    "strategic_value": "머시아 왕실 묘지이자 수도원. 정신적·종교적 거점.",
+    "notes": "역사적으로 873년 덴마크군이 동계 야영지로 삼음. 현재는 아직 머시아 영토."
+  },
+  {
+    "id": "leicester",
+    "x": 56, "y": 110,
+    "name": "레스터 (Ligera ceaster)",
+    "controller": "mercia",
+    "terrain": "내륙 평지 — 소어 강변 로마 도로망 교차점",
+    "strategic_value": "노팅엄-탬워스 사이 보급로 결절점. 덴마크군 남하 시 전초기지 역할."
+  },
+  {
+    "id": "winchester",
+    "x": 58, "y": 138,
+    "name": "윈체스터 (Venta Belgarum)",
+    "controller": "wessex",
+    "terrain": "남부 구릉 — 이첸 강변",
+    "strategic_value": "고대 로마의 유산 위에 세워진, 웨섹스 왕국의 수도이자 심장",
+    "notes": "고대 로마시대에 세워진 도시로, 7세기 경 건립된 올드 민스터(Old Minster) 성당은 웨섹스 왕실의 권위를 상징한다."
+  },
+  {
+    "id": "norfolk",
+    "x": 158, "y": 112,
+    "name": "노포크 (Norfolc)",
+    "controller": "east-anglia",
+    "terrain": "동해안 저지대 — 습지·하구 밀집 지형",
+    "strategic_value": "동앵글리아의 북부 관문. 북해 연안 상륙 경로와 직결되며 덴마크군 증원 시 최초 상륙 후보지."
+  }
+]

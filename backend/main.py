@@ -16,12 +16,23 @@ import re
 import json
 
 # ── 시나리오 데이터 로드 ──────────────────────────
+# 구조: backend/scenarios/{id}/meta.json + locations.json + factions.json
+#                                         + characters.json + events.json
 SCENARIOS_DIR = Path(__file__).parent / "scenarios"
 
 def _load_scenarios() -> list[dict]:
     scenarios = []
-    for path in sorted(SCENARIOS_DIR.glob("*.json")):
-        scenarios.append(json.loads(path.read_text(encoding="utf-8")))
+    for scenario_dir in sorted(SCENARIOS_DIR.iterdir()):
+        if not scenario_dir.is_dir():
+            continue
+        meta_path = scenario_dir / "meta.json"
+        if not meta_path.exists():
+            continue
+        scenario = json.loads(meta_path.read_text(encoding="utf-8"))
+        for key in ("locations", "factions", "characters", "events"):
+            path = scenario_dir / f"{key}.json"
+            scenario[key] = json.loads(path.read_text(encoding="utf-8")) if path.exists() else []
+        scenarios.append(scenario)
     return scenarios
 
 SCENARIOS: list[dict] = _load_scenarios()

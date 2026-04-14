@@ -11,8 +11,5 @@
   "colorSoft": "rgba(58,122,191,0.06)",
   "iconBg": "rgba(58,122,191,0.08)",
   "status": "wip",
-  "protagonistMode": "fixed",
-  "locations": [],
-  "factions": [],
-  "characters": []
+  "protagonistMode": "fixed"
 }

@@ -1,0 +1,65 @@
+[
+  {
+    "id": "edirne",
+    "x": 22, "y": 54,
+    "name": "에디르네 (Edirne / Adrianople)",
+    "controller": "suleyman",
+    "terrain": "강변 평지 — 마리차·통자·아르다 강 합류부",
+    "strategic_value": "루멜리아(유럽 영토) 행정·군사 수도. 비잔틴·제노바 교역로 결절점.",
+    "notes": "술레이만이 형제 중 가장 탄탄한 행정 기반을 가진 이유. 내부 귀족 영향력도 집중."
+  },
+  {
+    "id": "bursa",
+    "x": 82, "y": 104,
+    "name": "부르사 (Bursa / Prusa)",
+    "controller": "isa",
+    "terrain": "울루다으 산 북록 — 비옥한 평원",
+    "strategic_value": "오스만 최초 수도이자 상업 중심지. 비단 교역로의 요충. 상징성 강함.",
+    "notes": "이사가 장악 중이나 기반이 불안정. 무사·술레이만 양측의 압박을 동시에 받는 위치."
+  },
+  {
+    "id": "amasya",
+    "x": 157, "y": 52,
+    "name": "아마스야 (Amasya)",
+    "controller": "mehmed",
+    "terrain": "예실으르막 강 협곡 — 절벽 위 요새 도시",
+    "strategic_value": "아나톨리아 북부 흑해 교역로 관문. 천연 요새 지형으로 방어에 유리.",
+    "notes": "마흐메트의 근거지. 티무르가 각 왕자에게 분봉한 영역 중 방어가 가장 용이."
+  },
+  {
+    "id": "constantinople",
+    "x": 63, "y": 74,
+    "name": "콘스탄티노폴리스 (Konstantinoupolis)",
+    "controller": "byzantine",
+    "terrain": "삼면이 바다 — 테오도시우스 성벽",
+    "strategic_value": "비잔틴 제국 수도. 어느 왕자도 직접 공략 불가. 외교 승인의 핵심 변수.",
+    "notes": "마누엘 2세가 모든 왕자와 동시 협상 중. 비잔틴 지지 확보는 루멜리아 통제권과 직결."
+  },
+  {
+    "id": "ankara",
+    "x": 134, "y": 80,
+    "name": "앙카라 (Ankara / Ancyra)",
+    "controller": "contested",
+    "terrain": "아나톨리아 고원 — 성채 언덕",
+    "strategic_value": "1402년 전투 현장. 중앙 아나톨리아 교차로. 현재 실효 지배 공백.",
+    "notes": "티무르 철수 후 아나톨리아 베이릭들이 각자 영역 회복 중. 심리적 트라우마 지점."
+  },
+  {
+    "id": "gallipoli",
+    "x": 44, "y": 98,
+    "name": "갈리폴리 (Gelibolu)",
+    "controller": "suleyman",
+    "terrain": "다르다넬스 해협 서안 — 반도 요새",
+    "strategic_value": "유럽-아나톨리아 해협 도하 거점. 루멜리아 병력의 아나톨리아 투입 관문.",
+    "notes": "술레이만이 장악 중. 아나톨리아 전선 참여 시 반드시 통과해야 하는 병목."
+  },
+  {
+    "id": "iznik",
+    "x": 88, "y": 86,
+    "name": "이즈니크 (İznik / Nicaea)",
+    "controller": "contested",
+    "terrain": "이즈니크 호 동안 — 로마 성벽",
+    "strategic_value": "아나톨리아 서북부 요충. 부르사-콘스탄티노폴리스 사이 방어선.",
+    "notes": "부르사와 함께 아나톨리아 서부 패권의 핵심. 이사-술레이만 충돌 가능 지점."
+  }
+]

@@ -1,0 +1,53 @@
+[
+  {
+    "id": "burgred",
+    "name": "버그레드",
+    "epithet": "머시아 왕",
+    "disposition": "플레이어",
+    "status_tag": "확인됨",
+    "title": "왕",
+    "troops": "~12,000",
+    "supply": "약 8일치",
+    "desc": "머시아 왕. 웨섹스와의 동맹을 기반으로 노팅엄 포위전을 지휘 중."
+  },
+  {
+    "id": "aethelred",
+    "name": "애설레드",
+    "epithet": "웨섹스 왕",
+    "disposition": "우호",
+    "status_tag": "확인됨",
+    "desc": "머시아와 동맹 유지 중. 장기 파견에 부담, 2주 이상 체류 어렵다는 입장."
+  },
+  {
+    "id": "alfred",
+    "name": "알프레드",
+    "epithet": "웨섹스 왕자",
+    "disposition": "우호",
+    "status_tag": "추정됨",
+    "desc": "애설레드의 동생. 신중한 전술가로 알려짐. 성향 추정 단계."
+  },
+  {
+    "id": "ivar",
+    "name": "이바르",
+    "epithet": "대군세 지휘관",
+    "disposition": "적대",
+    "status_tag": "불명",
+    "desc": "노팅엄 점거 후 농성. 협상 전령을 보냈으나 의도 불명."
+  },
+  {
+    "id": "halfdan",
+    "name": "하프단",
+    "epithet": "대군세 공동 지휘관",
+    "disposition": "적대",
+    "status_tag": "추정됨",
+    "desc": "이바르의 형제. 공격적 성향. 노팅엄 내부 추정."
+  },
+  {
+    "id": "ubba",
+    "name": "우바",
+    "epithet": "대군세 지휘관",
+    "disposition": "적대",
+    "status_tag": "불명",
+    "desc": "이바르·하프단의 형제. 현재 위치 불명."
+  }
+]

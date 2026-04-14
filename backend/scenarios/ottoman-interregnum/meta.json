@@ -1,0 +1,16 @@
+{
+  "id": "ottoman-interregnum",
+  "title": "뇌제의 후계자",
+  "section": "history",
+  "eyebrow": "1403년 · 오스만 제국",
+  "meta": "4인의 왕자 중 선택 — 오스만 공위기",
+  "desc": "앙카라 전투 이후 티무르의 포로로 잡힌 바야지트 1세가 사망했다. 술레이만, 무사, 이사, 마흐메트 — 네 왕자가 저마다의 방식으로 제국을 손에 넣으려 한다. 누구의 길을 걷겠는가.",
+  "tags": ["정치", "내전", "외교", "오스만"],
+  "icon": "🌙",
+  "color": "#C5932A",
+  "colorSoft": "rgba(197,147,42,0.07)",
+  "iconBg": "rgba(197,147,42,0.09)",
+  "status": "partial",
+  "protagonistMode": "select",
+  "characterSelectPage": "prince_select.html"
+}
