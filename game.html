@@ -242,71 +242,51 @@ function renderFactionBars(state) {
 // ── 지도 마커 갱신 ────────────────────────────────────────────────
 function renderMapMarkers(state) {
   if (!_ui) return;
-  const svg = document.querySelector('#map-container svg');
+  const layer = document.getElementById('map-markers-layer');
+  if (!layer) return;
 
   // 기존 마커 색상·상태 갱신
-  document.querySelectorAll('.map-marker[data-id]').forEach(marker => {
-    const loc = state.locations.get(marker.dataset.id);
+  layer.querySelectorAll('.map-pin[data-id]').forEach(pin => {
+    const loc = state.locations.get(pin.dataset.id);
     if (!loc) return;
     const { color, statusText } = _ui.mapMarkerStyle(loc, state);
-    marker.querySelectorAll('circle').forEach(c => {
-      if (c.getAttribute('fill')   && c.getAttribute('fill')   !== 'none')  c.setAttribute('fill',   color);
-      if (c.getAttribute('stroke') && c.getAttribute('stroke') !== 'none' &&
-          c.getAttribute('stroke') !== 'white')                              c.setAttribute('stroke', color);
-    });
+    const dot   = pin.querySelector('.pin-dot');
+    const pulse = pin.querySelector('.pin-pulse');
+    if (dot)   dot.style.background   = color;
+    if (pulse) pulse.style.borderColor = color;
     const factionName = state.factions.get(loc.controller)?.name || loc.controller;
-    marker.dataset.faction = factionName;
-    marker.dataset.status  = statusText;
-    if (loc.terrain) marker.dataset.terrain = loc.terrain;
-    if (loc.notes)   marker.dataset.note    = loc.notes;
+    pin.dataset.faction = factionName;
+    pin.dataset.status  = statusText;
+    if (loc.terrain) pin.dataset.terrain = loc.terrain;
+    if (loc.notes)   pin.dataset.note    = loc.notes;
   });
 
-  // SVG 마커가 없고 좌표가 있는 location은 동적으로 마커 생성
-  if (svg) {
-    state.locations.forEach((loc, id) => {
-      if (loc.x == null || loc.y == null) return;
-      if (svg.querySelector(`.map-marker[data-id="${id}"]`)) return;
+  // 좌표가 있는 location 중 마커가 없는 것은 동적으로 생성
+  state.locations.forEach((loc, id) => {
+    if (loc.x == null || loc.y == null) return;
+    if (layer.querySelector(`.map-pin[data-id="${id}"]`)) return;
 
-      const { color, statusText } = _ui.mapMarkerStyle(loc, state);
-      const factionName = state.factions.get(loc.controller)?.name || loc.controller || '—';
-      const NS = 'http://www.w3.org/2000/svg';
-      const cx = loc.x, cy = loc.y;
+    const { color, statusText } = _ui.mapMarkerStyle(loc, state);
+    const factionName = state.factions.get(loc.controller)?.name || loc.controller || '—';
 
-      const g = document.createElementNS(NS, 'g');
-      g.setAttribute('class', 'map-marker');
-      g.setAttribute('data-id', id);
-      g.dataset.city    = loc.name;
-      g.dataset.faction = factionName;
-      g.dataset.terrain = loc.terrain || '';
-      g.dataset.status  = statusText;
-      g.dataset.note    = loc.notes || '';
+    const pin = document.createElement('div');
+    pin.className = 'map-marker map-pin';
+    pin.dataset.id      = id;
+    pin.dataset.city    = loc.name;
+    pin.dataset.faction = factionName;
+    pin.dataset.terrain = loc.terrain || '';
+    pin.dataset.status  = statusText;
+    pin.dataset.note    = loc.notes || '';
+    pin.style.left = `${loc.x}%`;
+    pin.style.top  = `${loc.y}%`;
 
-      const outer = document.createElementNS(NS, 'circle');
-      outer.setAttribute('class', 'outer');
-      outer.setAttribute('cx', cx); outer.setAttribute('cy', cy);
-      outer.setAttribute('r', '4');
-      outer.setAttribute('fill', color); outer.setAttribute('opacity', '0.22');
-      outer.setAttribute('stroke', color); outer.setAttribute('stroke-width', '0.6');
+    pin.innerHTML = `
+      <div class="pin-pulse" style="border-color:${color};"></div>
+      <div class="pin-dot"   style="background:${color};"></div>
+      <div class="pin-label">${loc.name.split(' ')[0]}</div>`;
 
-      const inner = document.createElementNS(NS, 'circle');
-      inner.setAttribute('cx', cx); inner.setAttribute('cy', cy);
-      inner.setAttribute('r', '2.8');
-      inner.setAttribute('fill', color);
-
-      g.appendChild(outer);
-      g.appendChild(inner);
-      svg.appendChild(g);
-
-      const label = document.createElementNS(NS, 'text');
-      label.setAttribute('x', cx + 5); label.setAttribute('y', cy + 2);
-      label.setAttribute('font-size', '6');
-      label.setAttribute('font-family', 'sans-serif');
-      label.setAttribute('fill', '#444');
-      label.setAttribute('data-dynamic-label', id);
-      label.textContent = loc.name.split(' ')[0]; // 첫 단어만 (한자·괄호 제외)
-      svg.appendChild(label);
-    });
-  }
+    layer.appendChild(pin);
+  });
 
   rebindTooltips();
 }
@@ -370,8 +350,11 @@ let _ui      = null;
   const mapContainer = document.getElementById('map-container');
   const scenario = await ScenarioLoader.fetchOne(scenarioId);
 
-  // 지도 SVG 주입 (백엔드에서 로드)
-  if (mapContainer && scenario?.map_svg) mapContainer.innerHTML = scenario.map_svg;
+  // 지도 이미지 + 마커 레이어 주입
+  if (mapContainer) {
+    const imgUrl = `${window.API_BASE}/api/scenarios/${scenarioId}/map-image`;
+    mapContainer.innerHTML = `<div class="map-inner"><img id="map-img" src="${imgUrl}" alt="지도"><div id="map-markers-layer"></div></div>`;
+  }
 
   if (!_state) {
     const protagonistId = sessionStorage.getItem('selectedCharacterId')

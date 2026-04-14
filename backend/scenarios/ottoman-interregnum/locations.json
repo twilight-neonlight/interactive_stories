@@ -1,7 +1,7 @@
 [
   {
     "id": "edirne",
-    "x": 22, "y": 54,
+    "x": 11.0, "y": 33.8,
     "name": "에디르네 (Edirne / Adrianople)",
     "controller": "suleyman",
     "terrain": "강변 평지 — 마리차·통자·아르다 강 합류부",
@@ -10,7 +10,7 @@
   },
   {
     "id": "bursa",
-    "x": 82, "y": 104,
+    "x": 41.0, "y": 65.0,
     "name": "부르사 (Bursa / Prusa)",
     "controller": "isa",
     "terrain": "울루다으 산 북록 — 비옥한 평원",
@@ -19,7 +19,7 @@
   },
   {
     "id": "amasya",
-    "x": 157, "y": 52,
+    "x": 78.5, "y": 32.5,
     "name": "아마스야 (Amasya)",
     "controller": "mehmed",
     "terrain": "예실으르막 강 협곡 — 절벽 위 요새 도시",
@@ -28,7 +28,7 @@
   },
   {
     "id": "constantinople",
-    "x": 63, "y": 74,
+    "x": 31.5, "y": 46.3,
     "name": "콘스탄티노폴리스 (Konstantinoupolis)",
     "controller": "byzantine",
     "terrain": "삼면이 바다 — 테오도시우스 성벽",
@@ -37,7 +37,7 @@
   },
   {
     "id": "ankara",
-    "x": 134, "y": 80,
+    "x": 67.0, "y": 50.0,
     "name": "앙카라 (Ankara / Ancyra)",
     "controller": "contested",
     "terrain": "아나톨리아 고원 — 성채 언덕",
@@ -46,7 +46,7 @@
   },
   {
     "id": "gallipoli",
-    "x": 44, "y": 98,
+    "x": 22.0, "y": 61.3,
     "name": "갈리폴리 (Gelibolu)",
     "controller": "suleyman",
     "terrain": "다르다넬스 해협 서안 — 반도 요새",
@@ -55,7 +55,7 @@
   },
   {
     "id": "iznik",
-    "x": 88, "y": 86,
+    "x": 44.0, "y": 53.8,
     "name": "이즈니크 (İznik / Nicaea)",
     "controller": "contested",
     "terrain": "이즈니크 호 동안 — 로마 성벽",

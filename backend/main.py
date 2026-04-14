@@ -7,6 +7,7 @@ FastAPI 서버 — Google AI Studio (Gemini) API 프록시 + TurnEngine
 
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse
 from pydantic import BaseModel
 from openai import OpenAI
 from dotenv import load_dotenv
@@ -263,6 +264,17 @@ def get_scenario(scenario_id: str):
     if not scenario:
         raise HTTPException(status_code=404, detail=f"시나리오 '{scenario_id}'를 찾을 수 없습니다.")
     return scenario
+
+
+@app.get("/api/scenarios/{scenario_id}/map-image")
+def get_map_image(scenario_id: str):
+    """시나리오 지도 이미지 파일 반환 (PNG, JPG, WEBP 순서로 탐색)."""
+    scenario_dir = SCENARIOS_DIR / scenario_id
+    for ext in ("png", "jpg", "jpeg", "webp"):
+        path = scenario_dir / f"map.{ext}"
+        if path.exists():
+            return FileResponse(path, media_type=f"image/{ext.replace('jpeg','jpeg')}")
+    raise HTTPException(status_code=404, detail=f"시나리오 '{scenario_id}'의 지도 이미지가 없습니다.")
 
 @app.post("/api/turn")
 async def process_turn(req: TurnRequest):

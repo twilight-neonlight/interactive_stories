@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>지도 좌표 픽커</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: sans-serif; background: #1a1a1a; color: #e0e0e0; height: 100vh; display: flex; flex-direction: column; }
+  #toolbar {
+    flex-shrink: 0; padding: 10px 16px; background: #242424; border-bottom: 1px solid #333;
+    display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+  }
+  #toolbar h1 { font-size: 14px; font-weight: 600; color: #ccc; }
+  #file-btn {
+    padding: 5px 12px; background: #3a3a3a; border: 1px solid #555; border-radius: 4px;
+    color: #ddd; cursor: pointer; font-size: 13px;
+  }
+  #file-btn:hover { background: #4a4a4a; }
+  #hint { font-size: 12px; color: #888; }
+  #crosshair-toggle {
+    padding: 4px 10px; background: #2d4a2d; border: 1px solid #4a7a4a; border-radius: 4px;
+    color: #8fca8f; cursor: pointer; font-size: 12px;
+  }
+  #crosshair-toggle.off { background: #3a2d2d; border-color: #7a4a4a; color: #ca8f8f; }
+  #main { flex: 1; display: flex; overflow: hidden; }
+  #canvas-wrap {
+    flex: 1; overflow: auto; position: relative; background: #111;
+    cursor: crosshair;
+  }
+  #map-img { display: block; max-width: none; user-select: none; }
+  .marker {
+    position: absolute; transform: translate(-50%, -50%);
+    pointer-events: none;
+  }
+  .marker-dot {
+    width: 10px; height: 10px; border-radius: 50%;
+    background: #ff4444; border: 2px solid white;
+    box-shadow: 0 0 4px rgba(0,0,0,0.6);
+  }
+  .marker-label {
+    position: absolute; left: 10px; top: 50%; transform: translateY(-50%);
+    font-size: 11px; background: rgba(0,0,0,0.7); color: white;
+    padding: 1px 5px; border-radius: 3px; white-space: nowrap;
+  }
+  #crosshair-h, #crosshair-v {
+    position: absolute; background: rgba(255,255,0,0.4); pointer-events: none;
+  }
+  #crosshair-h { height: 1px; left: 0; right: 0; }
+  #crosshair-v { width: 1px; top: 0; bottom: 0; }
+  #sidebar {
+    width: 280px; flex-shrink: 0; background: #1e1e1e;
+    border-left: 1px solid #333; display: flex; flex-direction: column; overflow: hidden;
+  }
+  #sidebar-header {
+    padding: 10px 12px; background: #242424; border-bottom: 1px solid #333;
+    font-size: 13px; font-weight: 600; color: #ccc; display: flex; justify-content: space-between; align-items: center;
+  }
+  #clear-btn {
+    font-size: 11px; padding: 2px 8px; background: #3a2d2d; border: 1px solid #7a4a4a;
+    color: #ca8f8f; border-radius: 3px; cursor: pointer;
+  }
+  #point-list { flex: 1; overflow-y: auto; padding: 6px; }
+  .point-item {
+    padding: 7px 8px; border-radius: 4px; cursor: pointer;
+    font-size: 12px; font-family: monospace; color: #ccc;
+    border: 1px solid transparent; margin-bottom: 3px;
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  .point-item:hover { background: #2a2a2a; border-color: #444; }
+  .point-item .coords { color: #7fb8ff; }
+  .point-item .del { color: #888; cursor: pointer; padding: 0 4px; }
+  .point-item .del:hover { color: #ff6666; }
+  #copy-area { padding: 10px; border-top: 1px solid #333; }
+  #copy-btn {
+    width: 100%; padding: 7px; background: #1e3a5a; border: 1px solid #2e5a8a;
+    color: #7fb8ff; border-radius: 4px; cursor: pointer; font-size: 13px;
+  }
+  #copy-btn:hover { background: #254a70; }
+  #output {
+    margin-top: 8px; font-size: 11px; font-family: monospace;
+    background: #111; border: 1px solid #333; border-radius: 4px;
+    padding: 8px; color: #aaa; white-space: pre; overflow-x: auto; max-height: 180px; overflow-y: auto;
+  }
+  #coords-display {
+    position: fixed; bottom: 12px; left: 50%; transform: translateX(-50%);
+    background: rgba(0,0,0,0.8); color: #ffe; padding: 4px 12px;
+    border-radius: 20px; font-size: 12px; font-family: monospace;
+    pointer-events: none; opacity: 0; transition: opacity 0.1s;
+  }
+  #drop-overlay {
+    display: none; position: absolute; inset: 0; background: rgba(30,80,140,0.3);
+    border: 3px dashed #4a8fd4; border-radius: 8px;
+    align-items: center; justify-content: center; font-size: 18px; color: #7fb8ff;
+    z-index: 10;
+  }
+  #drop-overlay.active { display: flex; }
+  #empty-msg {
+    position: absolute; inset: 0; display: flex; flex-direction: column;
+    align-items: center; justify-content: center; color: #555; gap: 12px;
+  }
+  #empty-msg svg { opacity: 0.3; }
+  #empty-msg p { font-size: 14px; }
+  #zoom-bar { padding: 8px 12px; border-top: 1px solid #333; display: flex; align-items: center; gap: 8px; font-size: 12px; color: #888; }
+  #zoom-range { flex: 1; }
+</style>
+</head>
+<body>
+
+<div id="toolbar">
+  <h1>지도 좌표 픽커</h1>
+  <button id="file-btn" onclick="document.getElementById('file-input').click()">이미지 열기</button>
+  <input id="file-input" type="file" accept="image/*" style="display:none">
+  <button id="crosshair-toggle" onclick="toggleCrosshair()">십자선 ON</button>
+  <span id="hint">이미지를 드래그하거나 버튼으로 불러오세요. 클릭하면 좌표가 기록됩니다.</span>
+</div>
+
+<div id="main">
+  <div id="canvas-wrap">
+    <div id="drop-overlay">이미지를 여기에 놓으세요</div>
+    <div id="empty-msg">
+      <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
+      <p>이미지를 불러오면 클릭으로 좌표를 기록합니다</p>
+    </div>
+    <img id="map-img" style="display:none">
+    <div id="crosshair-h" style="display:none"></div>
+    <div id="crosshair-v" style="display:none"></div>
+  </div>
+
+  <div id="sidebar">
+    <div id="sidebar-header">
+      <span>기록된 좌표 (<span id="count">0</span>)</span>
+      <button id="clear-btn" onclick="clearAll()">전체 삭제</button>
+    </div>
+    <div id="point-list"></div>
+    <div id="copy-area">
+      <button id="copy-btn" onclick="copyJSON()">JSON 복사</button>
+      <div id="output"></div>
+    </div>
+    <div id="zoom-bar">
+      <span>확대</span>
+      <input id="zoom-range" type="range" min="50" max="300" value="100" oninput="setZoom(this.value)">
+      <span id="zoom-label">100%</span>
+    </div>
+  </div>
+</div>
+
+<div id="coords-display"></div>
+
+<script>
+let points = [];
+let crosshairOn = false;
+let zoom = 100;
+let imgW = 0, imgH = 0;
+let lastId = '';
+
+const wrap  = document.getElementById('canvas-wrap');
+const img   = document.getElementById('map-img');
+const chH   = document.getElementById('crosshair-h');
+const chV   = document.getElementById('crosshair-v');
+const coordsDisplay = document.getElementById('coords-display');
+
+// ── 파일 로드 ──
+document.getElementById('file-input').addEventListener('change', e => loadFile(e.target.files[0]));
+
+wrap.addEventListener('dragover', e => { e.preventDefault(); document.getElementById('drop-overlay').classList.add('active'); });
+wrap.addEventListener('dragleave', () => document.getElementById('drop-overlay').classList.remove('active'));
+wrap.addEventListener('drop', e => {
+  e.preventDefault();
+  document.getElementById('drop-overlay').classList.remove('active');
+  const f = e.dataTransfer.files[0];
+  if (f && f.type.startsWith('image/')) loadFile(f);
+});
+
+function loadFile(file) {
+  if (!file) return;
+  const url = URL.createObjectURL(file);
+  img.onload = () => {
+    imgW = img.naturalWidth; imgH = img.naturalHeight;
+    img.style.display = 'block';
+    document.getElementById('empty-msg').style.display = 'none';
+    setZoom(zoom);
+  };
+  img.src = url;
+  clearAll();
+}
+
+// ── 줌 ──
+function setZoom(v) {
+  zoom = parseInt(v);
+  document.getElementById('zoom-label').textContent = zoom + '%';
+  document.getElementById('zoom-range').value = zoom;
+  img.style.width = (imgW * zoom / 100) + 'px';
+  // 마커 위치 갱신
+  document.querySelectorAll('.marker').forEach(m => {
+    const px = parseFloat(m.dataset.xpct);
+    const py = parseFloat(m.dataset.ypct);
+    m.style.left = (px / 100 * img.offsetWidth) + 'px';
+    m.style.top  = (py / 100 * img.offsetHeight) + 'px';
+  });
+}
+
+// ── 클릭 → 좌표 ──
+wrap.addEventListener('click', e => {
+  if (!imgW) return;
+  const rect = img.getBoundingClientRect();
+  const wRect = wrap.getBoundingClientRect();
+  // click relative to img
+  const rx = e.clientX - rect.left;
+  const ry = e.clientY - rect.top;
+  if (rx < 0 || ry < 0 || rx > rect.width || ry > rect.height) return;
+  const xPct = +(rx / rect.width  * 100).toFixed(1);
+  const yPct = +(ry / rect.height * 100).toFixed(1);
+
+  const id = prompt('이 지점의 ID를 입력하세요 (예: nottingham):', lastId) ?? '';
+  if (id === null) return;
+  lastId = id;
+  addPoint(id || `point_${points.length + 1}`, xPct, yPct);
+});
+
+function addPoint(id, x, y) {
+  points.push({ id, x, y });
+
+  // 마커 DOM
+  const marker = document.createElement('div');
+  marker.className = 'marker';
+  marker.dataset.idx  = points.length - 1;
+  marker.dataset.xpct = x;
+  marker.dataset.ypct = y;
+  const renderedW = img.offsetWidth  || imgW * zoom / 100;
+  const renderedH = img.offsetHeight || imgH * zoom / 100;
+  marker.style.left = (x / 100 * renderedW) + 'px';
+  marker.style.top  = (y / 100 * renderedH) + 'px';
+  marker.innerHTML = `<div class="marker-dot"></div><div class="marker-label">${id}</div>`;
+  wrap.appendChild(marker);
+
+  renderList();
+}
+
+function renderList() {
+  const list = document.getElementById('point-list');
+  document.getElementById('count').textContent = points.length;
+  list.innerHTML = points.map((p, i) => `
+    <div class="point-item">
+      <span>${p.id}</span>
+      <span class="coords">x:${p.x} y:${p.y}</span>
+      <span class="del" onclick="delPoint(${i})">✕</span>
+    </div>`).join('');
+  updateOutput();
+}
+
+function delPoint(i) {
+  points.splice(i, 1);
+  // 마커 재생성
+  document.querySelectorAll('.marker').forEach(m => m.remove());
+  const tmp = [...points];
+  points = [];
+  tmp.forEach(p => addPoint(p.id, p.x, p.y));
+  renderList();
+}
+
+function clearAll() {
+  points = [];
+  document.querySelectorAll('.marker').forEach(m => m.remove());
+  renderList();
+}
+
+function updateOutput() {
+  const json = points.map(p => `  { "id": "${p.id}", "x": ${p.x}, "y": ${p.y} }`).join(',\n');
+  document.getElementById('output').textContent = `[\n${json}\n]`;
+}
+
+async function copyJSON() {
+  const text = document.getElementById('output').textContent;
+  try {
+    await navigator.clipboard.writeText(text);
+    const btn = document.getElementById('copy-btn');
+    btn.textContent = '복사됨!';
+    setTimeout(() => btn.textContent = 'JSON 복사', 1500);
+  } catch {
+    document.getElementById('output').select?.();
+  }
+}
+
+// ── 십자선 ──
+function toggleCrosshair() {
+  crosshairOn = !crosshairOn;
+  const btn = document.getElementById('crosshair-toggle');
+  btn.textContent = `십자선 ${crosshairOn ? 'ON' : 'OFF'}`;
+  btn.className = crosshairOn ? '' : 'off';
+  if (!crosshairOn) { chH.style.display = 'none'; chV.style.display = 'none'; }
+}
+
+wrap.addEventListener('mousemove', e => {
+  if (!imgW) return;
+  const rect  = img.getBoundingClientRect();
+  const wRect = wrap.getBoundingClientRect();
+  const rx = e.clientX - rect.left;
+  const ry = e.clientY - rect.top;
+
+  if (rx >= 0 && ry >= 0 && rx <= rect.width && ry <= rect.height) {
+    const xPct = +(rx / rect.width  * 100).toFixed(1);
+    const yPct = +(ry / rect.height * 100).toFixed(1);
+    coordsDisplay.style.opacity = '1';
+    coordsDisplay.textContent = `x: ${xPct}%  y: ${yPct}%`;
+  } else {
+    coordsDisplay.style.opacity = '0';
+  }
+
+  if (crosshairOn) {
+    const ox = e.clientX - wRect.left + wrap.scrollLeft;
+    const oy = e.clientY - wRect.top  + wrap.scrollTop;
+    chH.style.display = 'block'; chH.style.top  = oy + 'px';
+    chV.style.display = 'block'; chV.style.left = ox + 'px';
+  }
+});
+wrap.addEventListener('mouseleave', () => {
+  coordsDisplay.style.opacity = '0';
+  if (crosshairOn) { chH.style.display = 'none'; chV.style.display = 'none'; }
+});
+</script>
+</body>
+</html>
