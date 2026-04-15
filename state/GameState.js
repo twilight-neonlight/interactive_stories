@@ -121,6 +121,8 @@ class GameState {
       if (f.strength_score == null) {
         f.strength_score = GameState._strengthToScore(f.strength);
       }
+      // 전투 피해 누적값 초기화
+      if (f.battle_damage == null) f.battle_damage = 0;
       this.factions.set(f.id, f);
     }
     for (const location of scenario.locations ?? []) {
@@ -240,6 +242,7 @@ class GameState {
     if (f.strength_score == null) {
       f.strength_score = GameState._strengthToScore(f.strength);
     }
+    if (f.battle_damage == null) f.battle_damage = 0;
     this.factions.set(faction.id, { ...f, is_dynamic: true });
   }
 
@@ -271,17 +274,46 @@ class GameState {
   }
 
   /**
-   * 세력 강도 점수를 delta만큼 조정하고 strength 레이블을 재계산합니다.
-   * 점수 범위 0–700. 100점 단위 구간을 넘어야 레이블이 바뀝니다.
-   * @param {string} id - 세력 id
-   * @param {number} delta - 변화량
+   * 세력의 기반 강도(병력·영토)를 delta만큼 조정합니다.
+   * 병력 손실, 영토 변화 등 영구적 변화에 사용합니다.
+   * @param {string} id
+   * @param {number} delta
    */
   updateFactionStrength(id, delta) {
     const faction = this.factions.get(id);
     if (!faction) return;
-    const next = Math.max(0, Math.min(700, (faction.strength_score ?? 350) + delta));
-    faction.strength_score = next;
-    faction.strength = GameState._scoreToStrength(next);
+    faction.strength_score = Math.max(0, Math.min(700, (faction.strength_score ?? 350) + delta));
+    faction.strength = GameState._effectiveStrength(faction);
+  }
+
+  /**
+   * 전투 패배 페널티를 누적합니다. 패자에게만 적용.
+   * @param {string} id
+   * @param {number} damage - 양수. 실효 강도를 임시로 낮춥니다.
+   */
+  addFactionBattleDamage(id, damage) {
+    const faction = this.factions.get(id);
+    if (!faction) return;
+    faction.battle_damage = (faction.battle_damage ?? 0) + Math.abs(damage);
+    faction.strength = GameState._effectiveStrength(faction);
+  }
+
+  /**
+   * 시간 경과에 따라 battle_damage를 경감합니다.
+   * @param {string} id
+   * @param {number} amount - 양수. 회복량.
+   */
+  recoverFactionBattleDamage(id, amount) {
+    const faction = this.factions.get(id);
+    if (!faction) return;
+    faction.battle_damage = Math.max(0, (faction.battle_damage ?? 0) - Math.abs(amount));
+    faction.strength = GameState._effectiveStrength(faction);
+  }
+
+  /** 실효 강도 레이블: strength_score - battle_damage */
+  static _effectiveStrength(faction) {
+    const effective = Math.max(0, (faction.strength_score ?? 350) - (faction.battle_damage ?? 0));
+    return GameState._scoreToStrength(effective);
   }
 
   /** @param {number} score 0–700 */

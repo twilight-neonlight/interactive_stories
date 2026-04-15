@@ -215,8 +215,12 @@ def build_scenario_context(state: dict) -> str:
             note_short = note[:80] + "…" if len(note) > 80 else note
             dipl = f.get("diplomacy_score")
             dipl_str = f" [{int(dipl):+d}]" if dipl is not None else ""
-            str_score = f.get("strength_score")
-            str_str = f" [{int(str_score)}]" if str_score is not None else ""
+            s_base   = f.get("strength_score")
+            s_dmg    = f.get("battle_damage", 0)
+            if s_base is not None:
+                str_str = f" [{int(s_base)}" + (f"-{int(s_dmg)}dmg" if s_dmg else "") + "]"
+            else:
+                str_str = ""
             lines.append(
                 f"  - {f.get('name', '?')} | {f.get('disposition', '?')}{dipl_str} | {f.get('strength', '?')}{str_str}"
                 + (f"\n    {note_short}" if note_short else "")
@@ -336,9 +340,9 @@ async def process_turn(req: TurnRequest):
 
     # 6. state_update 항목 병합
     for key in ("new_characters", "dead_characters", "new_factions",
-                "faction_strength_changes", "faction_diplomacy_changes",
-                "faction_disposition_changes", "character_troop_changes",
-                "character_disposition_changes",
+                "faction_strength_changes", "faction_battle_damage", "faction_battle_recovery",
+                "faction_diplomacy_changes", "faction_disposition_changes",
+                "character_troop_changes", "character_disposition_changes",
                 "new_locations", "location_changes"):
         if extra.get(key):
             state_updates[key] = extra[key]

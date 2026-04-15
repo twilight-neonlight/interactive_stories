@@ -628,10 +628,22 @@ async function submitTurn() {
         if (f.id && !_state.factions.has(f.id)) _state.addFaction(f);
       }
     }
-    // 세력 강도 변경 (delta 기반 → strength 레이블 자동 재계산)
+    // 세력 기반 강도 변경 (병력·영토, delta 기반, 영구적)
     if (Array.isArray(su.faction_strength_changes)) {
       for (const fc of su.faction_strength_changes) {
         if (fc.id && fc.delta != null) _state.updateFactionStrength(fc.id, fc.delta);
+      }
+    }
+    // 전투 패배 페널티 (패자만, 시간 경과로 회복 가능)
+    if (Array.isArray(su.faction_battle_damage)) {
+      for (const fc of su.faction_battle_damage) {
+        if (fc.id && fc.damage != null) _state.addFactionBattleDamage(fc.id, fc.damage);
+      }
+    }
+    // 전투 피해 회복 (시간 경과 반영)
+    if (Array.isArray(su.faction_battle_recovery)) {
+      for (const fc of su.faction_battle_recovery) {
+        if (fc.id && fc.amount != null) _state.recoverFactionBattleDamage(fc.id, fc.amount);
       }
     }
     // 캐릭터 병력 변경 (delta 기반)
