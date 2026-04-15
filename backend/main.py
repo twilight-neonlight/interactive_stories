@@ -9,12 +9,12 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
-from openai import OpenAI
 from dotenv import load_dotenv
 from pathlib import Path
 import os
 import re
 import json
+import httpx
 
 # ── 시나리오 데이터 로드 ──────────────────────────
 # 구조: backend/scenarios/{id}/meta.json + locations.json + factions.json
@@ -61,11 +61,7 @@ MODEL       = "gemini-3-flash-preview"
 MAX_TOKENS  = 9172
 TEMPERATURE = 0.8
 
-# ── Google AI Studio 클라이언트 (OpenAI 호환) ─────
-gemini_client = OpenAI(
-    api_key=GOOGLE_API_KEY,
-    base_url="https://generativelanguage.googleapis.com/v1beta/openai/",
-)
+GEMINI_URL = "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions"
 
 # ── FastAPI 앱 ────────────────────────────────────
 app = FastAPI(title="Interactive Stories API")
@@ -288,16 +284,27 @@ async def process_turn(req: TurnRequest):
 
     # 3. Google AI Studio (Gemini) 호출
     try:
-        completion = gemini_client.chat.completions.create(
-            model=MODEL,
-            messages=messages,
-            max_tokens=MAX_TOKENS,
-            temperature=TEMPERATURE,
-        )
+        async with httpx.AsyncClient(timeout=60.0) as client:
+            resp = await client.post(
+                GEMINI_URL,
+                headers={
+                    "Authorization": f"Bearer {GOOGLE_API_KEY}",
+                    "Content-Type": "application/json",
+                },
+                json={
+                    "model":       MODEL,
+                    "messages":    messages,
+                    "max_tokens":  MAX_TOKENS,
+                    "temperature": TEMPERATURE,
+                },
+            )
+            resp.raise_for_status()
+    except httpx.HTTPStatusError as e:
+        raise HTTPException(status_code=502, detail=f"Gemini API 오류: {e.response.text}")
     except Exception as e:
         raise HTTPException(status_code=502, detail=f"Gemini API 오류: {e}")
 
-    content = completion.choices[0].message.content
+    content = resp.json()["choices"][0]["message"]["content"]
 
     # 4. state_update 블록 추출 및 제거
     content, extra = _extract_state_update(content)

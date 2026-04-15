@@ -341,7 +341,16 @@ let _ui      = null;
     ? _state.scenarioId
     : (sessionStorage.getItem('scenario') || sessionStorage.getItem('scenarioId') || null);
 
-  if (!scenarioId) return; // 진입 경로 없음 → 빈 패널·비활성 버튼 그대로 유지
+  if (!scenarioId) {
+    // 진입 경로 없음 (sessionStorage 미설정) — 빈 패널 대신 안내 메시지
+    renderSceneBody(`<p style="color:var(--text-secondary);font-size:13px;">
+      <strong>시나리오가 선택되지 않았습니다.</strong><br><br>
+      <a href="scenario_select.html" style="color:inherit;text-decoration:underline;">시나리오 선택 화면</a>으로 돌아가 다시 시작하세요.
+    </p>`);
+    console.warn('[game.html] sessionStorage에 scenarioId/scenario 키가 없음',
+      { scenario: sessionStorage.getItem('scenario'), scenarioId: sessionStorage.getItem('scenarioId') });
+    return;
+  }
 
   // 시나리오 UI 설정 로드
   _ui = window.getScenarioUI(scenarioId);
@@ -555,7 +564,7 @@ function startNextChapter() {
 }
 
 // ── 턴 전진 ───────────────────────────────────────────────────────
-const API_BASE = 'http://localhost:8000';
+// API_BASE는 scenario-loader.js에서 window.API_BASE로 노출됨
 
 async function submitTurn() {
   const cmd = document.getElementById('cmd').value.trim();
@@ -566,7 +575,7 @@ async function submitTurn() {
   showLoading();
 
   try {
-    const res = await fetch(`${API_BASE}/api/turn`, {
+    const res = await fetch(`${window.API_BASE}/api/turn`, {
       method:  'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
