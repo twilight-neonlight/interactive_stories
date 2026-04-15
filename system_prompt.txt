@@ -125,6 +125,8 @@ N장 요약: 최소 8항목 표
   "dead_characters": ["id1", "id2"],
   "new_factions": [{"id": "영문소문자_언더바", "name": "세력명", "type": "세력 유형", "disposition": "우호|적대|중립|불명", "strength": "extreme|very high|high|medium|low|very low|impotent", "notes": "1-2문장 설명"}],
   "faction_strength_changes": [{"id": "기존세력id", "strength": "새로운strength값"}],
+  "faction_disposition_changes": [{"id": "기존세력id", "disposition": "우호|적대|중립"}],
+  "character_disposition_changes": [{"id": "기존인물id", "disposition": "우호|적대|중립|불명"}],
   "new_locations": [{"id": "영문소문자_언더바", "name": "지명", "controller": "지배세력id", "terrain": "지형 특성", "notes": "1-2문장 설명"}],
   "location_changes": [{"id": "기존거점id", "controller": "새로운지배세력id"}]
 }
@@ -134,6 +136,8 @@ N장 요약: 최소 8항목 표
 - `dead_characters`: 이번 씬에서 사망·제거 확정된 인물의 id 목록.
 - `new_factions`: 이번 씬에서 처음 개입하는 세력. 이미 등록된 세력은 생략.
 - `faction_strength_changes`: 이번 씬에서 세력의 군사·경제 역량이 변화한 경우.
+- `faction_disposition_changes`: 이번 씬에서 세력의 플레이어에 대한 외교 태도가 바뀐 경우 (예: 중립→적대, 적대→우호).
+- `character_disposition_changes`: 이번 씬에서 인물의 플레이어에 대한 태도가 바뀐 경우.
 - `new_locations`: 이번 씬에서 새롭게 등장하는 거점. 이미 등록된 거점은 생략.
 - `location_changes`: 이번 씬에서 지배 세력이 바뀐 거점. id는 기존 locations의 id를 사용.
 

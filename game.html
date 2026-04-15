@@ -372,6 +372,13 @@ let _ui      = null;
     return;
   }
 
+  // opening·npcPool은 직렬화되지 않으므로 항상 scenario에서 재주입
+  // (새 게임·복원 게임 모두 해당)
+  if (_state) {
+    _state.opening = scenario.opening  ?? {};
+    _state.npcPool = scenario.npc_pool ?? {};
+  }
+
   // 지도 이미지 + 마커 레이어 주입
   if (mapContainer) {
     const imgUrl = `${window.API_BASE}/api/scenarios/${scenarioId}/map-image`;
@@ -639,6 +646,20 @@ async function submitTurn() {
       for (const lc of su.location_changes) {
         const loc = _state.locations.get(lc.id);
         if (loc && lc.controller) loc.controller = lc.controller;
+      }
+    }
+    // 세력 외교 태도 변경 (우호·적대·중립)
+    if (Array.isArray(su.faction_disposition_changes)) {
+      for (const fc of su.faction_disposition_changes) {
+        const faction = _state.factions.get(fc.id);
+        if (faction && fc.disposition) faction.disposition = fc.disposition;
+      }
+    }
+    // 인물 태도 변경
+    if (Array.isArray(su.character_disposition_changes)) {
+      for (const cc of su.character_disposition_changes) {
+        const char = _state.characters.get(cc.id);
+        if (char && cc.disposition) char.disposition = cc.disposition;
       }
     }
 

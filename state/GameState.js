@@ -96,10 +96,13 @@ class GameState {
     /** @type {Map<string, StateLocation>} */
     this.locations  = new Map();
 
-    // 시나리오 정적 데이터 (새 게임 시작 시에만 사용, 직렬화하지 않음)
+    // 시나리오 UI 데이터 (직렬화하지 않음 — 게임 진입 시 매번 재주입)
     this.mapSvg  = scenario.map_svg  ?? '';
     this.opening = scenario.opening  ?? {};
     this.npcPool = scenario.npc_pool ?? {};
+
+    /** @type {Array} 동시 진행 세계 사건 (events.json) */
+    this.events  = scenario.events   ?? [];
 
     // 시나리오 초기값을 깊은 복사해서 Map으로 변환
     for (const char of scenario.characters ?? []) {
@@ -245,6 +248,7 @@ class GameState {
       characters:    Object.fromEntries(this.characters),
       factions:      Object.fromEntries(this.factions),
       locations:     Object.fromEntries(this.locations),
+      events:        this.events.slice(),
     };
   }
 
@@ -269,6 +273,10 @@ class GameState {
     state.characters      = new Map(Object.entries(data.characters));
     state.factions        = new Map(Object.entries(data.factions));
     state.locations       = new Map(Object.entries(data.locations));
+    state.events          = Array.isArray(data.events) ? data.events.slice() : [];
+    // UI 전용 데이터는 직렬화 대상 아님 — game.html에서 scenario fetch 후 재주입
+    state.opening = {};
+    state.npcPool = {};
     return state;
   }
 }

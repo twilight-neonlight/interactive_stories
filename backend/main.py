@@ -226,6 +226,20 @@ def build_scenario_context(state: dict) -> str:
                 controller = factions[controller].get("name", controller)
             lines.append(f"  - {loc.get('name', '?')} | 지배: {controller}")
 
+    # 동시 진행 세계 사건
+    events = state.get("events", [])
+    if events:
+        lines.append("\n동시 진행 사건:")
+        for ev in events:
+            name   = ev.get("name", "?")
+            region = ev.get("region", "")
+            body   = ev.get("body", "")
+            body_short = body[:80] + "…" if len(body) > 80 else body
+            lines.append(
+                f"  - {name}" + (f" ({region})" if region else "")
+                + (f"\n    {body_short}" if body_short else "")
+            )
+
     # 현재 진행 위치
     progress = state.get("progress", {})
     chapter  = progress.get("chapter", 1)
@@ -315,7 +329,9 @@ async def process_turn(req: TurnRequest):
 
     # 6. state_update 항목 병합
     for key in ("new_characters", "dead_characters", "new_factions",
-                "faction_strength_changes", "new_locations", "location_changes"):
+                "faction_strength_changes", "faction_disposition_changes",
+                "character_disposition_changes",
+                "new_locations", "location_changes"):
         if extra.get(key):
             state_updates[key] = extra[key]
 
