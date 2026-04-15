@@ -101,47 +101,43 @@ interactive_stories/
 
 ## 시작하기
 
-### 1. 환경 설정
+### 사전 준비
+
+- **Python 3.10 이상** — [python.org/downloads](https://www.python.org/downloads/) (설치 시 "Add Python to PATH" 체크)
+- **Google AI Studio API 키** — [aistudio.google.com](https://aistudio.google.com) 에서 무료 발급
+
+### 실행 방법
+
+**Windows**
+```
+start.bat 더블클릭
+```
+
+**Mac / Linux**
+```bash
+chmod +x start.sh
+./start.sh
+```
+
+스크립트가 자동으로:
+1. 가상환경 생성 및 패키지 설치 (최초 1회)
+2. API 키 미설정 시 `.env` 파일 생성 안내
+3. 서버 시작 후 브라우저 자동 오픈 (`http://localhost:8000`)
+
+> API 키는 `backend/.env` 파일에 `GOOGLE_API_KEY=발급받은키` 형식으로 저장합니다.
+
+### 수동 실행 (개발자용)
 
 ```bash
-cd backend
-python -m venv ../.venv
-source ../.venv/Scripts/activate  # Windows: ..\.venv\Scripts\activate
-pip install -r requirements.txt
-```
+# 최초 1회
+python -m venv .venv
+.venv/Scripts/pip install -r backend/requirements.txt  # Mac/Linux: .venv/bin/pip
 
-### 2. API 키 설정
-
-`backend/.env` 파일을 생성하고 Google AI Studio API 키를 입력합니다:
-
-```
-GOOGLE_API_KEY=your_api_key_here
-```
-
-> Google AI Studio API 키는 [aistudio.google.com](https://aistudio.google.com) 에서 발급받을 수 있습니다.
-
-### 3. 백엔드 서버 실행
-
-```bash
+# 서버 실행
 cd backend
 uvicorn main:app --reload --port 8000
+# 브라우저에서 http://localhost:8000 접속
 ```
-
-### 4. 게임 실행
-
-프론트엔드는 정적 파일이므로, 간단한 HTTP 서버를 통해 제공해야 합니다.
-
-**VS Code Live Server** (권장):
-VS Code에서 `scenario_select.html`을 우클릭 → "Open with Live Server" 선택
-
-**Python 내장 서버**:
-```bash
-# 프로젝트 루트에서
-python -m http.server 5500
-# 브라우저에서 http://localhost:5500/scenario_select.html 접속
-```
-
-> `file://` 직접 열기는 `fetch()` 보안 정책으로 인해 백엔드 API 호출이 차단될 수 있습니다.
 
 ### 5. 지도 이미지 추가 (선택)
 

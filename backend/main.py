@@ -7,7 +7,8 @@ FastAPI 서버 — Google AI Studio (Gemini) API 프록시 + TurnEngine
 
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, RedirectResponse
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 from dotenv import load_dotenv
 from pathlib import Path
@@ -322,3 +323,15 @@ async def process_turn(req: TurnRequest):
         "content":       content,
         "state_updates": state_updates,
     }
+
+
+# ── 정적 파일 서빙 ────────────────────────────────
+# API 라우트 등록 후 마지막에 마운트해야 API가 우선 매칭됩니다.
+# http://localhost:8000 한 곳에서 프론트엔드와 백엔드를 모두 제공합니다.
+
+@app.get("/")
+def root():
+    return RedirectResponse(url="/scenario_select.html")
+
+_ROOT_DIR = Path(__file__).parent.parent  # interactive_stories/
+app.mount("/", StaticFiles(directory=str(_ROOT_DIR), html=True), name="static")
