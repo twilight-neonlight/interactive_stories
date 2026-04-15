@@ -198,9 +198,12 @@ def build_scenario_context(state: dict) -> str:
     chars = state.get("characters", {})
     if protagonist_id and protagonist_id in chars:
         c = chars[protagonist_id]
+        troops = c.get("troops_count")
+        troops_str = f" / 병력 {troops:,}명" if troops is not None else ""
         lines.append(
             f"플레이어: {c.get('name', protagonist_id)}"
             + (f" / {c.get('title') or c.get('epithet', '')}" if c.get('title') or c.get('epithet') else "")
+            + troops_str
         )
 
     # 등장 세력
@@ -210,10 +213,12 @@ def build_scenario_context(state: dict) -> str:
         for f in factions.values():
             note = f.get("notes", "")
             note_short = note[:80] + "…" if len(note) > 80 else note
-            score = f.get("diplomacy_score")
-            score_str = f" [{int(score):+d}]" if score is not None else ""
+            dipl = f.get("diplomacy_score")
+            dipl_str = f" [{int(dipl):+d}]" if dipl is not None else ""
+            str_score = f.get("strength_score")
+            str_str = f" [{int(str_score)}]" if str_score is not None else ""
             lines.append(
-                f"  - {f.get('name', '?')} | {f.get('disposition', '?')}{score_str} | {f.get('strength', '?')}"
+                f"  - {f.get('name', '?')} | {f.get('disposition', '?')}{dipl_str} | {f.get('strength', '?')}{str_str}"
                 + (f"\n    {note_short}" if note_short else "")
             )
 
@@ -332,7 +337,8 @@ async def process_turn(req: TurnRequest):
     # 6. state_update 항목 병합
     for key in ("new_characters", "dead_characters", "new_factions",
                 "faction_strength_changes", "faction_diplomacy_changes",
-                "faction_disposition_changes", "character_disposition_changes",
+                "faction_disposition_changes", "character_troop_changes",
+                "character_disposition_changes",
                 "new_locations", "location_changes"):
         if extra.get(key):
             state_updates[key] = extra[key]

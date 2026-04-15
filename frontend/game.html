@@ -628,11 +628,16 @@ async function submitTurn() {
         if (f.id && !_state.factions.has(f.id)) _state.addFaction(f);
       }
     }
-    // 세력 강도 변경
+    // 세력 강도 변경 (delta 기반 → strength 레이블 자동 재계산)
     if (Array.isArray(su.faction_strength_changes)) {
       for (const fc of su.faction_strength_changes) {
-        const faction = _state.factions.get(fc.id);
-        if (faction && fc.strength) faction.strength = fc.strength;
+        if (fc.id && fc.delta != null) _state.updateFactionStrength(fc.id, fc.delta);
+      }
+    }
+    // 캐릭터 병력 변경 (delta 기반)
+    if (Array.isArray(su.character_troop_changes)) {
+      for (const tc of su.character_troop_changes) {
+        if (tc.id && tc.delta != null) _state.updateCharacterTroops(tc.id, tc.delta);
       }
     }
     // 새 거점 추가

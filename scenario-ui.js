@@ -35,6 +35,67 @@ function defaultGetOpeningContent(state) {
   return o[key] ?? o['default'] ?? null;
 }
 
+/** troops_count 숫자를 읽기 좋은 문자열로 변환 */
+function formatTroops(count) {
+  if (count == null || count < 0) return '불명';
+  if (count === 0) return '전멸';
+  if (count >= 10000) return `${Math.floor(count / 1000)}천+`;
+  if (count >= 1000)  return `${+(count / 1000).toFixed(1)}천`;
+  return `${count}명`;
+}
+
+/**
+ * 범용 지휘관 정보 빌더.
+ * - 세력 조회: char.faction_id / char.faction 우선, 없으면 factions.get(protagonist) (오스만 방식)
+ * - 동맹: 우호 세력 중 본인 세력 제외
+ * - 표시 필드: 직위 / 병력 / 거점 / 동맹
+ */
+function defaultCommanderInfo(state) {
+  let name = '불명', sub = '—', title = '불명', strength = '불명', base = '불명', ally = '없음';
+  let ownFactionId = null;
+
+  if (state.protagonist) {
+    const char = state.characters.get(state.protagonist);
+    if (char) {
+      name         = char.name;
+      title        = char.title || char.epithet || '불명';
+      base         = char.base ? char.base.split(' — ')[0] : '불명';
+      strength     = char.troops_count != null
+                       ? formatTroops(char.troops_count)
+                       : char.troops || STRENGTH_LABEL[char.strength] || '불명';
+      ownFactionId = char.faction_id || char.faction || null;
+    }
+    // 오스만 방식: protagonist id = faction id
+    if (!ownFactionId && state.factions.has(state.protagonist)) {
+      ownFactionId = state.protagonist;
+    }
+    if (ownFactionId) {
+      const f = state.factions.get(ownFactionId);
+      if (f) {
+        sub = f.name;
+        if (strength === '불명') strength = STRENGTH_LABEL[f.strength] || '불명';
+      }
+    }
+  }
+
+  const friendly = Array.from(state.factions.values())
+    .filter(f => f.disposition === '우호' && f.id !== ownFactionId);
+
+  // protagonist 정보가 없을 때 우호 세력에서 보완
+  if (name     === '불명' && friendly.length > 0) name     = friendly[0].name;
+  if (sub      === '—'   && friendly.length > 0) sub      = friendly[0].name;
+  if (strength === '불명' && friendly.length > 0) strength = STRENGTH_LABEL[friendly[0].strength] || '불명';
+
+  ally = friendly.map(f => f.name.split(' ')[0]).join(', ') || '없음';
+
+  return { name, sub, fields: [
+    { key: '직위', val: title },
+    { key: '병력', val: strength },
+    { key: '거점', val: base },
+    { key: '동맹', val: ally },
+  ]};
+}
+
 // ════════════════════════════════════════════════════════════════
 const CONFIGS = {
 
@@ -42,34 +103,7 @@ const CONFIGS = {
   'great-heathen-army': {
     tagExtras: {},
 
-    commanderInfo(state) {
-      let name = '불명', sub = '—', title = '불명', troops = '불명', supply = '불명', ally = '없음';
-      if (state.protagonist) {
-        const char = state.characters.get(state.protagonist);
-        if (char) {
-          name   = char.name;
-          title  = char.title || char.epithet || '불명';
-          troops = char.troops || STRENGTH_LABEL[char.strength] || '불명';
-          supply = char.supply || '불명';
-          const fid = char.faction_id || char.faction;
-          if (fid) { const f = state.factions.get(fid); if (f) sub = f.name; }
-        }
-      }
-      const friendly = Array.from(state.factions.values()).filter(f => f.disposition === '우호');
-      if (friendly.length > 0) {
-        const pf = friendly[0];
-        if (sub    === '—')    sub    = pf.name;
-        if (name   === '불명') name   = pf.name;
-        if (troops === '불명') troops = STRENGTH_LABEL[pf.strength] || '불명';
-      }
-      ally = friendly.slice(1).map(f => f.name.split(' ')[0]).join(', ') || '없음';
-      return { name, sub, fields: [
-        { key: '직위', val: title },
-        { key: '병력', val: troops },
-        { key: '보급', val: supply },
-        { key: '동맹', val: ally },
-      ]};
-    },
+    commanderInfo: defaultCommanderInfo,
 
     charDotColor(char, state) {
       if (char.id === state.protagonist) return '#378ADD';
@@ -124,31 +158,7 @@ const CONFIGS = {
   'ottoman-interregnum': {
     tagExtras: { '경쟁': ['#fcebeb', '#a32d2d'] },
 
-    commanderInfo(state) {
-      let name = '불명', sub = '—', epithet = '불명', base = '불명', strength = '불명', ally = '없음';
-      if (state.protagonist) {
-        const char = state.characters.get(state.protagonist);
-        if (char) {
-          name    = char.name;
-          epithet = char.epithet || char.title || '불명';
-          base    = char.base ? char.base.split(' — ')[0] : '불명';
-        }
-        const ownFaction = state.factions.get(state.protagonist);
-        if (ownFaction) {
-          sub      = ownFaction.name;
-          strength = STRENGTH_LABEL[ownFaction.strength] || '불명';
-        }
-      }
-      const allyFactions = Array.from(state.factions.values())
-        .filter(f => f.disposition === '우호' && f.id !== state.protagonist);
-      ally = allyFactions.map(f => f.name.split(' ')[0]).join(', ') || '없음';
-      return { name, sub, fields: [
-        { key: '칭호', val: epithet },
-        { key: '세력', val: strength },
-        { key: '거점', val: base },
-        { key: '동맹', val: ally },
-      ]};
-    },
+    commanderInfo: defaultCommanderInfo,
 
     /** 캐릭터 데이터의 color 필드 사용 */
     charDotColor(char) { return char.color || '#888780'; },

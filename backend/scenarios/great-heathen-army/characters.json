@@ -6,8 +6,7 @@
     "disposition": "플레이어",
     "status_tag": "확인됨",
     "title": "왕",
-    "troops": "~12,000",
-    "supply": "약 8일치",
+    "troops_count": 12000,
     "desc": "머시아 왕. 웨섹스와의 동맹을 기반으로 노팅엄 포위전을 지휘 중."
   },
   {

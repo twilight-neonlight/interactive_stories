@@ -117,6 +117,10 @@ class GameState {
       if (f.diplomacy_score == null) {
         f.diplomacy_score = GameState._dispositionToScore(f.disposition);
       }
+      // 강도 점수 초기화: JSON에 없으면 strength 레이블에서 환산
+      if (f.strength_score == null) {
+        f.strength_score = GameState._strengthToScore(f.strength);
+      }
       this.factions.set(f.id, f);
     }
     for (const location of scenario.locations ?? []) {
@@ -194,6 +198,17 @@ class GameState {
   }
 
   /**
+   * 인물의 병력 수를 delta만큼 조정합니다. 0 미만으로 내려가지 않습니다.
+   * @param {string} id
+   * @param {number} delta - 변화량 (손실은 음수, 증원은 양수)
+   */
+  updateCharacterTroops(id, delta) {
+    const char = this.characters.get(id);
+    if (!char) return;
+    char.troops_count = Math.max(0, (char.troops_count ?? 0) + delta);
+  }
+
+  /**
    * 인물의 상태를 'dead'로 변경합니다.
    * @param {string} id
    */
@@ -221,6 +236,9 @@ class GameState {
     const f = structuredClone(faction);
     if (f.diplomacy_score == null) {
       f.diplomacy_score = GameState._dispositionToScore(f.disposition);
+    }
+    if (f.strength_score == null) {
+      f.strength_score = GameState._strengthToScore(f.strength);
     }
     this.factions.set(faction.id, { ...f, is_dynamic: true });
   }
@@ -250,6 +268,40 @@ class GameState {
     return disposition === '우호' ? 50
          : disposition === '적대' ? -50
          : 0;
+  }
+
+  /**
+   * 세력 강도 점수를 delta만큼 조정하고 strength 레이블을 재계산합니다.
+   * 점수 범위 0–700. 100점 단위 구간을 넘어야 레이블이 바뀝니다.
+   * @param {string} id - 세력 id
+   * @param {number} delta - 변화량
+   */
+  updateFactionStrength(id, delta) {
+    const faction = this.factions.get(id);
+    if (!faction) return;
+    const next = Math.max(0, Math.min(700, (faction.strength_score ?? 350) + delta));
+    faction.strength_score = next;
+    faction.strength = GameState._scoreToStrength(next);
+  }
+
+  /** @param {number} score 0–700 */
+  static _scoreToStrength(score) {
+    if (score >= 600) return 'extreme';
+    if (score >= 500) return 'very high';
+    if (score >= 400) return 'high';
+    if (score >= 300) return 'medium';
+    if (score >= 200) return 'low';
+    if (score >= 100) return 'very low';
+    return 'impotent';
+  }
+
+  /** @param {string} strength 레이블 */
+  static _strengthToScore(strength) {
+    const map = {
+      'extreme': 650, 'very high': 550, 'high': 450,
+      'medium': 350, 'low': 250, 'very low': 150, 'impotent': 50,
+    };
+    return map[strength] ?? 350;
   }
 
   // ── 거점 ──────────────────────────────────
