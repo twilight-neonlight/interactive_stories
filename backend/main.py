@@ -210,8 +210,10 @@ def build_scenario_context(state: dict) -> str:
         for f in factions.values():
             note = f.get("notes", "")
             note_short = note[:80] + "…" if len(note) > 80 else note
+            score = f.get("diplomacy_score")
+            score_str = f" [{int(score):+d}]" if score is not None else ""
             lines.append(
-                f"  - {f.get('name', '?')} | {f.get('disposition', '?')} | {f.get('strength', '?')}"
+                f"  - {f.get('name', '?')} | {f.get('disposition', '?')}{score_str} | {f.get('strength', '?')}"
                 + (f"\n    {note_short}" if note_short else "")
             )
 
@@ -329,8 +331,8 @@ async def process_turn(req: TurnRequest):
 
     # 6. state_update 항목 병합
     for key in ("new_characters", "dead_characters", "new_factions",
-                "faction_strength_changes", "faction_disposition_changes",
-                "character_disposition_changes",
+                "faction_strength_changes", "faction_diplomacy_changes",
+                "faction_disposition_changes", "character_disposition_changes",
                 "new_locations", "location_changes"):
         if extra.get(key):
             state_updates[key] = extra[key]
@@ -347,7 +349,7 @@ async def process_turn(req: TurnRequest):
 
 @app.get("/")
 def root():
-    return RedirectResponse(url="/scenario_select.html")
+    return RedirectResponse(url="/frontend/scenario_select.html")
 
 _ROOT_DIR = Path(__file__).parent.parent  # interactive_stories/
 app.mount("/", StaticFiles(directory=str(_ROOT_DIR), html=True), name="static")

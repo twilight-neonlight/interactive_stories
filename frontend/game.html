@@ -5,10 +5,10 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Interactive Stories</title>
 <link rel="stylesheet" href="./game.css">
-<script src="./scenario-loader.js"></script>
-<script src="./state/GameState.js"></script>
-<script src="./state/StateManager.js"></script>
-<script src="./scenario-ui.js"></script>
+<script src="../scenario-loader.js"></script>
+<script src="../state/GameState.js"></script>
+<script src="../state/StateManager.js"></script>
+<script src="../scenario-ui.js"></script>
 </head>
 <body>
 
@@ -648,11 +648,20 @@ async function submitTurn() {
         if (loc && lc.controller) loc.controller = lc.controller;
       }
     }
-    // 세력 외교 태도 변경 (우호·적대·중립)
+    // 세력 외교 수치 변경 (delta 기반 → disposition 자동 재계산)
+    if (Array.isArray(su.faction_diplomacy_changes)) {
+      for (const fc of su.faction_diplomacy_changes) {
+        if (fc.id && fc.delta != null) _state.updateFactionDiplomacy(fc.id, fc.delta);
+      }
+    }
+    // 세력 외교 태도 직접 설정 (구버전 호환 — 점수도 함께 보정)
     if (Array.isArray(su.faction_disposition_changes)) {
       for (const fc of su.faction_disposition_changes) {
         const faction = _state.factions.get(fc.id);
-        if (faction && fc.disposition) faction.disposition = fc.disposition;
+        if (faction && fc.disposition) {
+          faction.disposition = fc.disposition;
+          faction.diplomacy_score = GameState._dispositionToScore(fc.disposition);
+        }
       }
     }
     // 인물 태도 변경

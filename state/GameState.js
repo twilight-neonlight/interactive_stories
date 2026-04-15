@@ -112,7 +112,12 @@ class GameState {
       });
     }
     for (const faction of scenario.factions ?? []) {
-      this.factions.set(faction.id, structuredClone(faction));
+      const f = structuredClone(faction);
+      // 외교 수치 초기화: JSON에 없으면 disposition에서 환산
+      if (f.diplomacy_score == null) {
+        f.diplomacy_score = GameState._dispositionToScore(f.disposition);
+      }
+      this.factions.set(f.id, f);
     }
     for (const location of scenario.locations ?? []) {
       this.locations.set(location.id, structuredClone(location));
@@ -213,10 +218,38 @@ class GameState {
    * @param {Omit<StateFaction, 'is_dynamic'>} faction
    */
   addFaction(faction) {
-    this.factions.set(faction.id, {
-      ...structuredClone(faction),
-      is_dynamic: true,
-    });
+    const f = structuredClone(faction);
+    if (f.diplomacy_score == null) {
+      f.diplomacy_score = GameState._dispositionToScore(f.disposition);
+    }
+    this.factions.set(faction.id, { ...f, is_dynamic: true });
+  }
+
+  /**
+   * 세력의 외교 수치를 delta만큼 조정하고 disposition을 재계산합니다.
+   * @param {string} id - 세력 id
+   * @param {number} delta - 변화량 (-100~+100 범위 내로 클램프)
+   */
+  updateFactionDiplomacy(id, delta) {
+    const faction = this.factions.get(id);
+    if (!faction) return;
+    const next = Math.max(-100, Math.min(100, (faction.diplomacy_score ?? 0) + delta));
+    faction.diplomacy_score = next;
+    faction.disposition = GameState._scoreToDisposition(next);
+  }
+
+  /** @param {number} score */
+  static _scoreToDisposition(score) {
+    if (score > 33)  return '우호';
+    if (score < -33) return '적대';
+    return '중립';
+  }
+
+  /** @param {string} disposition */
+  static _dispositionToScore(disposition) {
+    return disposition === '우호' ? 50
+         : disposition === '적대' ? -50
+         : 0;
   }
 
   // ── 거점 ──────────────────────────────────
