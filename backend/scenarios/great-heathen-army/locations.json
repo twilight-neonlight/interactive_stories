@@ -1,16 +1,7 @@
 [
   {
-    "id": "nottingham",
-    "x": 54.0, "y": 34.0,
-    "name": "노팅엄 (Snotengaham)",
-    "controller": "great-heathen-army",
-    "terrain": "강변 평지 — 트렌트 강 북안, 목책 요새",
-    "strategic_value": "트렌트 강 도하 거점. 점령한 채 농성 중이므로 직접 공략 없이는 남진 불가.",
-    "notes": "덴마크군이 겨울을 나기 위해 점거. 성벽보다 강과 늪이 천연 방어선."
-  },
-  {
     "id": "york",
-    "x": 57.0, "y": 20.0,
+    "x": 65.7, "y": 19.0,
     "name": "요크 (Jorvik)",
     "controller": "great-heathen-army",
     "terrain": "평원 — 우즈 강·포스 강 합류 지점",
@@ -18,8 +9,17 @@
     "notes": "괴뢰왕 에그버트가 통치 중. 공략 시 전선 확대 불가피."
   },
   {
+    "id": "nottingham",
+    "x": 65.5, "y": 35.5,
+    "name": "노팅엄 (Snotengaham)",
+    "controller": "great-heathen-army",
+    "terrain": "강변 평지 — 트렌트 강 북안, 목책 요새",
+    "strategic_value": "트렌트 강 도하 거점. 점령한 채 농성 중이므로 직접 공략 없이는 남진 불가.",
+    "notes": "덴마크군이 겨울을 나기 위해 점거. 성벽보다 강과 늪이 천연 방어선."
+  },
+  {
     "id": "repton",
-    "x": 46.0, "y": 40.0,
+    "x": 61.1, "y": 37.8,
     "name": "레프턴 (Repton)",
     "controller": "mercia",
     "terrain": "트렌트 강 남안 — 수도원 언덕",
@@ -28,36 +28,82 @@
   },
   {
     "id": "leicester",
-    "x": 56.0, "y": 42.0,
+    "x": 65.0, "y": 41.4,
     "name": "레스터 (Ligera ceaster)",
     "controller": "mercia",
     "terrain": "내륙 평지 — 소어 강변 로마 도로망 교차점",
     "strategic_value": "노팅엄-탬워스 사이 보급로 결절점. 덴마크군 남하 시 전초기지 역할."
   },
   {
-    "id": "tamworth",
-    "x": 44.0, "y": 47.0,
-    "name": "탬워스 (Tamworth)",
+    "id": "northampton",
+    "x": 67.8, "y": 47.6,
+    "name": "노샘프턴 (Hamwih)",
     "controller": "mercia",
-    "terrain": "내륙 평지 — 앤커 강 합류부",
-    "strategic_value": "머시아 왕궁 소재지. 왕국의 행정·상징적 중심.",
-    "notes": "노팅엄이 함락되면 다음 침공 목표가 될 가능성 높음."
+    "terrain": "내륙 평지 — 넨 강변",
+    "strategic_value": "머시아 동부 방어선 거점. 동앵글리아와의 경계에 위치해 덴마크군 서진 시 최초 저지선.",
+    "notes": "로마 도로가 교차하는 요충지. 수비 병력이 희박하면 돌파 위험."
+  },
+  {
+    "id": "thetford",
+    "x": 85.1, "y": 43.4,
+    "name": "세트포드 (Thetford)",
+    "controller": "east-anglia",
+    "terrain": "저지대 — 리틀 우즈 강변",
+    "strategic_value": "동앵글리아 왕국의 핵심 도시. 869년 덴마크군 약탈 이후 불안정 상태.",
+    "notes": "에드먼드 왕이 순교한 지역 근방. 동앵글리아의 저항 의지가 아직 남아 있음."
+  },
+  {
+    "id": "colchester",
+    "x": 86.3, "y": 52.5,
+    "name": "콜체스터 (Camulodunum)",
+    "controller": "east-anglia",
+    "terrain": "동해안 평지 — 콜른 강변 로마 성벽 도시",
+    "strategic_value": "동앵글리아 남부 관문. 로마 성벽이 방어에 유리하나 수비 병력 부족.",
+    "notes": "북해 교역로와 연결되는 항구. 덴마크 증원군 상륙 후보지."
+  },
+  {
+    "id": "london",
+    "x": 77.1, "y": 59.3,
+    "name": "런던 (Lundenwic)",
+    "controller": "mercia",
+    "terrain": "템스 강변 — 로마 성벽 도시",
+    "strategic_value": "잉글랜드 최대 교역 거점. 템스 강 도하 통제권을 쥔 전략 요충지.",
+    "notes": "머시아 영향권이나 웨섹스와 공동 관리 성격. 함락 시 전쟁의 판도 전환."
+  },
+  {
+    "id": "reading",
+    "x": 67.6, "y": 60.8,
+    "name": "레딩 (Readingum)",
+    "controller": "wessex",
+    "terrain": "템스·케넷 강 합류부 — 습지에 둘러싸인 방어 거점",
+    "strategic_value": "웨섹스 북부 방어선. 871년 덴마크군이 이곳에 진영을 구축하며 대규모 공세를 개시.",
+    "notes": "강이 자연 해자 역할. 점령 시 웨섹스 심장부 진입 발판."
   },
   {
     "id": "winchester",
-    "x": 53.0, "y": 69.0,
+    "x": 62.9, "y": 68.5,
     "name": "윈체스터 (Venta Belgarum)",
     "controller": "wessex",
     "terrain": "남부 구릉 — 이첸 강변",
-    "strategic_value": "고대 로마의 유산 위에 세워진, 웨섹스 왕국의 수도이자 심장",
-    "notes": "고대 로마시대에 세워진 도시로, 7세기 경 건립된 올드 민스터(Old Minster) 성당은 웨섹스 왕실의 권위를 상징한다."
+    "strategic_value": "웨섹스 왕국의 수도이자 심장.",
+    "notes": "올드 민스터 성당이 위치한 웨섹스 왕실의 상징. 함락 시 왕국 붕괴 수순."
   },
   {
-    "id": "norfolk",
-    "x": 75.0, "y": 42.0,
-    "name": "노포크 (Norfolc)",
-    "controller": "east-anglia",
-    "terrain": "동해안 저지대 — 습지·하구 밀집 지형",
-    "strategic_value": "동앵글리아의 북부 관문. 북해 연안 상륙 경로와 직결되며 덴마크군 증원 시 최초 상륙 후보지."
+    "id": "dorchester",
+    "x": 51.2, "y": 73.5,
+    "name": "도체스터 (Durnovaria)",
+    "controller": "wessex",
+    "terrain": "남서부 구릉 — 프롬 강변 로마 도시",
+    "strategic_value": "웨섹스 서부 배후지. 덴마크군이 서쪽을 우회할 경우 최종 저지선.",
+    "notes": "교역보다 농업 거점. 병참 보급지 역할 가능."
+  },
+  {
+    "id": "canterbury",
+    "x": 89.7, "y": 61.7,
+    "name": "캔터베리 (Cantwaraburh)",
+    "controller": "wessex",
+    "terrain": "켄트 평야 — 스투어 강변",
+    "strategic_value": "잉글랜드 기독교의 총본산. 대주교좌 소재지로 종교적·외교적 가치 최고.",
+    "notes": "약탈 시 잉글랜드 전역에 심리적 충격. 방어는 성벽보다 종교적 위상에 의존."
   }
 ]
