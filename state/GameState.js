@@ -121,6 +121,8 @@ class GameState {
       if (f.strength_score == null) {
         f.strength_score = GameState._strengthToScore(f.strength);
       }
+      // strength 레이블은 항상 score로부터 역산 (JSON 값 무시)
+      f.strength = GameState._scoreToStrength(f.strength_score);
       // 전투 피해 누적값 초기화
       if (f.battle_damage == null) f.battle_damage = 0;
       this.factions.set(f.id, f);
@@ -234,6 +236,11 @@ class GameState {
    * 게임 중 새 세력을 동적으로 추가합니다.
    * @param {Omit<StateFaction, 'is_dynamic'>} faction
    */
+  defeatFaction(id) {
+    const f = this.factions.get(id);
+    if (f) f.defeated = true;
+  }
+
   addFaction(faction) {
     const f = structuredClone(faction);
     if (f.diplomacy_score == null) {
@@ -242,6 +249,7 @@ class GameState {
     if (f.strength_score == null) {
       f.strength_score = GameState._strengthToScore(f.strength);
     }
+    f.strength = GameState._scoreToStrength(f.strength_score);
     if (f.battle_damage == null) f.battle_damage = 0;
     this.factions.set(faction.id, { ...f, is_dynamic: true });
   }

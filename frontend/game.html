@@ -46,6 +46,10 @@
         <div class="scene-badge" id="scene-badge">SCENE 1</div>
         <div class="chapter-info" id="chapter-info">—</div>
         <div class="resolution-badge" id="resolution-badge" style="display:none;"></div>
+        <div class="save-bar">
+          <button class="save-btn" id="save-btn" onclick="saveToServer()" title="현재 상태를 서버에 저장">저장</button>
+          <a class="save-btn" href="main_menu.html" title="메인 메뉴로">메뉴</a>
+        </div>
       </div>
       <div class="time-badge">
         <svg width="13" height="13" viewBox="0 0 12 12" fill="none">
@@ -227,7 +231,7 @@ function renderFactionBars(state) {
   const container = document.getElementById('faction-bars');
   if (!container || !_ui) return;
   const widthMap = { extreme:'100%','very high':'85%',high:'70%',medium:'50%',low:'30%','very low':'15%',impotent:'5%' };
-  container.innerHTML = Array.from(state.factions.values()).map(f => {
+  container.innerHTML = Array.from(state.factions.values()).filter(f => !f.defeated).map(f => {
     const width = widthMap[f.strength] || '20%';
     const color = _ui.factionBarColor(f);
     const tag   = _ui.factionBarTag(f);
@@ -241,10 +245,40 @@ function renderFactionBars(state) {
 }
 
 // ── 지도 마커 갱신 ────────────────────────────────────────────────
+
+/**
+ * timestamp에서 플레이어 위치를 파싱.
+ * 단일 거점: { type:'fixed', id }
+ * 이동 중 (두 도시 감지): { type:'transit', fromId, toId }
+ * 불명: null
+ */
+function playerPosition(state) {
+  const ts = state.progress?.timestamp || '';
+  const m  = ts.match(/[,，]\s*(.+)$/) || ts.match(/\d년[^,，]*\s+(.+)$/);
+  if (!m) return null;
+  const segment = m[1].trim();
+
+  // state.locations에서 이름 후보를 뽑아 segment 내 등장 순서로 탐색
+  const hits = [];
+  for (const [id, loc] of state.locations) {
+    const short = loc.name?.split(' ')[0];
+    if (!short) continue;
+    const idx = segment.indexOf(short);
+    if (idx !== -1) hits.push({ id, idx });
+  }
+  hits.sort((a, b) => a.idx - b.idx);
+
+  if (hits.length >= 2) return { type: 'transit', fromId: hits[0].id, toId: hits[hits.length - 1].id };
+  if (hits.length === 1) return { type: 'fixed', id: hits[0].id };
+  return null;
+}
+
 function renderMapMarkers(state) {
   if (!_ui) return;
   const layer = document.getElementById('map-markers-layer');
   if (!layer) return;
+
+  const pos = playerPosition(state);
 
   // 기존 마커 색상·상태 갱신
   layer.querySelectorAll('.map-pin[data-id]').forEach(pin => {
@@ -260,6 +294,7 @@ function renderMapMarkers(state) {
     pin.dataset.status  = statusText;
     if (loc.terrain) pin.dataset.terrain = loc.terrain;
     if (loc.notes)   pin.dataset.note    = loc.notes;
+    pin.classList.toggle('is-player', pos?.type === 'fixed' && pin.dataset.id === pos.id);
   });
 
   // 좌표가 있는 location 중 마커가 없는 것은 동적으로 생성
@@ -272,6 +307,7 @@ function renderMapMarkers(state) {
 
     const pin = document.createElement('div');
     pin.className = 'map-marker map-pin';
+    if (pos?.type === 'fixed' && id === pos.id) pin.classList.add('is-player');
     pin.dataset.id      = id;
     pin.dataset.city    = loc.name;
     pin.dataset.faction = factionName;
@@ -288,6 +324,32 @@ function renderMapMarkers(state) {
 
     layer.appendChild(pin);
   });
+
+  // 이동 중 마커: 두 도시 중간점에 독립 마커 생성/갱신
+  let transitPin = layer.querySelector('#player-transit-pin');
+  if (pos?.type === 'transit') {
+    const from = state.locations.get(pos.fromId);
+    const to   = state.locations.get(pos.toId);
+    if (from?.x != null && to?.x != null) {
+      const mx = (from.x + to.x) / 2;
+      const my = (from.y + to.y) / 2;
+      if (!transitPin) {
+        transitPin = document.createElement('div');
+        transitPin.id        = 'player-transit-pin';
+        transitPin.className = 'map-marker map-pin is-player is-transit';
+        transitPin.innerHTML = `
+          <div class="pin-pulse" style="border-color:#3A9E5F;"></div>
+          <div class="pin-dot"   style="background:#3A9E5F;"></div>
+          <div class="pin-label">진군 중</div>`;
+        layer.appendChild(transitPin);
+      }
+      transitPin.style.left = `${mx}%`;
+      transitPin.style.top  = `${my}%`;
+      transitPin.style.display = '';
+    }
+  } else if (transitPin) {
+    transitPin.style.display = 'none';
+  }
 
   rebindTooltips();
 }
@@ -335,7 +397,42 @@ let _ui      = null;
 (async () => {
   try {
   _manager = new StateManager();
-  _state   = _manager.load();
+
+  // 메인 메뉴에서 세이브 파일을 선택한 경우 서버에서 복원
+  const saveFile = sessionStorage.getItem('saveFile');
+  if (saveFile) {
+    sessionStorage.removeItem('saveFile');
+    sessionStorage.removeItem('is_gameState');
+    try {
+      const data = await fetch(`${window.API_BASE}/api/saves/${encodeURIComponent(saveFile)}`).then(r => r.json());
+      const scenario = await ScenarioLoader.fetchOne(data.scenarioId);
+      _ui = window.getScenarioUI(data.scenarioId);
+      tagStyle = { ...BASE_TAG_STYLE, ..._ui.tagExtras };
+      _state = GameState.fromJSON(data);
+      _state.opening = scenario.opening  ?? {};
+      _state.npcPool = scenario.npc_pool ?? {};
+      _state.mapSvg  = scenario.map_svg  ?? '';
+      const mapContainer = document.getElementById('map-container');
+      if (mapContainer) {
+        const imgUrl = `${window.API_BASE}/api/scenarios/${data.scenarioId}/map-image`;
+        mapContainer.innerHTML = `<div class="map-inner"><img id="map-img" src="${imgUrl}" alt="지도"><div id="map-markers-layer"></div></div>`;
+      }
+      _manager._state = _state;
+      _manager.save();
+      renderAll(_state);
+      const lastAssistant = [..._state.getHistory()].reverse().find(h => h.role === 'assistant');
+      if (lastAssistant) {
+        if (_state.progress.isChapterEnd) renderChapterClose(lastAssistant.content);
+        else { renderSceneBody(markdownToHtml(extractNarrative(lastAssistant.content))); renderChoices(extractChoices(lastAssistant.content)); }
+      }
+      document.getElementById('send-btn').disabled = false;
+      return;
+    } catch (e) {
+      console.error('[saveFile 복원 실패]', e);
+    }
+  }
+
+  _state = _manager.load();
 
   // 시나리오 ID 결정 (두 가지 키 모두 지원, 없으면 null → 빈 패널)
   const scenarioId = _state
@@ -415,13 +512,47 @@ let _ui      = null;
         renderChoices(extractChoices(lastAssistant.content));
       }
     } else {
-      // 첫 진입 — 시나리오별 오프닝 콘텐츠
-      const opening = _ui.getOpeningContent(_state);
-      if (opening) {
-        renderSceneBody(opening.html);
-        renderChoices(opening.choices);
-        const tsSpan = document.getElementById('timestamp-text');
-        if (tsSpan && opening.timestamp) tsSpan.textContent = opening.timestamp;
+      // 첫 진입 — LLM 오프닝 생성
+      renderSceneBody('<div class="scene-loading">장면 생성 중…</div>');
+      try {
+        const res = await fetch(`${window.API_BASE}/api/opening`, {
+          method:  'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body:    JSON.stringify({ state: _state.toJSON() }),
+        });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const { content, timestamp, state_updates: su } = await res.json();
+
+        // 오프닝에서 새로 등장한 인물 추가
+        if (Array.isArray(su?.new_characters)) {
+          for (const c of su.new_characters) {
+            if (c.id && !_state.characters.has(c.id)) _state.addCharacter(c);
+          }
+        }
+
+        // 히스토리에 기록 (이후 턴에서 LLM이 오프닝 맥락을 이어받음)
+        _state.pushHistory('user',      '[게임 시작]');
+        _state.pushHistory('assistant', content);
+        _manager.save();
+
+        renderSceneHeader(_state.progress, _state.scenarioTitle);
+        if (timestamp) {
+          const tsSpan = document.getElementById('timestamp-text');
+          if (tsSpan) tsSpan.textContent = timestamp;
+        }
+        renderSceneBody(markdownToHtml(extractNarrative(content)));
+        renderChoices(extractChoices(content));
+      } catch (e) {
+        // 폴백: 하드코딩 오프닝
+        const opening = _ui.getOpeningContent(_state);
+        if (opening) {
+          renderSceneBody(opening.html);
+          renderChoices(opening.choices);
+          const tsSpan = document.getElementById('timestamp-text');
+          if (tsSpan && opening.timestamp) tsSpan.textContent = opening.timestamp;
+        } else {
+          renderSceneBody(`<p style="color:var(--text-secondary);font-size:13px;">오프닝 생성 실패: ${e.message}</p>`);
+        }
       }
     }
   }
@@ -436,6 +567,25 @@ let _ui      = null;
     </p>`);
   }
 })();
+
+// ── 저장 ─────────────────────────────────────────────────────────
+async function saveToServer() {
+  if (!_state) return;
+  const btn = document.getElementById('save-btn');
+  btn.textContent = '저장 중…'; btn.disabled = true;
+  try {
+    const { filename } = await fetch(`${window.API_BASE}/api/saves`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(_state.toJSON()),
+    }).then(r => r.json());
+    btn.textContent = '저장됨 ✓';
+    setTimeout(() => { btn.textContent = '저장'; btn.disabled = false; }, 1800);
+  } catch {
+    btn.textContent = '저장 실패';
+    setTimeout(() => { btn.textContent = '저장'; btn.disabled = false; }, 1800);
+  }
+}
 
 // ── 선택지 ────────────────────────────────────────────────────────
 function selectChoice(btn) {
@@ -648,6 +798,10 @@ async function submitTurn() {
       for (const id of su.dead_characters) {
         if (_state.characters.has(id)) _state.killCharacter(id);
       }
+    }
+    // 세력 멸망 처리
+    if (Array.isArray(su.defeated_factions)) {
+      for (const id of su.defeated_factions) _state.defeatFaction(id);
     }
     // 새 세력 추가
     if (Array.isArray(su.new_factions)) {

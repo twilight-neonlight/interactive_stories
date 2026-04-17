@@ -268,6 +268,9 @@ body {
   pointer-events: none;
 }
 @keyframes pin-anim { 0%,100%{opacity:0.6;transform:translate(-50%,-50%) scale(0.6)} 60%{opacity:0;transform:translate(-50%,-50%) scale(1.8)} }
+.map-pin.is-player .pin-dot { background:#3A9E5F !important; width:12px; height:12px; border-color:rgba(255,255,255,0.9); }
+.map-pin.is-player .pin-pulse { border-color:#3A9E5F !important; width:24px; height:24px; animation-duration:1.6s; }
+.map-pin.is-player .pin-label { color:#1a6e3e; font-weight:700; }
 
 /* ── 선택지 ── */
 .choice-list { display: flex; flex-direction: column; gap: 7px; flex: 1; min-height: 0; overflow-y: auto; padding-right: 2px; }
@@ -376,6 +379,18 @@ hr.divider { border: none; border-top: 1px solid var(--border-light); margin: 10
 }
 .embers-list li::before { content: '·'; position: absolute; left: 2px; color: var(--text-tertiary); }
 .embers-list li:last-child { border-bottom: none; }
+
+/* ── 저장·불러오기 버튼 ── */
+.save-bar { display: flex; gap: 5px; margin-left: auto; }
+.save-btn {
+  padding: 3px 9px; font-size: 11px; font-family: sans-serif;
+  background: transparent; color: var(--text-tertiary);
+  border: 1px solid var(--border-light); border-radius: var(--radius-sm);
+  cursor: pointer; transition: color 0.12s, border-color 0.12s;
+  text-decoration: none; display: inline-flex; align-items: center;
+}
+.save-btn:hover { color: var(--text-primary); border-color: var(--text-secondary); }
+.save-btn:disabled { opacity: 0.45; cursor: default; }
 
 /* ── 다음 장 버튼 ── */
 .next-chapter-btn {

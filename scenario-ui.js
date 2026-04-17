@@ -172,7 +172,7 @@ const CONFIGS = {
     commanderInfo: defaultCommanderInfo,
 
     charDotColor(char, state) {
-      if (char.id === state.protagonist) return '#378ADD';
+      if (char.id === state.protagonist) return '#3A9E5F';
       return DISP_COLOR[char.disposition] || '#888780';
     },
     charRelInfo(char, state) {

@@ -124,6 +124,7 @@ N장 요약: 최소 8항목 표
   "new_characters": [{"id": "영문소문자_언더바", "name": "이름", "epithet": "별칭(없으면 빈 문자열)", "disposition": "우호|적대|중립|불명", "desc": "1-2문장 설명"}],
   "dead_characters": ["id1", "id2"],
   "new_factions": [{"id": "영문소문자_언더바", "name": "세력명", "type": "세력 유형", "disposition": "우호|적대|중립|불명", "strength": "extreme|very high|high|medium|low|very low|impotent", "notes": "1-2문장 설명"}],
+  "defeated_factions": ["세력id1"],
   "faction_strength_changes": [{"id": "기존세력id", "delta": 숫자}],
   "faction_battle_damage": [{"id": "기존세력id", "damage": 숫자}],
   "faction_battle_recovery": [{"id": "기존세력id", "amount": 숫자}],
@@ -138,6 +139,10 @@ N장 요약: 최소 8항목 표
 - `new_characters`: 이번 씬에서 처음 등장하는 비중 있는 인물. 이미 등록된 인물은 생략.
 - `dead_characters`: 이번 씬에서 사망·제거 확정된 인물의 id 목록.
 - `new_factions`: 이번 씬에서 처음 개입하는 세력. 이미 등록된 세력은 생략.
+- `defeated_factions`: 이번 씬에서 **패퇴 확정**된 세력의 id 목록. 패퇴 판정 기준:
+  1. 세력 지도자가 전사·처형되었고 후계자가 없는 경우.
+  2. 모든 거점을 상실했고 잔존 병력이 impotent 수준(strength_score 기준 100 미만)인 경우.
+  - **예외 — 분리주의 반군 전환**: 모든 거점을 잃었어도 병력이 low 이상(100 이상) 건재하면 패퇴 처리하지 않는다. 대신 `new_factions`로 분리주의·잔당 세력을 새로 등록하고 원 세력은 `defeated_factions`에 추가한다. 이는 도시만 점령해 국가를 무너뜨리는 전략을 차단하기 위함이다.
 - `faction_strength_changes`: 세력의 **기반 강도** 변화. 정규 병력 증감·영토 획득/상실에 적용. 양측 모두 적용 가능. `delta` 범위 0–700.
   - 영토 1개 획득/상실: ±30~50 / 대규모 병력 충원·괴멸: ±80~120
   - 순수 전투 승패만으로는 적용하지 않는다 — 그것은 `faction_battle_damage`로 처리.

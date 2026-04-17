@@ -1,37 +1,57 @@
 [
   {
     "id": "suleyman", "name": "술레이만 첼레비파", "type": "faction",
-    "strength": "very high", "disposition": "중립", "color": "#3a7abf",
+    "strength_score": 570, "disposition": "중립", "color": "#3a7abf",
     "notes": "루멜리아 전역과 비잔틴·제노바 외교망을 보유한 형제 중 가장 강력한 왕자. 귀족·봉신 의존 구조로 중앙집권이 약하며, 외교 결단에 내부 반발이 따르기 쉽다."
   },
   {
     "id": "isa", "name": "이사 첼레비파", "type": "faction",
-    "strength": "very low", "disposition": "중립", "color": "#888780",
+    "strength_score": 130, "disposition": "중립", "color": "#888780",
     "notes": "부르사를 거점으로 한 왕자. 아나톨리아 서부를 장악했으나 사방이 경쟁 세력에 노출된 구조적으로 취약한 위치. 기동전에 강하고 고위험 고수익 전략을 구사한다."
   },
   {
     "id": "musa", "name": "무사 첼레비파", "type": "faction",
-    "strength": "medium", "disposition": "중립", "color": "#8b2020",
+    "strength_score": 360, "disposition": "중립", "color": "#8b2020",
     "notes": "아나톨리아 가지·유목 세력을 기반으로 한 전투형 왕자. 외교보다 전쟁을 선호해 협상 비용이 높으며, 전투력은 강하나 장기 행정 능력이 부재하다."
   },
   {
     "id": "mehmed", "name": "마흐메트 첼레비파", "type": "faction",
-    "strength": "low", "disposition": "중립", "color": "#C5932A",
+    "strength_score": 320, "disposition": "중립", "color": "#C5932A",
     "notes": "아마스야 요새와 흑해 교역 수입을 기반으로 한 가장 신중한 왕자. 초반에는 열세지만 균형 외교와 장기 전략에 능하다."
   },
   {
     "id": "byzantine", "name": "비잔틴 제국", "type": "empire",
-    "strength": "very low", "disposition": "중립", "color": "#7F77DD",
+    "strength_score": 110, "disposition": "중립", "color": "#7F77DD",
     "notes": "마누엘 2세가 이끄는 쇠락한 제국. 군사 지원보다 외교 승인의 가치가 크며, 오스만 내전을 활용해 세력 균형을 유지하고 내정 간섭을 도모한다."
   },
   {
     "id": "karamanids", "name": "카라만 왕조", "type": "emirate",
-    "strength": "medium", "disposition": "적대", "color": "#E24B4A",
+    "strength_score": 440, "disposition": "적대", "color": "#E24B4A",
     "notes": "티무르 이후 아나톨리아 패권을 노리는 가장 강력한 베이릭. 오스만 내전을 영역 확장의 기회로 삼으며, 어느 왕자가 강해져도 결국 충돌이 불가피하다."
   },
   {
     "id": "anatolian-beyliks", "name": "아나톨리아 베이릭들", "type": "tribe",
-    "strength": "very low", "disposition": "중립", "color": "#a09878",
+    "strength_score": 40, "disposition": "중립", "color": "#a09878",
     "notes": "티무르가 복원한 소규모 공국들. 개별 포섭은 가능하나 집단 행동은 어려우며, 가지 전사 충원의 주요 공급처."
+  },
+  {
+    "id": "genoa", "name": "제노바 공화국", "type": "republic",
+    "strength_score": 220, "disposition": "중립", "color": "#2E8B57",
+    "notes": "카파를 거점으로 흑해 교역을 독점하는 해상 강국. 오스만 내전에 직접 개입하지 않으나 어느 왕자가 승리하든 교역권 협상이 불가피하다."
+  },
+  {
+    "id": "jandarids", "name": "잔다르 왕조", "type": "emirate",
+    "strength_score": 150, "disposition": "중립", "color": "#6B8E23",
+    "notes": "시노프를 거점으로 흑해 남안을 장악한 이스펜디야르 왕조. 오스만과 트레비존드 사이에서 독립을 유지하며 실리 외교를 추구한다."
+  },
+  {
+    "id": "trebizond", "name": "트레비존드 제국", "type": "empire",
+    "strength_score": 170, "disposition": "중립", "color": "#4682B4",
+    "notes": "그랑 콤네노스 왕조의 소제국. 오스만 내전의 혼란 속에서도 동방 교역로 덕분에 독자 생존을 이어가며 어느 세력과도 섣불리 동맹하지 않는다."
+  },
+  {
+    "id": "wallachia", "name": "왈라키아 공국", "type": "kingdom",
+    "strength_score": 310, "disposition": "중립", "color": "#8B6914",
+    "notes": "미르체아 대공이 이끄는 다뉴브 북안의 기독교 완충국. 오스만 형제들의 루멜리아 전략에 깊이 연루되어 있으며, 지원 조건에 따라 전세를 바꿀 수 있다."
   }
 ]

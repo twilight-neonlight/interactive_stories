@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Interactive Stories</title>
+<link rel="stylesheet" href="./styles.css">
+<script src="../scenario-loader.js"></script>
+<style>
+  .menu-wrap {
+    position: relative; z-index: 1;
+    min-height: 100vh;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    padding: 40px 24px;
+  }
+  .menu-header { text-align: center; margin-bottom: 56px; animation: fadeDown 0.7s ease both; }
+  .menu-buttons { display: flex; flex-direction: column; gap: 14px; width: 280px; animation: fadeUp 0.5s 0.15s ease both; }
+
+  .menu-btn {
+    width: 100%; padding: 16px 24px;
+    font-family: 'Cinzel', serif; font-size: 14px; font-weight: 600;
+    letter-spacing: 0.12em; text-transform: uppercase;
+    border-radius: var(--radius-md); cursor: pointer;
+    transition: opacity 0.15s, transform 0.15s, box-shadow 0.15s;
+    border: none;
+  }
+  .menu-btn:hover:not(:disabled) { opacity: 0.88; transform: translateY(-1px); box-shadow: 0 4px 16px rgba(0,0,0,0.12); }
+  .menu-btn:active:not(:disabled) { transform: translateY(0); }
+  .menu-btn-primary { background: var(--text-primary); color: var(--bg-primary); }
+  .menu-btn-secondary {
+    background: transparent; color: var(--text-primary);
+    border: 1.5px solid var(--border-strong);
+  }
+  .menu-btn:disabled { opacity: 0.32; cursor: not-allowed; }
+
+  /* 세이브 목록 모달 */
+  .save-overlay {
+    display: none; position: fixed; inset: 0; z-index: 200;
+    background: rgba(0,0,0,0.45); backdrop-filter: blur(3px);
+    align-items: center; justify-content: center; padding: 20px;
+  }
+  .save-overlay.active { display: flex; }
+  .save-modal {
+    background: var(--bg-primary); border: 1px solid var(--border-strong);
+    border-radius: var(--radius-lg); padding: 28px 24px;
+    width: 100%; max-width: 480px; max-height: 80vh;
+    display: flex; flex-direction: column; gap: 16px;
+    animation: fadeUp 0.22s ease;
+  }
+  .save-modal-title {
+    font-family: 'Cinzel', serif; font-size: 12px; font-weight: 600;
+    letter-spacing: 0.18em; text-transform: uppercase; color: var(--text-tertiary);
+  }
+  .save-list { overflow-y: auto; display: flex; flex-direction: column; gap: 8px; flex: 1; }
+  .save-item {
+    padding: 13px 16px; border: 1px solid var(--border-light);
+    border-radius: var(--radius-md); cursor: pointer;
+    display: flex; align-items: center; justify-content: space-between; gap: 12px;
+    transition: border-color 0.12s, background 0.12s;
+  }
+  .save-item:hover { border-color: var(--border-strong); background: var(--bg-secondary); }
+  .save-item-info { flex: 1; min-width: 0; }
+  .save-item-title {
+    font-family: 'Noto Serif KR', serif; font-size: 13px; font-weight: 600;
+    color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .save-item-meta {
+    font-family: sans-serif; font-size: 11px; color: var(--text-tertiary); margin-top: 3px;
+  }
+  .save-item-del {
+    flex-shrink: 0; background: none; border: none; cursor: pointer;
+    color: var(--text-tertiary); font-size: 16px; line-height: 1; padding: 4px 6px;
+    border-radius: 4px; transition: color 0.12s, background 0.12s;
+  }
+  .save-item-del:hover { color: var(--accent); background: var(--accent-soft); }
+  .save-modal-close {
+    position: absolute; top: 14px; right: 16px;
+    background: none; border: none; cursor: pointer;
+    font-size: 18px; color: var(--text-tertiary); line-height: 1;
+  }
+  .save-empty {
+    text-align: center; padding: 32px 0;
+    font-family: sans-serif; font-size: 13px; color: var(--text-tertiary);
+  }
+
+  @keyframes fadeDown { from { opacity:0; transform:translateY(-12px); } to { opacity:1; transform:none; } }
+  @keyframes fadeUp   { from { opacity:0; transform:translateY(12px);  } to { opacity:1; transform:none; } }
+</style>
+</head>
+<body>
+
+<div class="menu-wrap">
+  <header class="menu-header">
+    <div style="font-family:'Cinzel',serif;font-size:10px;letter-spacing:0.25em;
+      text-transform:uppercase;color:var(--text-tertiary);margin-bottom:10px;">
+      Interactive Wargame &amp; Political Simulation
+    </div>
+    <h1 style="font-family:'Cinzel',serif;font-size:clamp(28px,5vw,46px);font-weight:700;
+      letter-spacing:0.04em;color:var(--text-primary);margin-bottom:8px;">
+      Interactive <em style="font-style:italic;color:var(--accent);">Stories</em>
+    </h1>
+    <p style="font-family:'IM Fell English',serif;font-style:italic;font-size:15px;
+      color:var(--text-secondary);letter-spacing:0.02em;">
+      역사의 분기점에서, 당신의 선택이 세계를 바꾼다
+    </p>
+  </header>
+
+  <div class="menu-buttons">
+    <button class="menu-btn menu-btn-primary" onclick="goNewGame()">새 게임</button>
+    <button class="menu-btn menu-btn-secondary" id="loadBtn" onclick="openSaveList()" disabled>불러오기</button>
+  </div>
+</div>
+
+<!-- 세이브 목록 모달 -->
+<div class="save-overlay" id="saveOverlay" onclick="closeSaveList(event)">
+  <div class="save-modal" style="position:relative;">
+    <button class="save-modal-close" onclick="closeSaveList()">×</button>
+    <div class="save-modal-title">저장된 게임 선택</div>
+    <div class="save-list" id="saveList"></div>
+  </div>
+</div>
+
+<script>
+const API = window.API_BASE || 'http://localhost:8000';
+
+// ── 초기 로드: 세이브 유무 확인 ──────────────────
+async function init() {
+  try {
+    const saves = await fetch(`${API}/api/saves`).then(r => r.json());
+    if (saves.length > 0) {
+      document.getElementById('loadBtn').disabled = false;
+    }
+  } catch { /* 서버 미응답 시 불러오기 비활성 유지 */ }
+}
+init();
+
+// ── 새 게임 ───────────────────────────────────────
+function goNewGame() {
+  sessionStorage.removeItem('saveFile');
+  sessionStorage.removeItem('is_gameState');
+  window.location.href = 'scenario_select.html';
+}
+
+// ── 불러오기 모달 ─────────────────────────────────
+async function openSaveList() {
+  const overlay = document.getElementById('saveOverlay');
+  const list    = document.getElementById('saveList');
+  list.innerHTML = '<div class="save-empty">불러오는 중…</div>';
+  overlay.classList.add('active');
+
+  try {
+    const saves = await fetch(`${API}/api/saves`).then(r => r.json());
+    if (saves.length === 0) {
+      list.innerHTML = '<div class="save-empty">저장된 게임이 없습니다.</div>';
+      return;
+    }
+    list.innerHTML = saves.map(s => `
+      <div class="save-item" onclick="loadSave('${s.filename}')">
+        <div class="save-item-info">
+          <div class="save-item-title">${s.scenarioTitle || s.scenarioId}</div>
+          <div class="save-item-meta">${s.chapter}장 · ${s.timestamp || ''} · 저장 ${s.savedAt}</div>
+        </div>
+        <button class="save-item-del" onclick="deleteSave(event, '${s.filename}')" title="삭제">×</button>
+      </div>`).join('');
+  } catch {
+    list.innerHTML = '<div class="save-empty">서버에 연결할 수 없습니다.</div>';
+  }
+}
+
+function closeSaveList(e) {
+  if (e && e.target !== document.getElementById('saveOverlay')) return;
+  document.getElementById('saveOverlay').classList.remove('active');
+}
+
+async function deleteSave(e, filename) {
+  e.stopPropagation();
+  if (!confirm(`"${filename}" 을 삭제할까요?`)) return;
+  await fetch(`${API}/api/saves/${encodeURIComponent(filename)}`, { method: 'DELETE' });
+  await openSaveList();
+  // 세이브가 0개가 됐으면 불러오기 버튼 비활성
+  const saves = await fetch(`${API}/api/saves`).then(r => r.json()).catch(() => []);
+  document.getElementById('loadBtn').disabled = saves.length === 0;
+}
+
+function loadSave(filename) {
+  sessionStorage.removeItem('is_gameState');
+  sessionStorage.setItem('saveFile', filename);
+  window.location.href = 'game.html';
+}
+</script>
+</body>
+</html>
