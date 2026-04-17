@@ -10,35 +10,96 @@
 
 ### 시나리오 시스템
 - 프리셋 시나리오와 **자유 커스텀 시나리오** 모두 지원
-- 커스텀 시나리오: 시대, 세계관, 지휘관, 목표를 자유 텍스트로 입력해 즉시 시작
+- 커스텀 시나리오: 시대, 세계관, 지휘관, 목표, 주요 위협을 자유 텍스트로 입력해 즉시 시작
 - 시나리오마다 고유한 배경 지도, 세력 배치, 등장 인물 설정 보유
 - 주인공 선택형(`protagonistMode: select`) / 고정형(`fixed`) 분기 지원
-- 시나리오 데이터(`백엔드/scenarios/{id}/`)는 JSON 파일로 분리 관리 — 코드 수정 없이 편집 가능
+- 시나리오 데이터(`backend/scenarios/{id}/`)는 JSON 파일로 분리 관리 — 코드 수정 없이 편집 가능
 
 ### AI 내러티브 엔진 (TurnEngine)
 - Google Gemini(`gemini-3-flash-preview`)를 내러티브 생성 모델로 사용
 - 플레이어 입력 → 백엔드 `/api/turn` → AI 응답 → 상태 갱신의 단방향 흐름
 - 행동 판정 3단계: **Tier 1(실행)** / **Tier 2(난이도 높음)** / **Tier 3(불가 — 세계관 내 이유로 설명)**
-- 장(Chapter) / 씬(Scene) 구조 자동 추적: LLM 응답 텍스트에서 `##N장, SCENE M` 패턴을 파싱해 진행 위치를 갱신
+- 장(Chapter) / 씬(Scene) 구조 자동 추적: LLM 응답 텍스트에서 `## N장, SCENE M` 패턴을 파싱해 진행 위치를 갱신
 
 ### 상태 관리 (GameState / StateManager)
-- **인물**: 등장·사망·추방 상태 추적, 게임 중 동적 추가
-- **세력**: 군사·경제 역량(`extreme` ~ `impotent`) 실시간 변동
-- **거점**: 지배 세력 변경 반영, 지형 정보 보유
-- **대화 히스토리**: 전체 턴 히스토리를 유지해 맥락 연속성 보장
+
+**인물 (`characters`)**
+- 상태: `alive` / `dead` / `unknown` / `exiled`
+- `troops_count`: 직접 지휘 병력 수 (delta 누적으로 변경)
+- `disposition`: 플레이어에 대한 성향 (동적 변경 가능)
+- 게임 중 동적 추가된 인물에는 `is_dynamic: true` 플래그
+
+**세력 강도 (`factions` — strength)**
+
+세력 강도는 두 값의 합산으로 결정됩니다:
+
+| 속성 | 범위 | 설명 |
+|---|---|---|
+| `strength_score` | 0 – 700 | 병력·영토·자원을 반영하는 기반 점수 (영구적) |
+| `battle_damage` | 0 이상 | 전투 패배로 누적되는 임시 페널티 (시간 경과로 회복) |
+
+실효 강도 = `strength_score − battle_damage` → 아래 7단계 레이블로 표시:
+
+| 레이블 | 실효 점수 |
+|---|---|
+| `extreme` | 600 이상 |
+| `very high` | 500 – 599 |
+| `high` | 400 – 499 |
+| `medium` | 300 – 399 |
+| `low` | 200 – 299 |
+| `very low` | 100 – 199 |
+| `impotent` | 0 – 99 |
+
+**세력 외교 (`factions` — diplomacy)**
+
+| 속성 | 범위 | 설명 |
+|---|---|---|
+| `diplomacy_score` | −100 – +100 | 플레이어에 대한 우호도 수치 |
+| `disposition` | 우호 / 중립 / 적대 | 수치에서 자동 산출 |
+
+수치 → 태도 변환 기준:
+
+- `> 33` → **우호**
+- `−33 ~ 33` → **중립**
+- `< −33` → **적대**
+
+초기값: 우호 → 50, 중립 → 0, 적대 → −50. `faction_diplomacy_changes`로 delta 누적 시 태도 자동 재계산. `faction_disposition_changes`로 태도를 직접 설정하면 점수도 해당 초기값으로 보정됩니다.
+
+**거점 (`locations`)**
+- `controller`: 현재 지배 세력 id
+- 게임 중 점거·해방 시 `location_changes`로 갱신
+
+**대화 히스토리**
+- 전체 턴 히스토리를 `{role, content}[]` 형태로 유지해 맥락 연속성 보장
 - 게임 상태는 `sessionStorage`에 직렬화(JSON)되어 세션 간 복원 지원
 
 ### 상태 자동 업데이트 (STATE_UPDATE 블록)
-LLM이 씬 응답 끝에 구조화된 블록을 포함하면, 백엔드가 이를 파싱해 프론트엔드에 전달:
-- `new_characters` / `dead_characters`
-- `new_factions` / `faction_strength_changes`
-- `new_locations` / `location_changes`
+LLM이 씬 응답 끝에 `[STATE_UPDATE] { ... }` 형식의 구조화된 블록을 포함하면, 백엔드가 이를 파싱해 프론트엔드에 전달합니다:
+
+| 키 | 설명 |
+|---|---|
+| `new_characters` / `dead_characters` | 인물 등장·사망 |
+| `new_factions` | 새 세력 추가 |
+| `faction_strength_changes` | 세력 기반 강도 변경 (delta, 영구적) |
+| `faction_battle_damage` / `faction_battle_recovery` | 전투 피해 누적·회복 (임시적) |
+| `faction_diplomacy_changes` | 외교 수치 변경 (delta → 태도 자동 재계산) |
+| `faction_disposition_changes` | 외교 태도 직접 설정 |
+| `character_troop_changes` | 인물 병력 변경 (delta) |
+| `character_disposition_changes` | 인물 성향 변경 |
+| `new_locations` / `location_changes` | 거점 추가·지배 세력 변경 |
 
 ### 지도 시스템
 - 실제 역사 지도 이미지(PNG/JPG/WEBP)를 시나리오 폴더에 배치하면 자동으로 적용
 - 거점 좌표는 이미지 크기 대비 퍼센트(`0–100`)로 저장 → 해상도·비율 변화에 무관하게 정확히 위치
 - CSS 절대 위치 마커 + 펄스 애니메이션으로 렌더링
+- 마커 색상: 본국 영토(초록) / 동맹 거점(파랑) / 적 점거(빨강) / 불안정(주황) / 중립(회색) — 시나리오별 커스터마이즈 가능
 - `tools/map-coord-picker.html`을 브라우저에서 열어 이미지를 불러온 뒤 클릭하면 좌표를 바로 기록·복사 가능
+
+### NPC 풀 시스템
+- 시나리오마다 `npc-pool.json`에 등장 가능한 인물 풀을 정의
+- 게임 시작 시 플레이어 역할에 따라 자동 소환: **군주·영주는 3–5명** (성향 다양성 보장), **일반 장군은 1–2명**
+- 각 NPC 항목에 `weight`(가중치), `tags`(역할 분류), `start_eligible`(시작 시 소환 여부), `require_location`(특정 거점 통제 시에만 등장) 속성 지원
+- 이벤트 진행 중 새 인물이 필요할 때 AI가 풀을 참조해 가중치 기반으로 선택
 
 ### 게임 UI (3열 레이아웃)
 | 영역 | 내용 |
@@ -80,21 +141,24 @@ interactive_stories/
 │           ├── characters.json     # 인물 목록
 │           ├── events.json         # 세계 사건 목록
 │           ├── opening.json        # 오프닝 콘텐츠 (주인공별 분기)
-│           ├── npc-pool.json       # 게임 시작 시 무작위 배치될 NPC 풀
-│           └── map.png             # 배경 지도 이미지 (PNG/JPG/WEBP 모두 가능)
+│           ├── npc-pool.json       # NPC 풀 (가중치·거점 조건부 등장 지원)
+│           └── map.png             # 배경 지도 이미지 (선택, PNG/JPG/WEBP 모두 가능)
+├── frontend/
+│   ├── game.html                   # 메인 게임 화면
+│   ├── game.css                    # 게임 UI 스타일
+│   ├── scenario_select.html        # 시나리오 선택 화면
+│   ├── prince_select.html          # 주인공 선택 화면
+│   └── styles.css                  # 시나리오 선택 화면 스타일
 ├── state/
 │   ├── GameState.js                # 게임 상태 클래스 (인물·세력·거점·히스토리)
 │   └── StateManager.js             # sessionStorage 직렬화·복원
 ├── tools/
 │   └── map-coord-picker.html       # 지도 이미지 좌표 픽업 도구
 ├── scenario-loader.js              # 백엔드 REST API 클라이언트
-├── scenario-ui.js                  # 시나리오별 UI 렌더링 로직 (색상·마커·이벤트)
-├── scenario_select.html            # 시나리오 선택 화면
-├── prince_select.html              # 주인공 선택 화면
-├── game.html                       # 메인 게임 화면
-├── game.css                        # 게임 UI 스타일
-├── styles.css                      # 시나리오 선택 화면 스타일
-└── system_prompt.txt               # AI 시스템 프롬프트 (세계 시뮬레이션 규칙 정의)
+├── scenario-ui.js                  # 시나리오별 UI 렌더링 로직 (색상·마커·NPC 소환)
+├── system_prompt.txt               # AI 시스템 프롬프트 (세계 시뮬레이션 규칙 정의)
+├── start.bat                       # Windows 실행 스크립트
+└── start.sh                        # Mac/Linux 실행 스크립트
 ```
 
 ---
@@ -139,7 +203,7 @@ uvicorn main:app --reload --port 8000
 # 브라우저에서 http://localhost:8000 접속
 ```
 
-### 5. 지도 이미지 추가 (선택)
+### 지도 이미지 추가 (선택)
 
 시나리오 폴더(`backend/scenarios/{id}/`)에 `map.png`(또는 `.jpg`, `.webp`)를 넣으면 게임 화면에 자동으로 표시됩니다.
 

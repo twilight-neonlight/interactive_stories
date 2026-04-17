@@ -45,6 +45,7 @@
         <div class="scene-badge" id="chapter-badge">1장</div>
         <div class="scene-badge" id="scene-badge">SCENE 1</div>
         <div class="chapter-info" id="chapter-info">—</div>
+        <div class="resolution-badge" id="resolution-badge" style="display:none;"></div>
       </div>
       <div class="time-badge">
         <svg width="13" height="13" viewBox="0 0 12 12" fill="none">
@@ -443,6 +444,31 @@ function selectChoice(btn) {
   document.getElementById('cmd').value = btn.textContent.trim();
 }
 
+// ── 행동 판정 배지 ────────────────────────────────────────────────
+const RESOLUTION_STYLE = {
+  critical_success: { label: '대성공', color: '#C5932A' },
+  success:          { label: '성공',   color: '#5DBB8B' },
+  partial:          { label: '부분 성공', color: '#EF9F27' },
+  failure:          { label: '실패',   color: '#E24B4A' },
+  critical_failure: { label: '대실패', color: '#8B2020' },
+};
+
+function renderResolution(res) {
+  const el = document.getElementById('resolution-badge');
+  if (!el) return;
+  if (!res || res.tier_en === 'narrate') { el.style.display = 'none'; return; }
+  const style = RESOLUTION_STYLE[res.tier_en];
+  if (!style) { el.style.display = 'none'; return; }
+  const modStr = res.modifiers?.length
+    ? ' · ' + res.modifiers.map(([l, v]) => `${l} ${v > 0 ? '+' : ''}${v}`).join(', ')
+    : '';
+  el.style.display = 'inline-flex';
+  el.style.color   = style.color;
+  el.style.borderColor = style.color;
+  el.title = `주사위 ${res.roll} → 보정 후 ${res.net}${modStr}`;
+  el.textContent = style.label;
+}
+
 // ── 씬 본문·선택지 렌더러 ─────────────────────────────────────────
 function renderSceneBody(html) {
   const el = document.getElementById('scene-body');
@@ -597,7 +623,8 @@ async function submitTurn() {
       throw new Error(err.detail);
     }
 
-    const { content, state_updates: su } = await res.json();
+    const { content, state_updates: su, resolution } = await res.json();
+    renderResolution(resolution);
 
     _state.pushHistory('user', cmd);
     _state.pushHistory('assistant', content);

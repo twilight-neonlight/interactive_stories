@@ -1,65 +1,159 @@
 {
   "mehmed": [
     {
-      "id": "protagonist-staff", "name": "이브라힘 파샤", "epithet": "수석 고문",
+      "id": "ibrahim-pasha",
+      "name": "이브라힘 파샤", "epithet": "수석 고문",
       "disposition": "우호", "status_tag": "확인됨",
+      "weight": 8, "tags": ["행정", "고문"],
       "desc": "아마스야 행정을 오래 보좌해온 실무형 관료. 흑해 교역로 수입 관리에 밝으며, 마흐메트의 신중한 노선을 지지한다."
     },
     {
-      "id": "protagonist-staff", "name": "타히르 베이", "epithet": "지방 귀족 대표",
+      "id": "tahir-bey",
+      "name": "타히르 베이", "epithet": "지방 귀족 대표",
       "disposition": "우호", "status_tag": "확인됨",
+      "weight": 6, "tags": ["귀족"],
       "desc": "아나톨리아 북부 지방 귀족 연합의 대변인. 독자적인 영지 이해관계를 갖고 있어 마흐메트의 결정에 조건부로 따른다."
     },
     {
-      "id": "protagonist-staff", "name": "유수프 에펜디", "epithet": "율법학자",
+      "id": "yusuf-efendi",
+      "name": "유수프 에펜디", "epithet": "율법학자",
       "disposition": "우호", "status_tag": "확인됨",
+      "weight": 5, "tags": ["성직자", "고문"],
       "desc": "아마스야 울레마(이슬람 법학자) 집단의 대표. 정통성 확보와 민심 관리를 조언하며, 신중한 외교를 일관되게 권고한다."
+    },
+    {
+      "id": "rustem-skeptic",
+      "name": "뤼스템 아가", "epithet": "전직 티무르 협상관",
+      "disposition": "중립", "status_tag": "불명",
+      "weight": 6, "tags": ["외교", "고문"],
+      "desc": "앙카라 전투 이후 티무르 진영과 교섭한 경험이 있는 인물. 마흐메트에게 협력하지만, 권력 구도에 따라 입장을 조정하는 현실주의자."
+    },
+    {
+      "id": "karamanid-envoy-m",
+      "name": "알리 베이 카라마니", "epithet": "카라만 사절",
+      "disposition": "중립", "status_tag": "불명",
+      "weight": 7, "tags": ["외교"],
+      "require_location": ["ankara"],
+      "start_eligible": false,
+      "desc": "카라만 왕조가 파견한 사절. 앙카라 장악 이후 접근해 왔으며, 협력과 견제를 동시에 타진하는 인물."
     }
   ],
+
   "suleyman": [
     {
-      "id": "protagonist-staff", "name": "알리 베이", "epithet": "루멜리아 총독",
+      "id": "ali-bey-rumelia",
+      "name": "알리 베이", "epithet": "루멜리아 총독",
       "disposition": "우호", "status_tag": "확인됨",
+      "weight": 7, "tags": ["행정", "귀족"],
       "desc": "에디르네를 실질적으로 운영하는 행정가. 귀족 네트워크에 두루 연결돼 있으나, 술레이만보다 귀족 전체의 이익을 우선한다."
     },
     {
-      "id": "protagonist-staff", "name": "야코보 그릴로", "epithet": "제노바 상인 대표",
+      "id": "yakob-grillo",
+      "name": "야코보 그릴로", "epithet": "제노바 상인 대표",
       "disposition": "우호", "status_tag": "확인됨",
+      "weight": 6, "tags": ["외교", "상인"],
       "desc": "제노바 무역 거점의 대리인. 술레이만의 외교 자산이지만, 상업적 이익이 보장되는 한에서만 협력한다."
     },
     {
-      "id": "protagonist-staff", "name": "하산 아가", "epithet": "친위대 지휘관",
+      "id": "hasan-aga-s",
+      "name": "하산 아가", "epithet": "친위대 지휘관",
       "disposition": "우호", "status_tag": "확인됨",
+      "weight": 6, "tags": ["군사"],
       "desc": "루멜리아 병력의 실질적 지휘를 맡은 군인. 전략보다 전술에 강하며, 아나톨리아 개입에 신중한 입장이다."
+    },
+    {
+      "id": "greek-archon-s",
+      "name": "디미트리오스 팔라이올로고스", "epithet": "비잔틴 귀족 협력자",
+      "disposition": "중립", "status_tag": "불명",
+      "weight": 5, "tags": ["외교", "귀족"],
+      "desc": "비잔틴 황실 방계 출신으로 에디르네에 거주하는 그리스 귀족. 술레이만에게 비잔틴 내부 정보를 제공하지만, 황제 마누엘과의 관계도 유지하고 있다."
+    },
+    {
+      "id": "disgruntled-bey-s",
+      "name": "투르한 베이", "epithet": "불만 품은 봉신",
+      "disposition": "중립", "status_tag": "불명",
+      "weight": 4, "tags": ["귀족", "야심"],
+      "desc": "루멜리아 소영주. 술레이만의 귀족 의존 정책에 불만을 갖고 있으며, 더 강한 리더십을 원한다. 적절한 자극이 주어지면 이반할 가능성이 있다."
+    },
+    {
+      "id": "byzantine-envoy-s",
+      "name": "요안네스 크리소베르게스", "epithet": "비잔틴 특사",
+      "disposition": "중립", "status_tag": "불명",
+      "weight": 8, "tags": ["외교"],
+      "require_location": ["constantinople", "gallipoli"],
+      "start_eligible": false,
+      "desc": "마누엘 2세가 파견한 외교관. 비잔틴의 지지를 조건으로 술레이만에게 갈리폴리 반환과 영토 양보를 요구하는 교섭을 진행한다."
     }
   ],
+
   "isa": [
     {
-      "id": "protagonist-staff", "name": "케말 베이", "epithet": "부르사 수비대장",
+      "id": "kemal-bey",
+      "name": "케말 베이", "epithet": "부르사 수비대장",
       "disposition": "우호", "status_tag": "확인됨",
+      "weight": 7, "tags": ["군사"],
       "desc": "아나톨리아 서부 방어를 책임지는 장수. 충성스럽지만 병력 열세를 누구보다 잘 안다. 현실론적 조언을 아끼지 않는다."
     },
     {
-      "id": "protagonist-staff", "name": "니코스 팔라이올로고스", "epithet": "비잔틴 망명 귀족",
+      "id": "nikos-palaio",
+      "name": "니코스 팔라이올로고스", "epithet": "비잔틴 망명 귀족",
       "disposition": "우호", "status_tag": "확인됨",
+      "weight": 5, "tags": ["외교", "귀족"],
       "desc": "비잔틴 황실 방계 출신으로 이사에게 망명해온 인물. 콘스탄티노폴리스 내부 사정에 밝으나 신뢰성은 미지수."
+    },
+    {
+      "id": "local-bey-isa",
+      "name": "오르한 베이", "epithet": "아나톨리아 지방 영주",
+      "disposition": "중립", "status_tag": "불명",
+      "weight": 6, "tags": ["귀족"],
+      "desc": "이즈니크 인근 소영주. 이사와 술레이만 사이에서 생존을 모색하고 있다. 강한 쪽의 손을 들어줄 준비가 되어 있다."
+    },
+    {
+      "id": "defector-noble-isa",
+      "name": "메흐메트 베이 카라시", "epithet": "카라시 왕조 잔존 귀족",
+      "disposition": "중립", "status_tag": "불명",
+      "weight": 4, "tags": ["귀족", "야심"],
+      "desc": "오스만 정복 이전 카라시 왕조의 후손. 이사에게 협력하지만, 구 영지 회복을 조건으로 제시하고 있어 협상 여지가 복잡하다."
     }
   ],
+
   "musa": [
     {
-      "id": "protagonist-staff", "name": "도안 베이", "epithet": "가지 수장",
+      "id": "dogan-bey",
+      "name": "도안 베이", "epithet": "가지 수장",
       "disposition": "우호", "status_tag": "확인됨",
+      "weight": 8, "tags": ["군사", "부족"],
       "desc": "아나톨리아 유목 전사 집단의 지도자. 무사의 가장 믿을 만한 군사 자산이지만, 장기 행정보다 약탈과 전투를 선호한다."
     },
     {
-      "id": "protagonist-staff", "name": "메흐메트 아가", "epithet": "참모장",
+      "id": "mehmet-aga-musa",
+      "name": "메흐메트 아가", "epithet": "참모장",
       "disposition": "우호", "status_tag": "확인됨",
+      "weight": 7, "tags": ["군사"],
       "desc": "앙카라 전투 생존자. 포로 시절 무사를 수행한 측근. 전술적 감각이 뛰어나지만 외교엔 어둡다."
     },
     {
-      "id": "protagonist-staff", "name": "압둘라 에펜디", "epithet": "부족 연합 중재자",
+      "id": "abdullha-mediator",
+      "name": "압둘라 에펜디", "epithet": "부족 연합 중재자",
       "disposition": "우호", "status_tag": "확인됨",
+      "weight": 5, "tags": ["부족", "외교"],
       "desc": "여러 유목 부족 사이를 오가며 무사의 연대를 조율하는 인물. 부족 간 이해관계 충돌 시 유일한 조정 창구."
+    },
+    {
+      "id": "tribe-leader-rival",
+      "name": "카라 토르간", "epithet": "독립 부족장",
+      "disposition": "중립", "status_tag": "불명",
+      "weight": 6, "tags": ["부족", "야심"],
+      "desc": "무사의 연합에 참여했지만 독자적 이해관계를 고집하는 부족장. 전리품 분배와 영지 문제에서 마찰이 잦다."
+    },
+    {
+      "id": "hostage-noble-musa",
+      "name": "에브레노스 베이", "epithet": "억류 귀족",
+      "disposition": "중립", "status_tag": "불명",
+      "weight": 5, "tags": ["귀족"],
+      "require_location": ["edirne"],
+      "start_eligible": false,
+      "desc": "루멜리아 귀족 출신으로 무사의 진영에 합류한 인물. 술레이만 세력권에 가족이 남아 있어 충성의 깊이를 가늠하기 어렵다."
     }
   ]
 }

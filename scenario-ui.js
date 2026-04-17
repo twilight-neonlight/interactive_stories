@@ -19,13 +19,79 @@ const DISP_COLOR = { '우호': '#378ADD', '적대': '#E24B4A', '중립': '#88878
 
 // ── 공통 헬퍼 ──────────────────────────────────────────────────────
 
-/** 백엔드 npc_pool에서 protagonist(또는 'default')키로 한 명을 무작위 선택해 추가 */
+/**
+ * 가중치 기반 다양성 픽업.
+ * 1차 패스: 우호·중립·적대 각 한 명씩 확보 (성향 다양성 보장)
+ * 2차 패스: 남은 슬롯을 가중치 랜덤으로 채움
+ */
+function weightedPickDiverse(pool, count) {
+  if (!pool.length) return [];
+
+  function weightedPick(candidates) {
+    const total = candidates.reduce((s, n) => s + (n.weight ?? 1), 0);
+    let r = Math.random() * total;
+    for (const n of candidates) { r -= (n.weight ?? 1); if (r <= 0) return n; }
+    return candidates[candidates.length - 1];
+  }
+
+  const result = [];
+  const remaining = [...pool];
+
+  for (const disp of ['우호', '중립', '적대']) {
+    if (result.length >= count) break;
+    const group = remaining.filter(n => n.disposition === disp);
+    if (!group.length) continue;
+    const chosen = weightedPick(group);
+    result.push(chosen);
+    remaining.splice(remaining.indexOf(chosen), 1);
+  }
+
+  while (result.length < count && remaining.length) {
+    const chosen = weightedPick(remaining);
+    result.push(chosen);
+    remaining.splice(remaining.indexOf(chosen), 1);
+  }
+
+  return result;
+}
+
+/**
+ * 게임 시작 시 NPC 풀에서 휘하 인물을 생성한다.
+ * - 군주/영주(faction type: kingdom·faction·empire, 또는 title에 왕·군주 등): 3–5명 (성향 다양)
+ * - 일반 장군·지휘관: 1–2명
+ * - start_eligible: false 항목과 require_location 조건 미충족 항목은 제외
+ *   (require_location 항목은 이벤트 중 AI가 npc-pool을 참조해 별도 등장)
+ */
 function defaultOnInit(state) {
   const key  = state.protagonist || 'default';
   const pool = (state.npcPool ?? {})[key] ?? (state.npcPool ?? {})['default'] ?? [];
   if (!pool.length) return;
-  const pick = pool[Math.floor(Math.random() * pool.length)];
-  state.addCharacter(structuredClone(pick));
+
+  const char = state.characters.get(state.protagonist);
+  const homeFactionId = char?.faction_id || char?.faction
+    || (state.factions.has(state.protagonist) ? state.protagonist : null);
+  const ownFaction    = state.factions.get(homeFactionId);
+
+  const lordTitles = ['왕', '군주', '영주', '왕자', '칼리프', '술탄', '황제'];
+  const isMonarch  = lordTitles.some(t => char?.title?.includes(t))
+    || ['kingdom', 'faction', 'empire'].includes(ownFaction?.type);
+  const count = isMonarch
+    ? 3 + Math.floor(Math.random() * 3)  // 3–5명
+    : 1 + Math.floor(Math.random() * 2); // 1–2명
+
+  const eligible = pool.filter(npc => {
+    if (npc.start_eligible === false) return false;
+    if (npc.require_location?.length) {
+      return npc.require_location.some(
+        locId => state.locations.get(locId)?.controller === homeFactionId
+      );
+    }
+    return true;
+  });
+
+  for (const pick of weightedPickDiverse(eligible, count)) {
+    state.addCharacter(structuredClone(pick));
+  }
 }
 
 /** 백엔드 opening에서 protagonist(또는 'default')키의 오프닝 콘텐츠를 반환 */
@@ -126,9 +192,17 @@ const CONFIGS = {
       if (loc.controller === 'contested') return { color: '#EF9F27', statusText: '불안정' };
       const faction = state.factions.get(loc.controller);
       const disp    = faction?.disposition;
-      if (disp === '우호') return { color: '#378ADD', statusText: '아군 거점' };
+      if (disp === '우호') {
+        const char = state.characters.get(state.protagonist);
+        const homeFactionId = char?.faction_id || char?.faction
+          || (state.factions.has(state.protagonist) ? state.protagonist : null);
+        if (homeFactionId && loc.controller === homeFactionId) {
+          return { color: '#5DBB8B', statusText: '본국 영토' };
+        }
+        return { color: '#378ADD', statusText: '동맹 거점' };
+      }
       if (disp === '적대') return { color: '#E24B4A', statusText: '적 점거' };
-      return { color: '#888780', statusText: '함락' };
+      return { color: '#888780', statusText: '중립' };
     },
 
     /** 적대 세력의 점거 거점을 동적으로 사건 목록으로 변환 */

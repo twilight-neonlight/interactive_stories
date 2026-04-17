@@ -195,6 +195,12 @@ body {
   border: 1px solid var(--border-light);
 }
 .chapter-info { font-size: 11px; color: var(--text-tertiary); margin-left: auto; font-family: sans-serif; }
+.resolution-badge {
+  font-size: 11px; font-weight: 600; font-family: sans-serif;
+  padding: 3px 9px; border-radius: var(--radius-md);
+  border: 1px solid currentColor;
+  cursor: default; letter-spacing: 0.02em;
+}
 
 .time-badge {
   font-size: 12px; color: var(--text-secondary); font-family: sans-serif;
