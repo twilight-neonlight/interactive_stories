@@ -290,12 +290,23 @@ const CONFIGS = {
       return { color, statusText: '중립' };
     },
 
-    /** trigger_year 미만인 미발생 이벤트를 제외하고 반환 */
+    /** trigger_year 미만이거나 trigger_condition 불충족 이벤트를 제외하고 반환 */
     getEvents(state) {
       const year = _parseYear(state.progress?.timestamp);
+
+      const princeFactionIds = Array.from(state.factions.values())
+        .filter(f => f.type === 'faction').map(f => f.id);
+      const controllersInUse = new Set(
+        Array.from(state.locations.values()).map(l => l.controller)
+      );
+      const conditions = {
+        has_exiled_prince: princeFactionIds.some(id => !controllersInUse.has(id)),
+      };
+
       return (state.events ?? []).filter(ev => {
-        const ty = ev.trigger_year;
-        return ty == null || year == null || year >= ty;
+        if (ev.trigger_year != null && year != null && year < ev.trigger_year) return false;
+        if (ev.trigger_condition != null && !conditions[ev.trigger_condition]) return false;
+        return true;
       });
     },
 

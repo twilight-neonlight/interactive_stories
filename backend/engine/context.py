@@ -102,11 +102,23 @@ def build_scenario_context(state: dict) -> str:
     m            = re.search(r'(\d{3,4})년', ts)
     current_year = int(m.group(1)) if m else None
 
+    # trigger_condition 평가
+    _locs        = state.get("locations", {})
+    _facs        = state.get("factions", {})
+    _prince_ids  = {fid for fid, f in _facs.items() if f.get("type") == "faction"}
+    _controllers = {loc.get("controller") for loc in _locs.values()}
+    _conditions  = {
+        "has_exiled_prince": any(pid not in _controllers for pid in _prince_ids),
+    }
+
+    def _cond_ok(ev: dict) -> bool:
+        cond = ev.get("trigger_condition")
+        return cond is None or _conditions.get(cond, True)
+
     active_events = [
         ev for ev in events
-        if ev.get("trigger_year") is None
-        or current_year is None
-        or current_year >= ev["trigger_year"]
+        if (ev.get("trigger_year") is None or current_year is None or current_year >= ev["trigger_year"])
+        and _cond_ok(ev)
     ]
     future_events = [
         ev for ev in events
