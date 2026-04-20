@@ -181,7 +181,9 @@ interactive_stories/
 │   └── map-coord-picker.html       # 지도 이미지 좌표 픽업 도구
 ├── scenario-loader.js              # 백엔드 REST API 클라이언트
 ├── scenario-ui.js                  # 시나리오별 UI 렌더링 로직 (색상·마커·NPC 소환)
-├── system_prompt.txt               # AI 시스템 프롬프트 (세계 시뮬레이션 규칙 정의)
+├── prompt_rules.md                 # AI 시스템 프롬프트 — 역할·세계 시뮬레이션·행동 판정·진행 규칙
+├── prompt_output_format.md         # AI 시스템 프롬프트 — 출력 포맷 및 STATE_UPDATE 명세
+├── prompt_examples.md              # AI 시스템 프롬프트 — Few-shot 예시 (씬·장 종결·Tier3)
 ├── start.bat                       # Windows 실행 스크립트
 └── start.sh                        # Mac/Linux 실행 스크립트
 ```
