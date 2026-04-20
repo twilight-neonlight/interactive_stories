@@ -17,7 +17,6 @@ let _ui      = null;
       _ui = window.getScenarioUI(data.scenarioId);
       tagStyle = { ...BASE_TAG_STYLE, ..._ui.tagExtras };
       _state = GameState.fromJSON(data);
-      _state.opening        = scenario.opening  ?? {};
       _state.npcPool        = scenario.npc_pool ?? {};
       _state.mapSvg         = scenario.map_svg  ?? '';
       _state.troopsPerPoint = scenario.troops_per_strength_point ?? null;
@@ -74,7 +73,6 @@ let _ui      = null;
   }
 
   if (_state) {
-    _state.opening        = scenario.opening  ?? {};
     _state.npcPool        = scenario.npc_pool ?? {};
     _state.troopsPerPoint = scenario.troops_per_strength_point ?? null;
   }
@@ -131,15 +129,7 @@ let _ui      = null;
         renderSceneBody(markdownToHtml(extractNarrative(content)));
         renderChoices(extractChoices(content));
       } catch (e) {
-        const opening = _ui.getOpeningContent(_state);
-        if (opening) {
-          renderSceneBody(opening.html);
-          renderChoices(opening.choices);
-          const tsSpan = document.getElementById('timestamp-text');
-          if (tsSpan && opening.timestamp) tsSpan.textContent = opening.timestamp;
-        } else {
-          renderSceneBody(`<p style="color:var(--text-secondary);font-size:13px;">오프닝 생성 실패: ${e.message}</p>`);
-        }
+        renderSceneBody(`<p style="color:var(--text-secondary);font-size:13px;">오프닝 생성 실패: ${e.message}</p>`);
       }
     }
   }

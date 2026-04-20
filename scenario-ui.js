@@ -101,13 +101,6 @@ function defaultOnInit(state) {
   }
 }
 
-/** 백엔드 opening에서 protagonist(또는 'default')키의 오프닝 콘텐츠를 반환 */
-function defaultGetOpeningContent(state) {
-  const key = state.protagonist || 'default';
-  const o   = state.opening ?? {};
-  return o[key] ?? o['default'] ?? null;
-}
-
 /** troops_count 숫자를 읽기 좋은 문자열로 변환 */
 function formatTroops(count) {
   if (count == null || count < 0) return '불명';
@@ -253,7 +246,6 @@ const CONFIGS = {
       return events;
     },
 
-    getOpeningContent: defaultGetOpeningContent,
     initDispositions(_state) { /* 시나리오 데이터에 이미 설정됨 */ },
     onInit: defaultOnInit,
   },
@@ -309,8 +301,6 @@ const CONFIGS = {
         return true;
       });
     },
-
-    getOpeningContent: defaultGetOpeningContent,
 
     /** type:'faction'인 세력들을 왕자로 간주해 disposition 초기화 */
     initDispositions(state) {
