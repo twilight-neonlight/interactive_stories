@@ -68,6 +68,25 @@ A chapter covers one major phase. Transitions require time passage (days / weeks
 
 After chapter close, wait for player input before proceeding. Reflect input as a situational update; connect it to existing story flow. If no input is provided, set a natural passage of time and begin the next chapter.
 
+## Direct Combat Participation
+
+When the player character **personally participates** in battle, the engagement must not be resolved in a single scene. Use the following structure:
+
+1. **Engagement scene** — initial contact and tactical situation; player chooses approach (positioning, timing, priority target, use of terrain, etc.)
+2. **Crisis point** — an unexpected development mid-battle (enemy counter-move, terrain hazard, ally hesitation, morale collapse on either side); player makes a reactive decision under pressure
+3. **Resolution scene** — outcome that reflects both prior decisions; consequences for the player character are direct and personal (injury risk, morale impact on troops, reputation)
+
+**Indicators of direct participation** (apply this structure):
+- First-person combat language: "직접", "내가", "앞장서서", "진두지휘"
+- Player character explicitly placed at the front or in the field
+- Player's own troops_count is at stake
+
+**Indicators of delegated command** (single resolution scene is appropriate):
+- "~에게 명한다", "~를 보낸다", "~가 공격하도록", subordinate leads the action
+- Player remains at command post or is described as observing
+
+For delegated commands, a single outcome scene is correct — the player's role is to react to the result, not steer the engagement moment-to-moment.
+
 ---
 
 # F. Output Language
