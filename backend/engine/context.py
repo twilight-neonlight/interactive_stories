@@ -118,7 +118,10 @@ def build_scenario_context(state: dict) -> str:
     _prince_ids  = {fid for fid, f in _facs.items() if f.get("type") == "faction"}
     _controllers = {loc.get("controller") for loc in _locs.values()}
     _conditions  = {
-        "has_exiled_prince": any(pid not in _controllers for pid in _prince_ids),
+        "has_exiled_prince": any(
+            pid not in _controllers and (_facs.get(pid, {}).get("battle_damage", 0) > 0)
+            for pid in _prince_ids
+        ),
     }
 
     def _cond_ok(ev: dict) -> bool:
@@ -127,7 +130,11 @@ def build_scenario_context(state: dict) -> str:
 
     active_events = [
         ev for ev in events
-        if (ev.get("trigger_year") is None or current_year is None or current_year >= ev["trigger_year"])
+        if ev.get("trigger_year") is None  # 연도 조건 없음
+        and _cond_ok(ev)
+        or ev.get("trigger_year") is not None
+        and current_year is not None
+        and current_year >= ev["trigger_year"]
         and _cond_ok(ev)
     ]
     future_events = [

@@ -292,11 +292,15 @@ const CONFIGS = {
         Array.from(state.locations.values()).map(l => l.controller)
       );
       const conditions = {
-        has_exiled_prince: princeFactionIds.some(id => !controllersInUse.has(id)),
+        has_exiled_prince: princeFactionIds.some(id => {
+          if (controllersInUse.has(id)) return false;
+          const f = state.factions.get(id);
+          return (f?.battle_damage ?? 0) > 0;
+        }),
       };
 
       return (state.events ?? []).filter(ev => {
-        if (ev.trigger_year != null && year != null && year < ev.trigger_year) return false;
+        if (ev.trigger_year != null && (year == null || year < ev.trigger_year)) return false;
         if (ev.trigger_condition != null && !conditions[ev.trigger_condition]) return false;
         return true;
       });
