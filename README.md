@@ -169,8 +169,10 @@ interactive_stories/
 │   ├── game-turn.js                # 턴 진행(submitTurn), 저장, 선택지 처리
 │   ├── game-init.js                # 전역 상태 선언 + 게임 초기화 IIFE
 │   ├── common.js                   # 공통 유틸 (showComingSoon 토스트 등)
+│   ├── api.js                      # 중앙화된 API 클라이언트 (fetch 호출 집중 관리)
+│   ├── nav.js                      # 네비게이션 상태 관리 (sessionStorage 키 집중 관리)
 │   ├── game.css                    # 게임 UI 스타일
-│   └── styles.css                  # 시나리오 선택 화면 스타일
+│   └── styles.css                  # 공통 디자인 시스템 (변수, 카드, 애니메이션 등)
 ├── state/
 │   ├── GameState.js                # 게임 상태 클래스 (인물·세력·거점·히스토리)
 │   └── StateManager.js             # sessionStorage 직렬화·복원

@@ -4,11 +4,7 @@ async function saveToServer() {
   const btn = document.getElementById('save-btn');
   btn.textContent = '저장 중…'; btn.disabled = true;
   try {
-    const { filename } = await fetch(`${window.API_BASE}/api/saves`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(_state.toJSON()),
-    }).then(r => r.json());
+    const { filename } = await GameAPI.createSave(_state.toJSON());
     btn.textContent = '저장됨 ✓';
     setTimeout(() => { btn.textContent = '저장'; btn.disabled = false; }, 1800);
   } catch {
@@ -34,22 +30,7 @@ async function submitTurn() {
   showLoading();
 
   try {
-    const res = await fetch(`${window.API_BASE}/api/turn`, {
-      method:  'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        command: cmd,
-        state:   _state.toJSON(),
-        history: _state.getHistory(),
-      }),
-    });
-
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({ detail: `HTTP ${res.status}` }));
-      throw new Error(err.detail);
-    }
-
-    const { content, state_updates: su, resolution } = await res.json();
+    const { content, state_updates: su, resolution } = await GameAPI.submitTurn(cmd, _state.toJSON(), _state.getHistory());
     renderResolution(resolution);
 
     _state.pushHistory('user', cmd);

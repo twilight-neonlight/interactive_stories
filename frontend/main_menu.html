@@ -6,6 +6,8 @@
 <title>Interactive Stories</title>
 <link rel="stylesheet" href="./styles.css">
 <script src="../scenario-loader.js"></script>
+<script src="./api.js"></script>
+<script src="./nav.js"></script>
 <style>
   .menu-wrap {
     position: relative; z-index: 1;
@@ -84,8 +86,6 @@
     font-family: sans-serif; font-size: 13px; color: var(--text-tertiary);
   }
 
-  @keyframes fadeDown { from { opacity:0; transform:translateY(-12px); } to { opacity:1; transform:none; } }
-  @keyframes fadeUp   { from { opacity:0; transform:translateY(12px);  } to { opacity:1; transform:none; } }
 </style>
 </head>
 <body>
@@ -122,23 +122,18 @@
 </div>
 
 <script>
-const API = window.API_BASE || 'http://localhost:8000';
-
 // ── 초기 로드: 세이브 유무 확인 ──────────────────
 async function init() {
   try {
-    const saves = await fetch(`${API}/api/saves`).then(r => r.json());
-    if (saves.length > 0) {
-      document.getElementById('loadBtn').disabled = false;
-    }
+    const saves = await GameAPI.getSaves();
+    if (saves.length > 0) document.getElementById('loadBtn').disabled = false;
   } catch { /* 서버 미응답 시 불러오기 비활성 유지 */ }
 }
 init();
 
 // ── 새 게임 ───────────────────────────────────────
 function goNewGame() {
-  sessionStorage.removeItem('saveFile');
-  sessionStorage.removeItem('is_gameState');
+  NavState.clearGame();
   window.location.href = 'scenario_select.html';
 }
 
@@ -150,7 +145,7 @@ async function openSaveList() {
   overlay.classList.add('active');
 
   try {
-    const saves = await fetch(`${API}/api/saves`).then(r => r.json());
+    const saves = await GameAPI.getSaves();
     if (saves.length === 0) {
       list.innerHTML = '<div class="save-empty">저장된 게임이 없습니다.</div>';
       return;
@@ -176,16 +171,14 @@ function closeSaveList(e) {
 async function deleteSave(e, filename) {
   e.stopPropagation();
   if (!confirm(`"${filename}" 을 삭제할까요?`)) return;
-  await fetch(`${API}/api/saves/${encodeURIComponent(filename)}`, { method: 'DELETE' });
+  await GameAPI.deleteSave(filename);
   await openSaveList();
-  // 세이브가 0개가 됐으면 불러오기 버튼 비활성
-  const saves = await fetch(`${API}/api/saves`).then(r => r.json()).catch(() => []);
+  const saves = await GameAPI.getSaves().catch(() => []);
   document.getElementById('loadBtn').disabled = saves.length === 0;
 }
 
 function loadSave(filename) {
-  sessionStorage.removeItem('is_gameState');
-  sessionStorage.setItem('saveFile', filename);
+  NavState.setSaveFile(filename);
   window.location.href = 'game.html';
 }
 </script>

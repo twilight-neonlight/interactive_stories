@@ -8,12 +8,11 @@ let _ui      = null;
   try {
   _manager = new StateManager();
 
-  const saveFile = sessionStorage.getItem('saveFile');
+  const saveFile = NavState.getSaveFile();
   if (saveFile) {
-    sessionStorage.removeItem('saveFile');
-    sessionStorage.removeItem('is_gameState');
+    NavState.clearGame();
     try {
-      const data = await fetch(`${window.API_BASE}/api/saves/${encodeURIComponent(saveFile)}`).then(r => r.json());
+      const data = await GameAPI.loadSave(saveFile);
       const scenario = await ScenarioLoader.fetchOne(data.scenarioId);
       _ui = window.getScenarioUI(data.scenarioId);
       tagStyle = { ...BASE_TAG_STYLE, ..._ui.tagExtras };
@@ -44,9 +43,7 @@ let _ui      = null;
 
   _state = _manager.load();
 
-  const scenarioId = _state
-    ? _state.scenarioId
-    : (sessionStorage.getItem('scenario') || sessionStorage.getItem('scenarioId') || null);
+  const scenarioId = _state ? _state.scenarioId : (NavState.getScenarioId() || null);
 
   if (!scenarioId) {
     renderSceneBody(`<p style="color:var(--text-secondary);font-size:13px;">
@@ -88,10 +85,7 @@ let _ui      = null;
   }
 
   if (!_state) {
-    const protagonistId = sessionStorage.getItem('selectedCharacterId')
-      || sessionStorage.getItem('selectedCharacter')
-      || scenario?.protagonist
-      || null;
+    const protagonistId = NavState.getCharacterId() || scenario?.protagonist || null;
 
     if (scenario) {
       _state = _manager.init(scenario, protagonistId);
@@ -117,13 +111,7 @@ let _ui      = null;
     } else {
       renderSceneBody('<div class="scene-loading">장면 생성 중…</div>');
       try {
-        const res = await fetch(`${window.API_BASE}/api/opening`, {
-          method:  'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body:    JSON.stringify({ state: _state.toJSON() }),
-        });
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        const { content, timestamp, state_updates: su } = await res.json();
+        const { content, timestamp, state_updates: su } = await GameAPI.getOpening(_state.toJSON());
 
         if (Array.isArray(su?.new_characters)) {
           for (const c of su.new_characters) {

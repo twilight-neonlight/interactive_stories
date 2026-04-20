@@ -7,6 +7,7 @@
 <link rel="stylesheet" href="styles.css">
 <script src="../scenario-loader.js"></script>
 <script src="./common.js"></script>
+<script src="./nav.js"></script>
 </head>
 <body>
 
@@ -193,9 +194,7 @@ window.launchScenario = function(card) {
     return;
   }
 
-  // 새 시나리오 진입 시 이전 게임 상태 초기화
-  sessionStorage.removeItem('is_gameState');
-  sessionStorage.setItem('scenarioId', id);
+  NavState.setScenario(id);
 
   document.getElementById('launchText').textContent = `"${title}" 불러오는 중…`;
   document.getElementById('launchOverlay').classList.add('active');
@@ -221,7 +220,7 @@ window.startCustom = function() {
   closeCustom();
   document.getElementById('launchText').textContent = '시나리오를 초기화하는 중…';
   document.getElementById('launchOverlay').classList.add('active');
-  sessionStorage.setItem('customScenario', text);
+  NavState.setCustomScenario(text);
   setTimeout(() => { window.location.href = 'game.html?custom=1'; }, 800);
 };
 
