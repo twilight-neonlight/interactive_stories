@@ -110,6 +110,16 @@ function formatTroops(count) {
   return `${count}명`;
 }
 
+/** strength_score + troops_per_strength_point → "약 X~Y명" 범위 문자열 */
+function formatStrengthScore(score, perPoint) {
+  if (score == null || perPoint == null) return null;
+  const base = score * perPoint;
+  const lo   = Math.round(base * 0.8 / 500) * 500;
+  const hi   = Math.round(base * 1.2 / 500) * 500;
+  const fmt  = n => n >= 10000 ? `${Math.floor(n / 1000)}천` : n.toLocaleString();
+  return `약 ${fmt(lo)}~${fmt(hi)}명`;
+}
+
 /**
  * 범용 지휘관 정보 빌더.
  * - 세력 조회: char.faction_id / char.faction 우선, 없으면 factions.get(protagonist) (오스만 방식)
@@ -117,18 +127,21 @@ function formatTroops(count) {
  * - 표시 필드: 직위 / 병력 / 거점 / 동맹
  */
 function defaultCommanderInfo(state) {
-  let name = '불명', sub = '—', title = '불명', strength = '불명', base = '불명', ally = '없음';
+  let name = '불명', sub = '—', title = '불명', strength = '불명', base = '불명';
   let ownFactionId = null;
 
   if (state.protagonist) {
     const char = state.characters.get(state.protagonist);
     if (char) {
       name         = char.name;
-      title        = char.title || char.epithet || '불명';
+      title        = char.birth_label || char.title || char.epithet || '불명';
       base         = char.base ? char.base.split(' — ')[0] : '불명';
-      strength     = char.troops_count != null
-                       ? formatTroops(char.troops_count)
-                       : char.troops || STRENGTH_LABEL[char.strength] || '불명';
+      const tpp = state.troopsPerPoint ?? null;
+      if (char.troops_count != null) {
+        strength = formatTroops(char.troops_count);
+      } else {
+        strength = char.troops || STRENGTH_LABEL[char.strength] || '불명';
+      }
       ownFactionId = char.faction_id || char.faction || null;
     }
     // 오스만 방식: protagonist id = faction id
@@ -136,29 +149,39 @@ function defaultCommanderInfo(state) {
       ownFactionId = state.protagonist;
     }
     if (ownFactionId) {
-      const f = state.factions.get(ownFactionId);
+      const f   = state.factions.get(ownFactionId);
+      const tpp = state.troopsPerPoint ?? null;
       if (f) {
         sub = f.name;
-        if (strength === '불명') strength = STRENGTH_LABEL[f.strength] || '불명';
+        if (strength === '불명') {
+          const score = f.strength_score != null
+            ? f.strength_score - (f.battle_damage ?? 0) : null;
+          strength = formatStrengthScore(score, tpp)
+                     || STRENGTH_LABEL[f.strength] || '불명';
+        }
       }
     }
   }
 
-  const friendly = Array.from(state.factions.values())
-    .filter(f => f.disposition === '우호' && f.id !== ownFactionId);
-
   // protagonist 정보가 없을 때 우호 세력에서 보완
-  if (name     === '불명' && friendly.length > 0) name     = friendly[0].name;
-  if (sub      === '—'   && friendly.length > 0) sub      = friendly[0].name;
-  if (strength === '불명' && friendly.length > 0) strength = STRENGTH_LABEL[friendly[0].strength] || '불명';
-
-  ally = friendly.map(f => f.name.split(' ')[0]).join(', ') || '없음';
+  if (name === '불명' || sub === '—' || strength === '불명') {
+    const friendly = Array.from(state.factions.values())
+      .filter(f => f.disposition === '우호' && f.id !== ownFactionId);
+    if (name     === '불명' && friendly.length > 0) name = friendly[0].name;
+    if (sub      === '—'   && friendly.length > 0) sub  = friendly[0].name;
+    if (strength === '불명' && friendly.length > 0) {
+      const tpp   = state.troopsPerPoint ?? null;
+      const score = friendly[0].strength_score != null
+        ? friendly[0].strength_score - (friendly[0].battle_damage ?? 0) : null;
+      strength = formatStrengthScore(score, tpp)
+                 || STRENGTH_LABEL[friendly[0].strength] || '불명';
+    }
+  }
 
   return { name, sub, fields: [
     { key: '직위', val: title },
     { key: '병력', val: strength },
     { key: '거점', val: base },
-    { key: '동맹', val: ally },
   ]};
 }
 

@@ -31,6 +31,14 @@ OPENING_INSTRUCTION = """
 400~700자 내외. 밀도 있게."""
 
 
+def _troops_range(score: int, per_point: int) -> str:
+    """strength_score → 추정 병력 범위 문자열 (±20%)"""
+    base = score * per_point
+    lo   = round(base * 0.8 / 500) * 500
+    hi   = round(base * 1.2 / 500) * 500
+    return f"약 {lo:,}~{hi:,}명"
+
+
 def build_scenario_context(state: dict) -> str:
     """state에서 시나리오 정보를 추출해 시스템 프롬프트 끝에 추가합니다."""
     lines = [
@@ -41,18 +49,28 @@ def build_scenario_context(state: dict) -> str:
     ]
 
     protagonist_id = state.get("protagonist")
-    chars = state.get("characters", {})
+    chars          = state.get("characters", {})
+    factions       = state.get("factions", {})
+    tpp            = state.get("troopsPerPoint")  # troops per strength_score point
     if protagonist_id and protagonist_id in chars:
         c = chars[protagonist_id]
         troops = c.get("troops_count")
-        troops_str = f" / 병력 {troops:,}명" if troops is not None else ""
+        # troops_count가 없으면 소속 세력 strength_score로 추정
+        if troops is not None:
+            troops_str = f" / 병력 {troops:,}명"
+        else:
+            pf = factions.get(c.get("faction_id") or protagonist_id) if factions else None
+            if pf and pf.get("strength_score") is not None and tpp:
+                s_eff = pf["strength_score"] - pf.get("battle_damage", 0)
+                troops_str = f" / 병력 {_troops_range(int(s_eff), tpp)}"
+            else:
+                troops_str = ""
         lines.append(
             f"플레이어: {c.get('name', protagonist_id)}"
             + (f" / {c.get('title') or c.get('epithet', '')}" if c.get('title') or c.get('epithet') else "")
             + troops_str
         )
 
-    factions = state.get("factions", {})
     if factions:
         lines.append("\n등장 세력:")
         for f in factions.values():
@@ -62,10 +80,11 @@ def build_scenario_context(state: dict) -> str:
             dipl_str   = f" [{int(dipl):+d}]" if dipl is not None else ""
             s_base     = f.get("strength_score")
             s_dmg      = f.get("battle_damage", 0)
-            str_str    = (f" [{int(s_base)}" + (f"-{int(s_dmg)}dmg" if s_dmg else "") + "]"
-                          if s_base is not None else "")
+            s_eff      = (s_base - s_dmg) if s_base is not None else None
+            str_str    = (f" [병력 {_troops_range(int(s_eff), tpp)}" + (f" / 피해 -{int(s_dmg)}" if s_dmg else "") + "]"
+                          if s_eff is not None and tpp else "")
             lines.append(
-                f"  - {f.get('name', '?')} | {f.get('disposition', '?')}{dipl_str} | {f.get('strength', '?')}{str_str}"
+                f"  - {f.get('name', '?')} | {f.get('disposition', '?')}{dipl_str}{str_str}"
                 + (f"\n    {note_short}" if note_short else "")
             )
 

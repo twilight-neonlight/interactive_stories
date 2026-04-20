@@ -97,9 +97,10 @@ class GameState {
     this.locations  = new Map();
 
     // 시나리오 UI 데이터 (직렬화하지 않음 — 게임 진입 시 매번 재주입)
-    this.mapSvg  = scenario.map_svg  ?? '';
-    this.opening = scenario.opening  ?? {};
-    this.npcPool = scenario.npc_pool ?? {};
+    this.mapSvg        = scenario.map_svg  ?? '';
+    this.opening       = scenario.opening  ?? {};
+    this.npcPool       = scenario.npc_pool ?? {};
+    this.troopsPerPoint = scenario.troops_per_strength_point ?? null;
 
     /** @type {Array} 동시 진행 세계 사건 (events.json) */
     this.events  = scenario.events   ?? [];
@@ -400,8 +401,9 @@ class GameState {
     state.locations       = new Map(Object.entries(data.locations));
     state.events          = Array.isArray(data.events) ? data.events.slice() : [];
     // UI 전용 데이터는 직렬화 대상 아님 — game.html에서 scenario fetch 후 재주입
-    state.opening = {};
-    state.npcPool = {};
+    state.opening        = {};
+    state.npcPool        = {};
+    state.troopsPerPoint = null;
     return state;
   }
 }

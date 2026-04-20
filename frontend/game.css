@@ -222,16 +222,14 @@ body {
 
 /* ── 지도 ── */
 .map-wrap {
-  width: 400px; height: 400px;
-  flex-shrink: 0;
-  display: flex; justify-content: center; align-items: center;
+  width: 100%;
   background: var(--bg-secondary);
   border-radius: var(--radius-md);
   border: 1px solid var(--border-light);
   overflow: hidden;
 }
 .map-inner { position: relative; line-height: 0; }
-#map-img { display: block; max-width: 400px; max-height: 400px; width: auto; height: auto; }
+#map-img { display: block; width: 100%; height: auto; }
 #map-markers-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; }
 .map-pin {
   position: absolute;

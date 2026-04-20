@@ -36,36 +36,6 @@ class SessionStorageAdapter {
 
 // ━━━ [/LOCAL-ONLY] ━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-// ━━━ [BACKEND] 백엔드 연동 시 아래 주석 해제 ━
-//
-// class ApiAdapter {
-//   constructor(baseUrl = '/api/state') {
-//     this.baseUrl = baseUrl;
-//   }
-//
-//   async save(data) {
-//     const res = await fetch(this.baseUrl, {
-//       method: 'POST',
-//       headers: { 'Content-Type': 'application/json' },
-//       body: JSON.stringify(data),
-//     });
-//     if (!res.ok) throw new Error('상태 저장에 실패했습니다.');
-//   }
-//
-//   async load() {
-//     const res = await fetch(this.baseUrl);
-//     if (res.status === 404) return null;
-//     if (!res.ok) throw new Error('상태 불러오기에 실패했습니다.');
-//     return res.json();
-//   }
-//
-//   async clear() {
-//     await fetch(this.baseUrl, { method: 'DELETE' });
-//   }
-// }
-//
-// ━━━ [/BACKEND] ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
 // ─────────────────────────────────────────────
 // StateManager
 // ─────────────────────────────────────────────

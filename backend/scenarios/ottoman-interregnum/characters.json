@@ -2,6 +2,7 @@
   {
     "id": "suleyman",
     "name": "술레이만 첼레비",
+    "birth_label": "선왕의 장남",
     "epithet": "유럽의 왕자",
     "icon": "🏛",
     "location": "루멜리아\n에디르네",
@@ -14,6 +15,7 @@
   {
     "id": "isa",
     "name": "이사 첼레비",
+    "birth_label": "선왕의 차남",
     "epithet": "잊혀진 왕자",
     "icon": "⚔",
     "location": "아나톨리아 서부\n부르사",
@@ -26,6 +28,7 @@
   {
     "id": "musa",
     "name": "무사 첼레비",
+    "birth_label": "선왕의 3남",
     "epithet": "포로에서 돌아온 자",
     "icon": "🗡",
     "location": "아나톨리아\n티무르 진영 귀환",
@@ -38,6 +41,7 @@
   {
     "id": "mehmed",
     "name": "마흐메트 첼레비",
+    "birth_label": "선왕의 4남",
     "epithet": "아마스야의 군주",
     "icon": "🌙",
     "location": "아나톨리아 북부\n아마스야",

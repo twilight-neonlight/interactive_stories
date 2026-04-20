@@ -7,6 +7,12 @@ LLM 호출 전에 주사위 + 게임 상태 수정치로 결과 등급을 결정
 
 import random
 
+
+def _eff_str(faction: dict, default: int = 350) -> float:
+    """전투 피해를 반영한 실효 병력 강도를 반환합니다."""
+    return faction.get("strength_score", default) - faction.get("battle_damage", 0)
+
+
 _MILITARY_KW   = {"공격","전투","포위","진격","돌격","출격","진군","침공","공세","교전","격파"}
 _SURPRISE_KW   = {"기습","매복","야습","선제"}
 _DEFENSE_KW    = {"방어","농성","수성","수비","진지","방비","지키","수호","막아","저지","저항","수비대"}
@@ -100,23 +106,22 @@ def resolve_action(command: str, state: dict) -> dict:
 
     # ── 군사·기습·방어·일반 수정치 ──────────────────────
     if action_type in ("military", "surprise", "defense", "general"):
-        p_str = (player_faction.get("strength_score", 350)
-                 - player_faction.get("battle_damage", 0))
+        p_str = _eff_str(player_faction)
         if enemy_factions:
-            e_str = (sum(f.get("strength_score", 350) - f.get("battle_damage", 0)
-                         for f in enemy_factions) / len(enemy_factions))
+            e_str = sum(_eff_str(f) for f in enemy_factions) / len(enemy_factions)
             ratio = p_str / e_str if e_str > 0 else 9.0
             if   ratio >= 2.0:  v, label = +25, "병력 압도 (2배↑)"
             elif ratio >= 1.5:  v, label = +15, "병력 우세 (1.5배↑)"
             elif ratio >= 1.1:  v, label =  +5, "병력 우위"
-            elif ratio >= 0.75: v, label = -10, "병력 열세 (0.75배)"
-            elif ratio >= 0.5:  v, label = -20, "병력 대열세 (0.5배)"
-            else:               v, label = -30, "병력 압도적 열세 (0.5배↓)"
-            modifiers.append((label, v)); net += v
+            elif ratio >= 0.91: v, label =   0, None          # 중립 구간
+            elif ratio >= 0.75: v, label = -10, "병력 열세 (0.75배↓)"
+            elif ratio >= 0.5:  v, label = -20, "병력 대열세 (0.5배↓)"
+            else:               v, label = -30, "병력 압도적 열세 (0.5배↓↓)"
+            if label is not None: modifiers.append((label, v))
+            net += v
 
         if ally_factions:
-            a_str = sum(f.get("strength_score", 350) - f.get("battle_damage", 0)
-                        for f in ally_factions)
+            a_str = sum(_eff_str(f) for f in ally_factions)
             if   a_str > 400: v, label = +15, "동맹 강력 지원"
             elif a_str > 200: v, label =  +8, "동맹 지원"
             else:             v = 0; label = None
@@ -142,8 +147,8 @@ def resolve_action(command: str, state: dict) -> dict:
     # ── 첩보 수정치 ──────────────────────────────────
     elif action_type == "stealth":
         if enemy_factions:
-            p_str = player_faction.get("strength_score", 350)
-            e_str = sum(f.get("strength_score", 350) for f in enemy_factions) / len(enemy_factions)
+            p_str = _eff_str(player_faction)
+            e_str = sum(_eff_str(f) for f in enemy_factions) / len(enemy_factions)
             if   p_str > e_str + 100: v, label = +10, "우세한 정보망"
             elif p_str < e_str - 100: v, label = -10, "열세한 정보망"
             else:                     v = 0; label = None

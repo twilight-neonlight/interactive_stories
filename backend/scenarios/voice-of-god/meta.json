@@ -11,5 +11,6 @@
   "colorSoft": "rgba(58,122,191,0.06)",
   "iconBg": "rgba(58,122,191,0.08)",
   "status": "wip",
-  "protagonistMode": "fixed"
+  "protagonistMode": "fixed",
+  "troops_per_strength_point": 55
 }

@@ -13,5 +13,6 @@
   "status": "ready",
   "href": "game.html",
   "protagonistMode": "fixed",
-  "protagonist": "burgred"
+  "protagonist": "burgred",
+  "troops_per_strength_point": 40
 }

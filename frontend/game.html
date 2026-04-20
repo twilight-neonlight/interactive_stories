@@ -25,14 +25,14 @@
 
   <!-- 좌측 -->
   <div class="left-col">
-    <div class="panel" id="commander-panel" style="flex:0 0 auto;"></div>
+    <div class="panel" id="commander-panel" style="flex:1; min-height:0;"></div>
 
-    <div class="panel scroll-panel" style="flex:3;">
+    <div class="panel scroll-panel" style="flex:2;">
       <div class="panel-label">주요 인물</div>
       <div class="scroll-inner" id="character-list"></div>
     </div>
 
-    <div class="panel scroll-panel" style="flex:1;">
+    <div class="panel scroll-panel" style="flex:2;">
       <div class="panel-label">세력 현황</div>
       <div class="scroll-inner" id="faction-bars"></div>
     </div>
@@ -64,7 +64,7 @@
 
   <!-- 우측 -->
   <div class="right-col">
-    <div class="panel" style="flex:2; display:flex; flex-direction:column; min-height:0;">
+    <div class="panel" style="flex:0 0 auto;">
       <div class="panel-label">배경 지도</div>
       <div class="map-wrap" id="map-container"></div>
     </div>
@@ -115,7 +115,12 @@ function pos(e) {
 }
 
 function showGeneric(el, e) {
-  ttName.textContent=el.dataset.name||'';
+  const color = el.dataset.color;
+  if (color) {
+    ttName.innerHTML = `<span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${color};margin-right:6px;vertical-align:middle;flex-shrink:0;"></span>${el.dataset.name||''}`;
+  } else {
+    ttName.textContent=el.dataset.name||'';
+  }
   ttSub.textContent=el.dataset.sub||'';
   ttBody.textContent=el.dataset.body||'';
   ttDiv.style.display='none'; ttRows.innerHTML='';
@@ -128,10 +133,12 @@ function showGeneric(el, e) {
 function showMap(el, e) {
   ttName.textContent=el.dataset.city||'';
   ttSub.textContent=''; ttBody.textContent='';
+  const _c = el.dataset.color || '#888';
+  const dot = `<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${_c};margin-right:4px;flex-shrink:0;vertical-align:middle;"></span>`;
   ttDiv.style.display='block';
-  ttRows.innerHTML=[['세력',el.dataset.faction],['지형',el.dataset.terrain],
-    ['주둔군',el.dataset.garrison],['지휘관',el.dataset.commander],['상태',el.dataset.status]]
-    .filter(([,v])=>v).map(([k,v])=>`<div class="tt-row"><span class="tt-row-key">${k}</span><span class="tt-row-val">${v}</span></div>`).join('');
+  ttRows.innerHTML=[['세력',el.dataset.faction,true],['지형',el.dataset.terrain],
+    ['주둔군',el.dataset.garrison],['지휘관',el.dataset.commander],['상태',el.dataset.status,true]]
+    .filter(([,v])=>v).map(([k,v,colored])=>`<div class="tt-row"><span class="tt-row-key">${k}</span><span class="tt-row-val">${colored?dot:''}${v}</span></div>`).join('');
   ttTags.innerHTML=el.dataset.note?`<div class="tt-note">${el.dataset.note}</div>`:'';
   tooltip.classList.add('active'); pos(e);
 }
@@ -237,7 +244,7 @@ function renderFactionBars(state) {
     const tag   = _ui.factionBarTag(f);
     const short = f.name.split(' ')[0];
     return `<div class="faction-item">
-      <span class="faction-name" data-name="${f.name}" data-sub="${f.type||''}" data-body="${f.notes||''}" data-tags="${tag}">${short}</span>
+      <span class="faction-name" data-name="${f.name}" data-sub="${f.type||''}" data-body="${f.notes||''}" data-tags="${tag}" data-color="${color}">${short}</span>
       <div class="faction-bar-wrap"><div class="faction-bar" style="width:${width};background:${color};"></div></div>
     </div>`;
   }).join('');
@@ -292,6 +299,7 @@ function renderMapMarkers(state) {
     const factionName = state.factions.get(loc.controller)?.name || loc.controller;
     pin.dataset.faction = factionName;
     pin.dataset.status  = statusText;
+    pin.dataset.color   = color;
     if (loc.terrain) pin.dataset.terrain = loc.terrain;
     if (loc.notes)   pin.dataset.note    = loc.notes;
     pin.classList.toggle('is-player', pos?.type === 'fixed' && pin.dataset.id === pos.id);
@@ -313,6 +321,7 @@ function renderMapMarkers(state) {
     pin.dataset.faction = factionName;
     pin.dataset.terrain = loc.terrain || '';
     pin.dataset.status  = statusText;
+    pin.dataset.color   = color;
     pin.dataset.note    = loc.notes || '';
     pin.style.left = `${loc.x}%`;
     pin.style.top  = `${loc.y}%`;
@@ -409,9 +418,10 @@ let _ui      = null;
       _ui = window.getScenarioUI(data.scenarioId);
       tagStyle = { ...BASE_TAG_STYLE, ..._ui.tagExtras };
       _state = GameState.fromJSON(data);
-      _state.opening = scenario.opening  ?? {};
-      _state.npcPool = scenario.npc_pool ?? {};
-      _state.mapSvg  = scenario.map_svg  ?? '';
+      _state.opening        = scenario.opening  ?? {};
+      _state.npcPool        = scenario.npc_pool ?? {};
+      _state.mapSvg         = scenario.map_svg  ?? '';
+      _state.troopsPerPoint = scenario.troops_per_strength_point ?? null;
       const mapContainer = document.getElementById('map-container');
       if (mapContainer) {
         const imgUrl = `${window.API_BASE}/api/scenarios/${data.scenarioId}/map-image`;
@@ -473,8 +483,9 @@ let _ui      = null;
   // opening·npcPool은 직렬화되지 않으므로 항상 scenario에서 재주입
   // (새 게임·복원 게임 모두 해당)
   if (_state) {
-    _state.opening = scenario.opening  ?? {};
-    _state.npcPool = scenario.npc_pool ?? {};
+    _state.opening        = scenario.opening  ?? {};
+    _state.npcPool        = scenario.npc_pool ?? {};
+    _state.troopsPerPoint = scenario.troops_per_strength_point ?? null;
   }
 
   // 지도 이미지 + 마커 레이어 주입
