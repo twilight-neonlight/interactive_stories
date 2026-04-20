@@ -342,6 +342,7 @@ body::before {
 @keyframes spin { to { transform: rotate(360deg); } }
 </style>
 <script src="../scenario-loader.js"></script>
+<script src="./common.js"></script>
 </head>
 <body>
 
@@ -391,16 +392,13 @@ const ScenarioLoader = window.ScenarioLoader;
 
 let selectedCharacter = null;
 
-// 현재 플레이 가능한 왕자 ID 목록
-const AVAILABLE_CHARACTERS = ['mehmed'];
-
 // ── 왕자 카드 동적 렌더링 ──────────────────────
 async function renderCharacters() {
   const characters = await ScenarioLoader.fetchCharacters('ottoman-interregnum');
   const list = document.getElementById('princeList');
 
   characters.forEach((c, i) => {
-    const isAvailable = AVAILABLE_CHARACTERS.includes(c.id);
+    const isAvailable = !!c.playable;
     const card = document.createElement('div');
     card.className = 'prince-card' + (isAvailable ? '' : ' wip');
     card.setAttribute('role', 'listitem');
@@ -474,31 +472,6 @@ window.confirmSelection = function() {
   }, 1200);
 };
 
-function showComingSoon(name) {
-  const toast = document.createElement('div');
-  toast.innerHTML = `<strong>${name}</strong> 시나리오는 아직 준비 중입니다`;
-  Object.assign(toast.style, {
-    position: 'fixed', bottom: '32px', left: '50%',
-    transform: 'translateX(-50%) translateY(8px)',
-    background: 'var(--bg-primary)', border: '1px solid var(--border-strong)',
-    borderRadius: '8px', padding: '11px 22px',
-    fontFamily: "'Noto Serif KR',serif", fontSize: '13px',
-    color: 'var(--text-secondary)',
-    boxShadow: '0 4px 18px rgba(0,0,0,0.10)',
-    opacity: '0', transition: 'opacity 0.22s, transform 0.22s',
-    zIndex: '300', whiteSpace: 'nowrap',
-  });
-  document.body.appendChild(toast);
-  requestAnimationFrame(() => {
-    toast.style.opacity = '1';
-    toast.style.transform = 'translateX(-50%) translateY(0)';
-  });
-  setTimeout(() => {
-    toast.style.opacity = '0';
-    toast.style.transform = 'translateX(-50%) translateY(8px)';
-    setTimeout(() => toast.remove(), 300);
-  }, 2400);
-}
 
 renderCharacters();
 </script>

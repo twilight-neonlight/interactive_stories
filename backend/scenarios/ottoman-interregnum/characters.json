@@ -10,7 +10,8 @@
     "traits": ["외교 중심", "풍부한 자원", "귀족 의존"],
     "base": "에디르네 — 루멜리아 전역",
     "color": "#3a7abf",
-    "colorSoft": "rgba(58,122,191,0.06)"
+    "colorSoft": "rgba(58,122,191,0.06)",
+    "playable": false
   },
   {
     "id": "isa",
@@ -23,7 +24,8 @@
     "traits": ["불안정한 기반", "기동전", "고위험 고수익"],
     "base": "부르사 — 아나톨리아 서부",
     "color": "#888780",
-    "colorSoft": "rgba(136,135,128,0.06)"
+    "colorSoft": "rgba(136,135,128,0.06)",
+    "playable": false
   },
   {
     "id": "musa",
@@ -36,7 +38,8 @@
     "traits": ["전투 중심", "가지 세력", "외교 취약"],
     "base": "아나톨리아 내륙 — 유목 세력권",
     "color": "#8b2020",
-    "colorSoft": "rgba(139,32,32,0.06)"
+    "colorSoft": "rgba(139,32,32,0.06)",
+    "playable": false
   },
   {
     "id": "mehmed",
@@ -49,6 +52,7 @@
     "traits": ["균형 외교", "장기 전략", "초반 열세"],
     "base": "아마스야 — 흑해 연안",
     "color": "#C5932A",
-    "colorSoft": "rgba(197,147,42,0.07)"
+    "colorSoft": "rgba(197,147,42,0.07)",
+    "playable": true
   }
 ]

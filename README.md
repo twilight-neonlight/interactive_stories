@@ -154,16 +154,22 @@ interactive_stories/
 │           ├── meta.json           # 표시 메타데이터 (제목·섹션·troops_per_strength_point 등)
 │           ├── locations.json      # 거점 목록 (x/y는 이미지 기준 퍼센트 좌표)
 │           ├── factions.json       # 세력 목록 (strength_score 직접 지정)
-│           ├── characters.json     # 인물 목록
+│           ├── characters.json     # 인물 목록 (playable: true/false로 선택 가능 여부 지정)
 │           ├── events.json         # 세계 사건 목록
 │           ├── npc-pool.json       # NPC 풀 (가중치·거점 조건부 등장 지원)
 │           └── map.png             # 배경 지도 이미지 (선택, PNG/JPG/WEBP 모두 가능)
 ├── frontend/
 │   ├── main_menu.html              # 메인 메뉴 (새 게임 / 불러오기)
-│   ├── game.html                   # 메인 게임 화면
-│   ├── game.css                    # 게임 UI 스타일
 │   ├── scenario_select.html        # 시나리오 선택 화면
 │   ├── prince_select.html          # 주인공 선택 화면
+│   ├── game.html                   # 메인 게임 화면 (HTML 구조만)
+│   ├── game-tooltip.js             # 툴팁 시스템 + 태그 스타일 정의
+│   ├── game-markdown.js            # 마크다운 → HTML 변환, 응답 텍스트 파싱
+│   ├── game-ui.js                  # 렌더링 함수 (씬·인물·세력·지도·사건)
+│   ├── game-turn.js                # 턴 진행(submitTurn), 저장, 선택지 처리
+│   ├── game-init.js                # 전역 상태 선언 + 게임 초기화 IIFE
+│   ├── common.js                   # 공통 유틸 (showComingSoon 토스트 등)
+│   ├── game.css                    # 게임 UI 스타일
 │   └── styles.css                  # 시나리오 선택 화면 스타일
 ├── state/
 │   ├── GameState.js                # 게임 상태 클래스 (인물·세력·거점·히스토리)
