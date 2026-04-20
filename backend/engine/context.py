@@ -5,6 +5,8 @@ engine/context.py — LLM 시나리오 컨텍스트 빌더
 오프닝 전용 NPC 컨텍스트 빌더도 포함합니다.
 """
 
+import re
+
 
 OPENING_INSTRUCTION = """
 
