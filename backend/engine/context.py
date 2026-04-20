@@ -97,16 +97,45 @@ def build_scenario_context(state: dict) -> str:
                 controller = factions[controller].get("name", controller)
             lines.append(f"  - {loc.get('name', '?')} | 지배: {controller}")
 
-    events = state.get("events", [])
-    if events:
+    events       = state.get("events", [])
+    ts           = state.get("progress", {}).get("timestamp", "")
+    m            = re.search(r'(\d{3,4})년', ts)
+    current_year = int(m.group(1)) if m else None
+
+    active_events = [
+        ev for ev in events
+        if ev.get("trigger_year") is None
+        or current_year is None
+        or current_year >= ev["trigger_year"]
+    ]
+    future_events = [
+        ev for ev in events
+        if ev.get("trigger_year") is not None
+        and current_year is not None
+        and current_year < ev["trigger_year"]
+    ]
+
+    if active_events:
         lines.append("\n동시 진행 사건:")
-        for ev in events:
+        for ev in active_events:
             name       = ev.get("name", "?")
             region     = ev.get("region", "")
             body       = ev.get("body", "")
             body_short = body[:80] + "…" if len(body) > 80 else body
             lines.append(
                 f"  - {name}" + (f" ({region})" if region else "")
+                + (f"\n    {body_short}" if body_short else "")
+            )
+
+    if future_events:
+        lines.append("\n역사적 예정 사건 (내러티브 참고 — UI 미표시):")
+        for ev in future_events:
+            name       = ev.get("name", "?")
+            trigger    = ev.get("trigger_year", "?")
+            body       = ev.get("body", "")
+            body_short = body[:80] + "…" if len(body) > 80 else body
+            lines.append(
+                f"  - [{trigger}년 예정] {name}"
                 + (f"\n    {body_short}" if body_short else "")
             )
 

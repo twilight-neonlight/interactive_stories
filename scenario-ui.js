@@ -19,6 +19,13 @@ const DISP_COLOR = { '우호': '#378ADD', '적대': '#E24B4A', '중립': '#88878
 
 // ── 공통 헬퍼 ──────────────────────────────────────────────────────
 
+/** 타임스탬프 문자열에서 연도를 추출. "1403년 봄, 에디르네" → 1403. 파싱 불가 시 null. */
+function _parseYear(timestamp) {
+  if (!timestamp) return null;
+  const m = timestamp.match(/(\d{3,4})년/);
+  return m ? parseInt(m[1]) : null;
+}
+
 /**
  * 가중치 기반 다양성 픽업.
  * 1차 패스: 우호·중립·적대 각 한 명씩 확보 (성향 다양성 보장)
@@ -283,8 +290,14 @@ const CONFIGS = {
       return { color, statusText: '중립' };
     },
 
-    /** events.json에서 로드된 세계 사건 목록 반환 */
-    getEvents(state) { return state.events ?? []; },
+    /** trigger_year 미만인 미발생 이벤트를 제외하고 반환 */
+    getEvents(state) {
+      const year = _parseYear(state.progress?.timestamp);
+      return (state.events ?? []).filter(ev => {
+        const ty = ev.trigger_year;
+        return ty == null || year == null || year >= ty;
+      });
+    },
 
     getOpeningContent: defaultGetOpeningContent,
 
