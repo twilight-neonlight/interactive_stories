@@ -52,7 +52,7 @@ def load_scenarios() -> list[dict]:
         if not meta_path.exists():
             continue
         scenario = json.loads(meta_path.read_text(encoding="utf-8"))
-        for key in ("locations", "factions", "characters", "events"):
+        for key in ("locations", "factions", "characters", "events", "rules"):
             path = scenario_dir / f"{key}.json"
             scenario[key] = json.loads(path.read_text(encoding="utf-8")) if path.exists() else []
         for key, filename in (("opening", "opening.json"), ("npc_pool", "npc-pool.json")):

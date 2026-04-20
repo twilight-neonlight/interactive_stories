@@ -48,6 +48,14 @@ def build_scenario_context(state: dict) -> str:
         f"시나리오: {state.get('scenarioTitle', '불명')}",
     ]
 
+    rules = state.get("rules", [])
+    if rules:
+        lines.append("\n## 시나리오 특수 규칙")
+        for r in rules:
+            name = r.get("name", "")
+            body = r.get("rule", "")
+            lines.append(f"- **{name}**: {body}" if name else f"- {body}")
+
     protagonist_id = state.get("protagonist")
     chars          = state.get("characters", {})
     factions       = state.get("factions", {})
