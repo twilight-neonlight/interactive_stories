@@ -48,7 +48,7 @@ if not exist .venv (
 )
 
 :: Open browser after 2s delay
-start "" cmd /c "timeout /t 2 /nobreak >nul && start http://localhost:8000"
+start "" cmd /c "timeout /t 2 /nobreak >nul && start http://localhost:8000/frontend/main_menu.html"
 
 :: Start server
 echo  Server: http://localhost:8000

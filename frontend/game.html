@@ -230,9 +230,9 @@ function renderCharacterList(state) {
 function renderFactionBars(state) {
   const container = document.getElementById('faction-bars');
   if (!container || !_ui) return;
-  const widthMap = { extreme:'100%','very high':'85%',high:'70%',medium:'50%',low:'30%','very low':'15%',impotent:'5%' };
   container.innerHTML = Array.from(state.factions.values()).filter(f => !f.defeated).map(f => {
-    const width = widthMap[f.strength] || '20%';
+    const score = Math.max(0, (f.strength_score ?? 350) - (f.battle_damage ?? 0));
+    const width = `${Math.min(100, Math.round(score / 7))}%`;
     const color = _ui.factionBarColor(f);
     const tag   = _ui.factionBarTag(f);
     const short = f.name.split(' ')[0];
