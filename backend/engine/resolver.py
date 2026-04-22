@@ -17,8 +17,18 @@ _MILITARY_KW   = {"공격","전투","포위","진격","돌격","출격","진군"
 _SURPRISE_KW   = {"기습","매복","야습","선제"}
 _DEFENSE_KW    = {"방어","농성","수성","수비","진지","방비","지키","수호","막아","저지","저항","수비대"}
 _DIPLOMATIC_KW = {"협상","외교","동맹","설득","교섭","협력","회담","제안","조건","강화","회유","타협","요청"}
-_STEALTH_KW    = {"정찰","첩보","암살","침투","위장","간첩","밀서","내통","공작","염탐","잠입"}
+_INTRIGUE_KW   = {"정찰","첩보","암살","침투","위장","간첩","밀서","내통","공작","염탐","잠입",
+                  "모략","매수","이간","선동","유언비어","교란","와해","내응"}
 _PASSIVE_KW    = {"관찰","기다","대기","확인","살펴","머문","쉬어","휴식","보고","상황"}
+_ACTION_LABELS = {
+    "military": "전투",
+    "surprise": "기습",
+    "defense": "방어",
+    "diplomatic": "외교",
+    "intrigue": "모략",
+    "passive": "서술",
+    "general": "일반",
+}
 
 # 지형 유형 → (방어 수정치, 공격 수정치, 레이블)
 _TERRAIN_TABLE: dict[str, tuple[int, int, str]] = {
@@ -66,28 +76,15 @@ def _action_type(command: str) -> str:
         if kw in command: return "defense"
     for kw in _DIPLOMATIC_KW:
         if kw in command: return "diplomatic"
-    for kw in _STEALTH_KW:
-        if kw in command: return "stealth"
+    for kw in _INTRIGUE_KW:
+        if kw in command: return "intrigue"
     for kw in _PASSIVE_KW:
         if kw in command: return "passive"
     return "general"
 
 
-def resolve_action(command: str, state: dict) -> dict:
-    """
-    행동 유형을 분류하고 주사위 + 게임 상태 수정치로 결과 등급을 결정합니다.
-    passive 행동(관찰/대기)은 판정을 생략합니다.
-    """
-    action_type = _action_type(command)
-
-    if action_type == "passive":
-        return {"tier": "서술", "tier_en": "narrate", "roll": None,
-                "net": None, "action_type": action_type, "modifiers": []}
-
-    roll = random.randint(1, 100)
-    net  = roll
-    modifiers: list[tuple[str, int]] = []
-
+def _resolution_context(state: dict) -> dict:
+    """판정에 공통으로 쓰는 플레이어·세력 문맥을 구성합니다."""
     factions       = state.get("factions", {})
     chars          = state.get("characters", {})
     protagonist_id = state.get("protagonist")
@@ -100,62 +97,34 @@ def resolve_action(command: str, state: dict) -> dict:
     enemy_factions = [f for f in factions.values() if f.get("disposition") == "적대"]
     ally_factions  = [f for f in factions.values()
                       if f.get("disposition") == "우호" and f.get("id") != player_faction_id]
+    neutral_factions = [f for f in factions.values()
+                        if f.get("disposition") == "중립" and f.get("id") != player_faction_id]
 
-    is_defense  = action_type == "defense"
-    is_surprise = action_type == "surprise"
+    return {
+        "player_faction": player_faction,
+        "enemy_factions": enemy_factions,
+        "ally_factions": ally_factions,
+        "neutral_factions": neutral_factions,
+    }
 
-    # ── 군사·기습·방어·일반 수정치 ──────────────────────
-    if action_type in ("military", "surprise", "defense", "general"):
-        p_str = _eff_str(player_faction)
-        if enemy_factions:
-            e_str = sum(_eff_str(f) for f in enemy_factions) / len(enemy_factions)
-            ratio = p_str / e_str if e_str > 0 else 9.0
-            if   ratio >= 2.0:  v, label = +25, "병력 압도 (2배↑)"
-            elif ratio >= 1.5:  v, label = +15, "병력 우세 (1.5배↑)"
-            elif ratio >= 1.1:  v, label =  +5, "병력 우위"
-            elif ratio >= 0.91: v, label =   0, None          # 중립 구간
-            elif ratio >= 0.75: v, label = -10, "병력 열세 (0.75배↓)"
-            elif ratio >= 0.5:  v, label = -20, "병력 대열세 (0.5배↓)"
-            else:               v, label = -30, "병력 압도적 열세 (0.5배↓↓)"
-            if label is not None: modifiers.append((label, v))
-            net += v
+def _strength_ratio(player_faction: dict, counterpart_factions: list[dict]) -> float | None:
+    """플레이어 세력과 상대 세력 평균 실효 전력의 비율을 계산합니다."""
+    if not counterpart_factions:
+        return None
+    p_str = _eff_str(player_faction)
+    c_str = sum(_eff_str(f) for f in counterpart_factions) / len(counterpart_factions)
+    return p_str / c_str if c_str > 0 else 9.0
 
-        if ally_factions:
-            a_str = sum(_eff_str(f) for f in ally_factions)
-            if   a_str > 400: v, label = +15, "동맹 강력 지원"
-            elif a_str > 200: v, label =  +8, "동맹 지원"
-            else:             v = 0; label = None
-            if v: modifiers.append((label, v)); net += v
 
-        if is_surprise:
-            modifiers.append(("기습 선공", +20)); net += 20
+def _narrative_resolution(action_type: str) -> dict:
+    """판정을 생략하고 서술만 허용하는 결과를 반환합니다."""
+    return {"tier": "서술", "tier_en": "narrate", "roll": None,
+            "net": None, "action_type": action_type, "modifiers": []}
 
-        terrain_v, terrain_label = _terrain_modifier(command, state, is_defense)
-        if terrain_v and terrain_label:
-            modifiers.append((terrain_label, terrain_v)); net += terrain_v
 
-    # ── 외교 수정치 ──────────────────────────────────
-    elif action_type == "diplomatic":
-        dipl = player_faction.get("diplomacy_score", 0)
-        if   dipl >  60: v, label = +20, "외교 기반 강함"
-        elif dipl >  30: v, label = +10, "외교 기반 보통"
-        elif dipl > -30: v, label =   0, None
-        elif dipl > -60: v, label = -10, "외교 기반 약함"
-        else:            v, label = -20, "외교 기반 매우 약함"
-        if v: modifiers.append((label, v)); net += v
-
-    # ── 첩보 수정치 ──────────────────────────────────
-    elif action_type == "stealth":
-        if enemy_factions:
-            p_str = _eff_str(player_faction)
-            e_str = sum(_eff_str(f) for f in enemy_factions) / len(enemy_factions)
-            if   p_str > e_str + 100: v, label = +10, "우세한 정보망"
-            elif p_str < e_str - 100: v, label = -10, "열세한 정보망"
-            else:                     v = 0; label = None
-            if v: modifiers.append((label, v)); net += v
-
-    net = max(1, min(100, net))
-
+def _graded_resolution(action_type: str, roll: int, modifiers: list[tuple[str, int]]) -> dict:
+    """주사위와 수정치로 등급을 결정합니다."""
+    net = max(1, min(100, roll + sum(v for _, v in modifiers)))
     if   net >= 90: tier, tier_en = "대성공",    "critical_success"
     elif net >= 65: tier, tier_en = "성공",      "success"
     elif net >= 35: tier, tier_en = "부분 성공", "partial"
@@ -166,10 +135,168 @@ def resolve_action(command: str, state: dict) -> dict:
             "net": net, "action_type": action_type, "modifiers": modifiers}
 
 
+def _resolve_military_action(command: str, state: dict, action_type: str, ctx: dict,
+                              quality_modifier: tuple[str, int] | None = None) -> dict:
+    """전투·기습·방어 계열 행동을 판정합니다."""
+    roll      = random.randint(1, 100)
+    modifiers: list[tuple[str, int]] = []
+
+    ally_factions = ctx["ally_factions"]
+    is_defense    = action_type == "defense"
+    is_surprise   = action_type == "surprise"
+
+    # 전략적 선택 품질 (LLM 평가)
+    if quality_modifier:
+        modifiers.append(quality_modifier)
+
+    # 동맹 후원 (잠재 전력 기반 전략적 지원)
+    if ally_factions:
+        a_str = sum(_eff_str(f) for f in ally_factions)
+        if   a_str > 400: v, label = +15, "동맹 강력 지원"
+        elif a_str > 200: v, label =  +8, "동맹 지원"
+        else:             v, label = 0, None
+        if label is not None:
+            modifiers.append((label, v))
+
+    if is_surprise:
+        modifiers.append(("기습 선공", +20))
+
+    terrain_v, terrain_label = _terrain_modifier(command, state, is_defense)
+    if terrain_v and terrain_label:
+        modifiers.append((terrain_label, terrain_v))
+
+    return _graded_resolution(action_type, roll, modifiers)
+
+
+def _resolve_diplomatic_action(_command: str, _state: dict, ctx: dict,
+                               quality_modifier: tuple[str, int] | None = None) -> dict:
+    """외교 행동을 군사 판정과 분리된 기준으로 평가합니다."""
+    roll      = random.randint(1, 100)
+    modifiers: list[tuple[str, int]] = []
+
+    player_faction   = ctx["player_faction"]
+    enemy_factions   = ctx["enemy_factions"]
+    ally_factions    = ctx["ally_factions"]
+    neutral_factions = ctx["neutral_factions"]
+
+    if quality_modifier:
+        modifiers.append(quality_modifier)
+
+    dipl = player_faction.get("diplomacy_score", 0)
+    if   dipl >  60: v, label = +20, "외교 기반 강함"
+    elif dipl >  30: v, label = +10, "외교 기반 안정"
+    elif dipl > -30: v, label =   0, None
+    elif dipl > -60: v, label = -10, "외교 기반 취약"
+    else:            v, label = -20, "외교 기반 매우 취약"
+    if label is not None:
+        modifiers.append((label, v))
+
+    ratio = _strength_ratio(player_faction, enemy_factions)
+    if ratio is not None:
+        if   ratio >= 1.5: v, label = +10, "협상 배경 우세"
+        elif ratio >= 1.1: v, label =  +5, "협상 배경 우위"
+        elif ratio < 0.5:  v, label = -15, "강압 대응 취약"
+        elif ratio < 0.75: v, label =  -8, "협상 배경 열세"
+        else:              v, label =   0, None
+        if label is not None:
+            modifiers.append((label, v))
+
+    if ally_factions:
+        a_str = sum(_eff_str(f) for f in ally_factions)
+        if   a_str > 400: v, label = +10, "동맹 후원"
+        elif a_str > 200: v, label =  +5, "우호 세력 뒷받침"
+        else:             v, label = 0, None
+        if label is not None:
+            modifiers.append((label, v))
+
+    if len(neutral_factions) >= 4:
+        modifiers.append(("중재 여지 풍부", +5))
+    if len(enemy_factions) >= 3:
+        modifiers.append(("다중 전선 압박", -5))
+
+    return _graded_resolution("diplomatic", roll, modifiers)
+
+
+def _resolve_intrigue_action(command: str, _state: dict, ctx: dict,
+                             quality_modifier: tuple[str, int] | None = None) -> dict:
+    """첩보·모략·잠입 계열 행동을 별도 기준으로 평가합니다."""
+    roll      = random.randint(1, 100)
+    modifiers: list[tuple[str, int]] = []
+
+    player_faction = ctx["player_faction"]
+    enemy_factions = ctx["enemy_factions"]
+    ally_factions  = ctx["ally_factions"]
+
+    if quality_modifier:
+        modifiers.append(quality_modifier)
+
+    dipl = player_faction.get("diplomacy_score", 0)
+    if   dipl >  60: v, label = +10, "은밀한 인맥"
+    elif dipl >  30: v, label =  +5, "정보 교섭망"
+    elif dipl > -30: v, label =   0, None
+    elif dipl > -60: v, label =  -5, "은밀한 접촉망 취약"
+    else:            v, label = -10, "은밀한 접촉망 빈약"
+    if label is not None:
+        modifiers.append((label, v))
+
+    ratio = _strength_ratio(player_faction, enemy_factions)
+    if ratio is not None:
+        if   ratio >= 1.5: v, label = +8, "공작 자원 풍부"
+        elif ratio >= 1.1: v, label = +4, "공작 자원 우위"
+        elif ratio < 0.5:  v, label = -12, "공작 자원 대열세"
+        elif ratio < 0.75: v, label =  -6, "공작 자원 열세"
+        else:              v, label =   0, None
+        if label is not None:
+            modifiers.append((label, v))
+
+    if ally_factions:
+        a_str = sum(_eff_str(f) for f in ally_factions)
+        if   a_str > 400: v, label = +8, "내부 협조자 확보"
+        elif a_str > 200: v, label = +4, "우호 정보망"
+        else:             v, label = 0, None
+        if label is not None:
+            modifiers.append((label, v))
+
+    if len(enemy_factions) >= 3:
+        modifiers.append(("경계망 촘촘함", -5))
+    if any(kw in command for kw in ("정찰", "염탐", "잠입")):
+        modifiers.append(("은밀 접근 적합", +4))
+    if any(kw in command for kw in ("암살", "내응")):
+        modifiers.append(("고위험 공작", -4))
+
+    return _graded_resolution("intrigue", roll, modifiers)
+
+
+def needs_resolution(command: str) -> bool:
+    """이 명령이 주사위 판정을 필요로 하는지 반환합니다."""
+    return _action_type(command) not in {"passive", "general"}
+
+
+def resolve_action(command: str, state: dict,
+                   quality_modifier: tuple[str, int] | None = None) -> dict:
+    """
+    행동 유형을 분류하고 유형별 전용 판정기로 결과 등급을 결정합니다.
+    passive·general 행동은 판정을 생략하고 서술로 처리합니다.
+    """
+    action_type = _action_type(command)
+    if action_type in {"passive", "general"}:
+        return _narrative_resolution(action_type)
+
+    ctx = _resolution_context(state)
+    if action_type in {"military", "surprise", "defense"}:
+        return _resolve_military_action(command, state, action_type, ctx, quality_modifier)
+    if action_type == "diplomatic":
+        return _resolve_diplomatic_action(command, state, ctx, quality_modifier)
+    if action_type == "intrigue":
+        return _resolve_intrigue_action(command, state, ctx, quality_modifier)
+    return _narrative_resolution(action_type)
+
+
 def resolution_prompt(res: dict) -> str:
     """판정 결과를 시스템 프롬프트 주입용 텍스트로 변환합니다."""
     if res["tier_en"] == "narrate":
         return ""
+    action_label = _ACTION_LABELS.get(res.get("action_type", ""), "행동")
     mod_str = ""
     if res["modifiers"]:
         parts   = [f"{lbl} {'+' if v > 0 else ''}{v}" for lbl, v in res["modifiers"]]
@@ -177,6 +304,7 @@ def resolution_prompt(res: dict) -> str:
     return (
         "\n\n---\n"
         "## 행동 판정 결과 (엔진 결정 — 반드시 준수)\n"
+        f"판정 유형: **{action_label}**\n"
         f"결과: **{res['tier']}**\n"
         f"주사위: {res['roll']} → 보정 후 {res['net']}{mod_str}\n\n"
         "이 등급에 따라 서술하시오. 등급을 임의로 상향하지 마시오.\n"

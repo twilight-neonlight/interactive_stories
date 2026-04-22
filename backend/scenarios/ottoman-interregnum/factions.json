@@ -1,22 +1,22 @@
 [
   {
     "id": "suleyman", "name": "술레이만 첼레비파", "type": "faction",
-    "strength_score": 570, "disposition": "중립", "color": "#3a7abf",
+    "strength_score": 520, "disposition": "중립", "color": "#3a7abf",
     "notes": "루멜리아 전역과 비잔틴·제노바 외교망을 보유한 형제 중 가장 강력한 왕자. 귀족·봉신 의존 구조로 중앙집권이 약하며, 외교 결단에 내부 반발이 따르기 쉽다."
   },
   {
     "id": "isa", "name": "이사 첼레비파", "type": "faction",
-    "strength_score": 130, "disposition": "중립", "color": "#888780",
+    "strength_score": 170, "disposition": "중립", "color": "#888780",
     "notes": "부르사를 거점으로 한 왕자. 아나톨리아 서부를 장악했으나 사방이 경쟁 세력에 노출된 구조적으로 취약한 위치. 기동전에 강하고 고위험 고수익 전략을 구사한다."
   },
   {
     "id": "musa", "name": "무사 첼레비파", "type": "faction",
-    "strength_score": 360, "disposition": "중립", "color": "#8b2020",
+    "strength_score": 250, "disposition": "중립", "color": "#8b2020",
     "notes": "아나톨리아 가지·유목 세력을 기반으로 한 전투형 왕자. 외교보다 전쟁을 선호해 협상 비용이 높으며, 전투력은 강하나 장기 행정 능력이 부재하다."
   },
   {
     "id": "mehmed", "name": "마흐메트 첼레비파", "type": "faction",
-    "strength_score": 320, "disposition": "중립", "color": "#C5932A",
+    "strength_score": 280, "disposition": "중립", "color": "#C5932A",
     "notes": "아마스야 요새와 흑해 교역 수입을 기반으로 한 가장 신중한 왕자. 초반에는 열세지만 균형 외교와 장기 전략에 능하다."
   },
   {
@@ -26,12 +26,12 @@
   },
   {
     "id": "karamanids", "name": "카라만 왕조", "type": "emirate",
-    "strength_score": 440, "disposition": "적대", "color": "#E24B4A",
+    "strength_score": 390, "disposition": "적대", "color": "#E24B4A",
     "notes": "티무르 이후 아나톨리아 패권을 노리는 가장 강력한 베이릭. 오스만 내전을 영역 확장의 기회로 삼으며, 어느 왕자가 강해져도 결국 충돌이 불가피하다."
   },
   {
     "id": "anatolian-beyliks", "name": "아나톨리아 베이릭들", "type": "tribe",
-    "strength_score": 40, "disposition": "중립", "color": "#a09878",
+    "strength_score": 50, "disposition": "중립", "color": "#a09878",
     "notes": "티무르가 복원한 소규모 공국들. 개별 포섭은 가능하나 집단 행동은 어려우며, 가지 전사 충원의 주요 공급처."
   },
   {
@@ -56,12 +56,12 @@
   },
   {
     "id": "serbia", "name": "세르비아 전제공국", "type": "kingdom",
-    "strength_score": 280, "disposition": "중립", "color": "#6B4C8A",
+    "strength_score": 300, "disposition": "중립", "color": "#6B4C8A",
     "notes": "스테판 라자레비치가 이끄는 발칸의 강소국. 명목상 오스만 종주권 아래 있으나 실질적 독립을 유지하며, 술레이만의 루멜리아 전략에 깊이 연루되어 있다."
   },
   {
     "id": "wallachia", "name": "왈라키아 공국", "type": "kingdom",
-    "strength_score": 310, "disposition": "중립", "color": "#8B6914",
+    "strength_score": 300, "disposition": "중립", "color": "#8B6914",
     "notes": "미르체아 대공이 이끄는 다뉴브 북안의 기독교 완충국. 오스만 형제들의 루멜리아 전략에 깊이 연루되어 있으며, 지원 조건에 따라 전세를 바꿀 수 있다."
   },
   {

@@ -241,12 +241,31 @@ function renderSceneBody(html) {
   if (el) el.innerHTML = html;
 }
 
+const _CHOICE_TYPE_KW = {
+  military:   ['공격','전투','포위','진격','돌격','출격','진군','침공','공세','교전','격파',
+               '기습','매복','야습','선제','방어','농성','수성','수비','진지','방비'],
+  diplomatic: ['협상','외교','동맹','설득','교섭','협력','회담','제안','조건','강화','회유','타협','요청'],
+  intrigue:   ['정찰','첩보','암살','침투','위장','간첩','밀서','내통','공작','염탐',
+               '잠입','모략','매수','이간','선동','유언비어','교란','와해','내응'],
+};
+
+function _choiceActionType(text) {
+  for (const [type, kws] of Object.entries(_CHOICE_TYPE_KW)) {
+    if (kws.some(kw => text.includes(kw))) return type;
+  }
+  return null;
+}
+
 function renderChoices(choices) {
   const list = document.getElementById('choice-list');
   if (!list) return;
   if (!choices.length) { list.innerHTML = ''; return; }
   list.innerHTML = choices
-    .map(c => `<button class="choice-btn" onclick="selectChoice(this)">${c}</button>`)
+    .map(c => {
+      const type = _choiceActionType(c);
+      const cls  = type ? `choice-btn choice-btn--${type}` : 'choice-btn';
+      return `<button class="${cls}" onclick="selectChoice(this)">${c}</button>`;
+    })
     .join('');
 }
 

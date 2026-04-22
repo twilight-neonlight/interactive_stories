@@ -1,0 +1,66 @@
+[
+  {
+    "id": "warsaw",
+    "name": "바르샤바",
+    "label": "바르샤바",
+    "region": "마조프셰",
+    "controlling_faction": "polish-crown",
+    "notes": "연방의 수도이자 세임(귀족 의회) 소재지. 왕실의 정치적 중심이지만 군사 요충지는 아니다."
+  },
+  {
+    "id": "krakow",
+    "name": "크라쿠프",
+    "label": "크라쿠프",
+    "region": "소폴란드",
+    "controlling_faction": "polish-crown",
+    "notes": "옛 수도. 바벨 성과 왕실 교회가 있어 상징적 중요성이 크다. 서쪽 방어의 거점."
+  },
+  {
+    "id": "vilnius",
+    "name": "빌뉴스",
+    "label": "빌뉴스",
+    "region": "리투아니아",
+    "controlling_faction": "grand-duchy-lithuania",
+    "notes": "리투아니아 대공국의 수도. 야누시 라지비우의 근거지. 모스크바 진격로 상에 위치해 방어가 시급하다."
+  },
+  {
+    "id": "kyiv",
+    "name": "키예프",
+    "label": "키예프",
+    "region": "우크라이나",
+    "controlling_faction": "zaporozhian-host",
+    "notes": "동방 정교회의 성지이자 코사크 봉기의 정신적 중심. 1648년 이후 흐멜니츠키 세력권 아래 있다."
+  },
+  {
+    "id": "chigirin",
+    "name": "치히린",
+    "label": "치히린",
+    "region": "우크라이나",
+    "controlling_faction": "zaporozhian-host",
+    "notes": "흐멜니츠키의 본거지이자 자포로지아 코사크의 행정 중심 도시."
+  },
+  {
+    "id": "lviv",
+    "name": "르비우",
+    "label": "르비우",
+    "region": "갈리치아",
+    "controlling_faction": "polish-crown",
+    "notes": "동부 연방의 최대 도시. 1648년 코사크 포위를 방어 성금으로 막아냈다. 교역과 가톨릭 문화의 중심."
+  },
+  {
+    "id": "zbarazh",
+    "name": "즈바라시",
+    "label": "즈바라시",
+    "region": "포돌리아",
+    "controlling_faction": "polish-crown",
+    "notes": "1649년 코사크·타타르 연합군에 포위된 요새. 비스니오비에츠키 공이 수비. 즈보리우 협정으로 포위가 풀렸다."
+  },
+  {
+    "id": "zaporizhzhia",
+    "name": "자포리자",
+    "label": "자포리자",
+    "region": "드니프로강 하류",
+    "controlling_faction": "zaporozhian-host",
+    "notes": "자포로지아 코사크의 본진(시치). 연방의 통제권 밖에 있으며 코사크 전사들의 집결지."
+  }
+]

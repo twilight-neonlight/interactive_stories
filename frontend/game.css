@@ -229,7 +229,7 @@ body {
   overflow: hidden;
 }
 .map-inner { position: relative; line-height: 0; }
-#map-img { display: block; width: 100%; height: auto; }
+#map-img { display: block; width: 100%; height: auto; filter: blur(0.6px) brightness(0.84); }
 #map-markers-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; }
 .map-pin {
   position: absolute;
@@ -238,13 +238,15 @@ body {
   cursor: pointer;
 }
 .pin-dot {
-  width: 9px; height: 9px;
+  width: 10px; height: 10px;
   border-radius: 50%;
-  border: 1.5px solid rgba(255,255,255,0.7);
+  border: 2px solid #fff;
+  box-shadow: 0 0 0 1px rgba(0,0,0,0.25), 0 1px 4px rgba(0,0,0,0.30);
   position: relative; z-index: 2;
   transition: transform 0.15s;
 }
-.map-pin:hover .pin-dot { transform: scale(1.4); }
+.map-pin:hover { z-index: 10; }
+.map-pin:hover .pin-dot { transform: scale(1.5); }
 .pin-pulse {
   position: absolute;
   top: 50%; left: 50%;
@@ -292,8 +294,24 @@ hr.divider { flex-shrink: 0; }
   border-color: #378add;
   background: #e6f1fb; color: #185fa5;
 }
+
+/* ── 선택지 유형별 색상 (베이지 톤 조화) ── */
+.choice-btn--military   { background: #f5ebe8; border-color: rgba(196,118, 94,0.40); }
+.choice-btn--diplomatic { background: #e9f0ea; border-color: rgba( 90,140,100,0.40); }
+.choice-btn--intrigue   { background: #ede8f2; border-color: rgba(130,100,165,0.40); }
+
+.choice-btn--military:hover   { background: #f0e1dc; border-color: rgba(196,118, 94,0.65); }
+.choice-btn--diplomatic:hover { background: #dce8de; border-color: rgba( 90,140,100,0.65); }
+.choice-btn--intrigue:hover   { background: #e5dcee; border-color: rgba(130,100,165,0.65); }
+
 @media (prefers-color-scheme: dark) {
   .choice-btn.selected { background: #0c447c; color: #b5d4f4; border-color: #378add; }
+  .choice-btn--military   { background: #2a1a16; border-color: rgba(160, 80,60,0.40); }
+  .choice-btn--diplomatic { background: #162018; border-color: rgba( 60,120,70,0.40); }
+  .choice-btn--intrigue   { background: #1e1626; border-color: rgba(120, 80,160,0.40); }
+  .choice-btn--military:hover   { background: #351e18; border-color: rgba(160, 80,60,0.65); }
+  .choice-btn--diplomatic:hover { background: #1c281e; border-color: rgba( 60,120,70,0.65); }
+  .choice-btn--intrigue:hover   { background: #261c30; border-color: rgba(120, 80,160,0.65); }
 }
 
 hr.divider { border: none; border-top: 1px solid var(--border-light); margin: 10px 0; }

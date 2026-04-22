@@ -41,6 +41,122 @@ def _troops_range(score: int, per_point: int) -> str:
     return f"약 {lo:,}~{hi:,}명"
 
 
+def _event_condition_context(state: dict, current_year: int | None) -> dict:
+    """이벤트 trigger_condition 평가에 쓰일 컨텍스트를 구성합니다."""
+    locs        = state.get("locations", {})
+    facs        = state.get("factions", {})
+    prince_ids  = {fid for fid, f in facs.items() if f.get("type") == "faction"}
+    controllers = {loc.get("controller") for loc in locs.values()}
+
+    return {
+        "year": current_year,
+        "chapter": state.get("progress", {}).get("chapter"),
+        "scene": state.get("progress", {}).get("scene"),
+        "has_exiled_prince": any(
+            pid not in controllers and (facs.get(pid, {}).get("battle_damage", 0) > 0)
+            for pid in prince_ids
+        ),
+    }
+
+
+def _event_condition_expr(ev: dict) -> str | None:
+    """신규 trigger_condition 또는 레거시 trigger_year를 조건식으로 정규화합니다."""
+    cond = ev.get("trigger_condition")
+    if isinstance(cond, str) and cond.strip():
+        return cond.strip()
+    if ev.get("trigger_year") is not None:
+        return f"year >= {int(ev['trigger_year'])}"
+    return None
+
+
+def _coerce_condition_value(token: str, ctx: dict):
+    token = token.strip()
+    if token in ctx:
+        return ctx[token]
+    if re.fullmatch(r"-?\d+", token):
+        return int(token)
+    if (token.startswith('"') and token.endswith('"')) or (token.startswith("'") and token.endswith("'")):
+        return token[1:-1]
+    if token.lower() == "true":
+        return True
+    if token.lower() == "false":
+        return False
+    return None
+
+
+def _eval_condition_atom(atom: str, ctx: dict) -> bool:
+    atom = atom.strip()
+    if not atom:
+        return True
+
+    m = re.fullmatch(r"(.+?)\s*(>=|<=|==|!=|>|<)\s*(.+)", atom)
+    if m:
+        left  = _coerce_condition_value(m.group(1), ctx)
+        op    = m.group(2)
+        right = _coerce_condition_value(m.group(3), ctx)
+        if left is None or right is None:
+            return False
+        if op == ">=":
+            return left >= right
+        if op == "<=":
+            return left <= right
+        if op == "==":
+            return left == right
+        if op == "!=":
+            return left != right
+        if op == ">":
+            return left > right
+        if op == "<":
+            return left < right
+
+    val = _coerce_condition_value(atom, ctx)
+    return bool(val) if val is not None else False
+
+
+def _evaluate_event_condition(expression: str | None, ctx: dict) -> bool:
+    """간단한 불리언 식을 평가합니다. 지원: and/or, 비교식, 단일 플래그."""
+    if expression is None:
+        return True
+
+    expr = expression.strip()
+    if not expr:
+        return True
+
+    or_parts = [part.strip() for part in re.split(r"\s*(?:\|\||\bor\b)\s*", expr, flags=re.IGNORECASE) if part.strip()]
+    if len(or_parts) > 1:
+        return any(_evaluate_event_condition(part, ctx) for part in or_parts)
+
+    and_parts = [part.strip() for part in re.split(r"\s*(?:&&|\band\b)\s*", expr, flags=re.IGNORECASE) if part.strip()]
+    if len(and_parts) > 1:
+        return all(_evaluate_event_condition(part, ctx) for part in and_parts)
+
+    return _eval_condition_atom(expr, ctx)
+
+
+def _extract_trigger_year(ev: dict) -> int | None:
+    """future_events 표시에 쓸 기준 연도를 추출합니다."""
+    if ev.get("trigger_year") is not None:
+        return int(ev["trigger_year"])
+
+    cond = ev.get("trigger_condition")
+    if not isinstance(cond, str) or not cond.strip():
+        return None
+    if re.search(r"(?:\|\||\bor\b)", cond, flags=re.IGNORECASE):
+        return None
+
+    atoms = [part.strip() for part in re.split(r"\s*(?:&&|\band\b)\s*", cond, flags=re.IGNORECASE) if part.strip()]
+    for atom in atoms:
+        m = re.fullmatch(r"year\s*(>=|>|==)\s*(-?\d+)", atom, flags=re.IGNORECASE)
+        if m:
+            year = int(m.group(2))
+            return year + 1 if m.group(1) == ">" else year
+        m = re.fullmatch(r"(-?\d+)\s*(<=|<|==)\s*year", atom, flags=re.IGNORECASE)
+        if m:
+            year = int(m.group(1))
+            return year + 1 if m.group(2) == "<" else year
+    return None
+
+
 def build_scenario_context(state: dict) -> str:
     """state에서 시나리오 정보를 추출해 시스템 프롬프트 끝에 추가합니다."""
     lines = [
@@ -112,36 +228,16 @@ def build_scenario_context(state: dict) -> str:
     m            = re.search(r'(\d{3,4})년', ts)
     current_year = int(m.group(1)) if m else None
 
-    # trigger_condition 평가
-    _locs        = state.get("locations", {})
-    _facs        = state.get("factions", {})
-    _prince_ids  = {fid for fid, f in _facs.items() if f.get("type") == "faction"}
-    _controllers = {loc.get("controller") for loc in _locs.values()}
-    _conditions  = {
-        "has_exiled_prince": any(
-            pid not in _controllers and (_facs.get(pid, {}).get("battle_damage", 0) > 0)
-            for pid in _prince_ids
-        ),
-    }
-
-    def _cond_ok(ev: dict) -> bool:
-        cond = ev.get("trigger_condition")
-        return cond is None or _conditions.get(cond, True)
-
+    cond_ctx = _event_condition_context(state, current_year)
     active_events = [
         ev for ev in events
-        if ev.get("trigger_year") is None  # 연도 조건 없음
-        and _cond_ok(ev)
-        or ev.get("trigger_year") is not None
-        and current_year is not None
-        and current_year >= ev["trigger_year"]
-        and _cond_ok(ev)
+        if _evaluate_event_condition(_event_condition_expr(ev), cond_ctx)
     ]
     future_events = [
         ev for ev in events
-        if ev.get("trigger_year") is not None
+        if (trigger_year := _extract_trigger_year(ev)) is not None
         and current_year is not None
-        and current_year < ev["trigger_year"]
+        and current_year < trigger_year
     ]
 
     if active_events:
@@ -160,7 +256,7 @@ def build_scenario_context(state: dict) -> str:
         lines.append("\n역사적 예정 사건 (내러티브 참고 — UI 미표시):")
         for ev in future_events:
             name       = ev.get("name", "?")
-            trigger    = ev.get("trigger_year", "?")
+            trigger    = _extract_trigger_year(ev) or "?"
             body       = ev.get("body", "")
             body_short = body[:80] + "…" if len(body) > 80 else body
             lines.append(

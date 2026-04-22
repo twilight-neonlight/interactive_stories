@@ -26,6 +26,84 @@ function _parseYear(timestamp) {
   return m ? parseInt(m[1]) : null;
 }
 
+function _buildEventConditionContext(state, year = _parseYear(state.progress?.timestamp)) {
+  const princeFactionIds = Array.from(state.factions.values())
+    .filter(f => f.type === 'faction')
+    .map(f => f.id);
+  const controllersInUse = new Set(
+    Array.from(state.locations.values()).map(l => l.controller)
+  );
+
+  return {
+    year,
+    chapter: state.progress?.chapter ?? null,
+    scene: state.progress?.scene ?? null,
+    has_exiled_prince: princeFactionIds.some(id => {
+      if (controllersInUse.has(id)) return false;
+      const f = state.factions.get(id);
+      return (f?.battle_damage ?? 0) > 0;
+    }),
+  };
+}
+
+function _eventConditionExpr(ev) {
+  if (typeof ev.trigger_condition === 'string' && ev.trigger_condition.trim()) {
+    return ev.trigger_condition.trim();
+  }
+  if (ev.trigger_year != null) {
+    return `year >= ${Number(ev.trigger_year)}`;
+  }
+  return null;
+}
+
+function _coerceConditionValue(token, context) {
+  const key = token.trim();
+  if (key in context) return context[key];
+  if (/^-?\d+$/.test(key)) return Number(key);
+  if ((key.startsWith('"') && key.endsWith('"')) || (key.startsWith("'") && key.endsWith("'"))) {
+    return key.slice(1, -1);
+  }
+  if (key.toLowerCase() === 'true') return true;
+  if (key.toLowerCase() === 'false') return false;
+  return undefined;
+}
+
+function _evalConditionAtom(atom, context) {
+  const text = atom.trim();
+  if (!text) return true;
+
+  const match = text.match(/^(.+?)\s*(>=|<=|==|!=|>|<)\s*(.+)$/);
+  if (match) {
+    const left  = _coerceConditionValue(match[1], context);
+    const op    = match[2];
+    const right = _coerceConditionValue(match[3], context);
+    if (left === undefined || right === undefined) return false;
+    if (op === '>=') return left >= right;
+    if (op === '<=') return left <= right;
+    if (op === '==') return left === right;
+    if (op === '!=') return left !== right;
+    if (op === '>')  return left > right;
+    if (op === '<')  return left < right;
+  }
+
+  const value = _coerceConditionValue(text, context);
+  return value === undefined ? false : Boolean(value);
+}
+
+function _evaluateEventCondition(expression, context) {
+  if (expression == null) return true;
+  const expr = expression.trim();
+  if (!expr) return true;
+
+  const orParts = expr.split(/\s*(?:\|\||\bor\b)\s*/i).filter(Boolean);
+  if (orParts.length > 1) return orParts.some(part => _evaluateEventCondition(part, context));
+
+  const andParts = expr.split(/\s*(?:&&|\band\b)\s*/i).filter(Boolean);
+  if (andParts.length > 1) return andParts.every(part => _evaluateEventCondition(part, context));
+
+  return _evalConditionAtom(expr, context);
+}
+
 /**
  * 가중치 기반 다양성 픽업.
  * 1차 패스: 우호·중립·적대 각 한 명씩 확보 (성향 다양성 보장)
@@ -282,28 +360,11 @@ const CONFIGS = {
       return { color, statusText: '중립' };
     },
 
-    /** trigger_year 미만이거나 trigger_condition 불충족 이벤트를 제외하고 반환 */
+    /** trigger_condition을 평가해 현재 시점에 활성화된 이벤트만 반환 */
     getEvents(state) {
-      const year = _parseYear(state.progress?.timestamp);
-
-      const princeFactionIds = Array.from(state.factions.values())
-        .filter(f => f.type === 'faction').map(f => f.id);
-      const controllersInUse = new Set(
-        Array.from(state.locations.values()).map(l => l.controller)
-      );
-      const conditions = {
-        has_exiled_prince: princeFactionIds.some(id => {
-          if (controllersInUse.has(id)) return false;
-          const f = state.factions.get(id);
-          return (f?.battle_damage ?? 0) > 0;
-        }),
-      };
-
-      return (state.events ?? []).filter(ev => {
-        if (ev.trigger_year != null && (year == null || year < ev.trigger_year)) return false;
-        if (ev.trigger_condition != null && !conditions[ev.trigger_condition]) return false;
-        return true;
-      });
+      const year    = _parseYear(state.progress?.timestamp);
+      const context = _buildEventConditionContext(state, year);
+      return (state.events ?? []).filter(ev => _evaluateEventCondition(_eventConditionExpr(ev), context));
     },
 
     /** type:'faction'인 세력들을 왕자로 간주해 disposition 초기화 */

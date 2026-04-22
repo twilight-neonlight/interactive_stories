@@ -8,7 +8,8 @@ from pydantic import BaseModel
 from config          import SYSTEM_PROMPT
 from gemini_client   import call_gemini
 from scenarios_loader import SCENARIOS
-from engine.resolver import resolve_action, resolution_prompt
+from engine.resolver import resolve_action, resolution_prompt, needs_resolution
+from engine.quality  import evaluate_action_quality
 from engine.turn     import turn_engine, extract_state_update, extract_timestamp
 from engine.context  import build_scenario_context, build_opening_npc_context, OPENING_INSTRUCTION
 
@@ -54,7 +55,11 @@ async def generate_opening(req: OpeningRequest):
 
 @router.post("/api/turn")
 async def process_turn(req: TurnRequest):
-    resolution  = resolve_action(req.command, req.state)
+    quality_mod = None
+    if needs_resolution(req.command):
+        quality_mod = await evaluate_action_quality(req.command, req.state)
+
+    resolution  = resolve_action(req.command, req.state, quality_modifier=quality_mod)
     full_system = SYSTEM_PROMPT + build_scenario_context(req.state) + resolution_prompt(resolution)
 
     messages = [{"role": "system", "content": full_system}]
