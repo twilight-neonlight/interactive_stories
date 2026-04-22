@@ -131,6 +131,9 @@ class GameState {
     for (const location of scenario.locations ?? []) {
       this.locations.set(location.id, structuredClone(location));
     }
+
+    GameState.applyInitialDiplomacy(this, scenario, protagonistId);
+
   }
 
   // ── 장/씬 ─────────────────────────────────
@@ -270,16 +273,20 @@ class GameState {
 
   /** @param {number} score */
   static _scoreToDisposition(score) {
-    if (score > 33)  return '우호';
-    if (score < -33) return '적대';
-    return '중립';
+    if (score >= 67)  return '동맹';
+    if (score >= 34)  return '우호';
+    if (score >= -33) return '중립';
+    if (score >= -66) return '비우호';
+    return '적대';
   }
 
   /** @param {string} disposition */
   static _dispositionToScore(disposition) {
-    return disposition === '우호' ? 50
-         : disposition === '적대' ? -50
-         : 0;
+    return disposition === '동맹'   ?  80
+         : disposition === '우호'   ?  50
+         : disposition === '비우호' ? -50
+         : disposition === '적대'   ? -80
+         : 0; // 중립, 불명
   }
 
   /**
@@ -405,6 +412,28 @@ class GameState {
     state.npcPool        = {};
     state.troopsPerPoint = null;
     return state;
+  }
+
+  /**
+   * 주인공의 initial_diplomacy를 state의 factions에 적용합니다.
+   * 생성자와 sessionStorage 복원 경로 모두에서 사용합니다.
+   * @param {GameState} state
+   * @param {{ characters?: Array }} scenario
+   * @param {string|null} protagonistId
+   */
+  static applyInitialDiplomacy(state, scenario, protagonistId) {
+    if (!protagonistId) return;
+    const pChar = (scenario.characters ?? []).find(c => c.id === protagonistId);
+    if (!pChar?.initial_diplomacy) return;
+    for (const [factionId, value] of Object.entries(pChar.initial_diplomacy)) {
+      const faction = state.factions.get(factionId);
+      if (!faction) continue;
+      const score = typeof value === 'number'
+        ? Math.max(-100, Math.min(100, value))
+        : GameState._dispositionToScore(value);
+      faction.diplomacy_score = score;
+      faction.disposition = GameState._scoreToDisposition(score);
+    }
   }
 }
 

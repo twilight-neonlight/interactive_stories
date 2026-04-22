@@ -11,8 +11,9 @@ const ttTags  = document.getElementById('tt-tags');
 const BASE_TAG_STYLE = {
   '확인됨': ['#e6f1fb','#185fa5'], '추정됨': ['#faeeda','#854f0b'],
   '불명':   ['#f0efea','#6b6a65'], '아군':   ['#eaf3de','#3b6d11'],
-  '동맹':   ['#e6f1fb','#185fa5'], '적대':   ['#fcebeb','#a32d2d'],
-  '함락':   ['#f0efea','#6b6a65'], '중립':   ['#f0efea','#6b6a65'],
+  '동맹':   ['#e6f1fb','#185fa5'], '우호':   ['#eaf3de','#3b6d11'],
+  '중립':   ['#f0efea','#6b6a65'], '비우호': ['#faeeda','#854f0b'],
+  '적대':   ['#fcebeb','#a32d2d'], '함락':   ['#f0efea','#6b6a65'],
 };
 let tagStyle = { ...BASE_TAG_STYLE };
 

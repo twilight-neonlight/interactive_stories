@@ -111,6 +111,12 @@ async function submitTurn() {
       for (const cc of su.character_disposition_changes) {
         const char = _state.characters.get(cc.id);
         if (char && cc.disposition) char.disposition = cc.disposition;
+        // 캐릭터와 동일 id의 팩션이 있으면 함께 동기화 (왕자 등 캐릭터-팩션 겸용)
+        const faction = _state.factions.get(cc.id);
+        if (faction && cc.disposition) {
+          faction.disposition    = cc.disposition;
+          faction.diplomacy_score = GameState._dispositionToScore(cc.disposition);
+        }
       }
     }
 

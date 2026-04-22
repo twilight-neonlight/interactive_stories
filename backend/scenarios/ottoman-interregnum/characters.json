@@ -11,7 +11,14 @@
     "base": "에디르네 — 루멜리아 전역",
     "color": "#3a7abf",
     "colorSoft": "rgba(58,122,191,0.06)",
-    "playable": true
+    "playable": true,
+    "initial_diplomacy": {
+      "byzantine": 50,
+      "genoa": 50,
+      "isa": -50,
+      "musa": -80,
+      "mehmed": -50
+    }
   },
   {
     "id": "isa",
@@ -25,7 +32,14 @@
     "base": "부르사 — 아나톨리아 서부",
     "color": "#888780",
     "colorSoft": "rgba(136,135,128,0.06)",
-    "playable": true
+    "playable": true,
+    "initial_diplomacy": {
+      "germiyanids": 50,
+      "tekke": 50,
+      "suleyman": -50,
+      "musa": -50,
+      "mehmed": -80
+    }
   },
   {
     "id": "musa",
@@ -39,7 +53,12 @@
     "base": "아나톨리아 내륙 — 유목 세력권",
     "color": "#8b2020",
     "colorSoft": "rgba(139,32,32,0.06)",
-    "playable": true
+    "playable": true,
+    "initial_diplomacy": {
+      "suleyman": -80,
+      "isa": -50,
+      "mehmed": -50
+    }
   },
   {
     "id": "mehmed",
@@ -54,6 +73,11 @@
     "color": "#C5932A",
     "colorSoft": "rgba(197,147,42,0.07)",
     "playable": true,
-    "recommended": true
+    "recommended": true,
+    "initial_diplomacy": {
+      "suleyman": -50,
+      "isa": -80,
+      "musa": -50
+    }
   }
 ]

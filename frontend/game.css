@@ -129,6 +129,7 @@ body {
   border-radius: 10px; white-space: nowrap; flex-shrink: 0;
   font-family: sans-serif;
 }
+.rel-ally   { background: #dbeafe; color: #1547a0; border: 1px solid rgba(21,71,160,0.2); }
 .rel-coop   { background: #e6f1fb; color: #185fa5; }
 .rel-host   { background: #fcebeb; color: #a32d2d; }
 .rel-unk    { background: var(--bg-secondary); color: var(--text-secondary); }
@@ -136,6 +137,7 @@ body {
 .rel-player { background: #eaf3de; color: #3b6d11; border: 1px solid rgba(59,109,17,0.25); }
 
 @media (prefers-color-scheme: dark) {
+  .rel-ally   { background: #0a2d6b; color: #93c5fd; border-color: rgba(147,197,253,0.25); }
   .rel-coop   { background: #0c447c; color: #b5d4f4; }
   .rel-host   { background: #791f1f; color: #f7c1c1; }
   .rel-dist   { background: #633806; color: #fac775; }

@@ -330,7 +330,7 @@ const CONFIGS = {
 
   // ── 뇌제의 후계자 ─────────────────────────────────────────────
   'ottoman-interregnum': {
-    tagExtras: { '경쟁': ['#fcebeb', '#a32d2d'] },
+    tagExtras: { '경쟁': ['#faeeda', '#854f0b'], '숙적': ['#fcebeb', '#a32d2d'], '동맹': ['#e6f1fb', '#185fa5'] },
 
     commanderInfo: defaultCommanderInfo,
 
@@ -338,25 +338,31 @@ const CONFIGS = {
     charDotColor(char) { return char.color || '#888780'; },
     charRelInfo(char, state) {
       if (char.id === state.protagonist) return { cls: 'rel-player', label: '플레이어' };
+      const disp = state.factions.get(char.id)?.disposition ?? char.disposition;
       return (
-        char.disposition === '우호' ? { cls: 'rel-coop', label: '협력' } :
-        char.disposition === '적대' ? { cls: 'rel-host', label: '경쟁' } :
-        char.disposition === '중립' ? { cls: 'rel-unk',  label: '중립' } :
-                                      { cls: 'rel-dist',  label: '불명' }
+        disp === '동맹'   ? { cls: 'rel-ally', label: '동맹' } :
+        disp === '우호'   ? { cls: 'rel-coop', label: '협력' } :
+        disp === '중립'   ? { cls: 'rel-unk',  label: '중립' } :
+        disp === '비우호' ? { cls: 'rel-dist', label: '경쟝' } :
+        disp === '적대'   ? { cls: 'rel-host', label: '숙적' } :
+                            { cls: 'rel-dist', label: '불명' }
       );
     },
 
     /** 세력 데이터의 color 필드 사용 */
     factionBarColor(faction) { return faction.color || '#888780'; },
-    factionBarTag(faction)   { return { 우호: '아군', 적대: '경쟁', 중립: '중립' }[faction.disposition] || '불명'; },
+    factionBarTag(faction) {
+      return { 동맹: '동맹', 우호: '아군', 중립: '중립', 비우호: '경쟁', 적대: '숙적' }[faction.disposition] || '불명';
+    },
 
     mapMarkerStyle(loc, state) {
       if (loc.controller === 'contested') return { color: '#EF9F27', statusText: '불안정' };
       const faction = state.factions.get(loc.controller);
       const color   = faction?.color || '#888780';
       const disp    = faction?.disposition;
-      if (disp === '우호') return { color, statusText: '아군 거점' };
-      if (disp === '적대') return { color, statusText: '경쟁 세력' };
+      if (disp === '동맹' || disp === '우호') return { color, statusText: '아군 거점' };
+      if (disp === '비우호') return { color, statusText: '경쟁 세력' };
+      if (disp === '적대')   return { color, statusText: '숙적' };
       return { color, statusText: '중립' };
     },
 
@@ -375,20 +381,11 @@ const CONFIGS = {
       );
     },
 
-    /** type:'faction'인 세력들을 왕자로 간주해 disposition 초기화 */
+    /** 캐릭터 disposition을 대응하는 세력의 disposition과 동기화 */
     initDispositions(state) {
-      const princes = Array.from(state.factions.values())
-        .filter(f => f.type === 'faction')
-        .map(f => f.id);
-      const pid = state.protagonist;
-      princes.forEach(id => {
-        const f = state.factions.get(id);
-        if (f) f.disposition = (id === pid) ? '우호' : '적대';
-      });
       for (const [id, char] of state.characters) {
-        if (id === pid)              char.disposition = '우호';
-        else if (princes.includes(id)) char.disposition = '적대';
-        else char.disposition = char.disposition ?? '중립';
+        const faction = state.factions.get(id);
+        char.disposition = faction?.disposition ?? char.disposition ?? '중립';
       }
     },
 

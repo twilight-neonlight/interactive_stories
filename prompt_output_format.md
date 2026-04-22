@@ -49,16 +49,16 @@ N장 요약: 최소 8항목 표
 ```
 [STATE_UPDATE]
 {
-  "new_characters": [{"id": "영문소문자_언더바", "name": "이름", "epithet": "별칭(없으면 빈 문자열)", "disposition": "우호|적대|중립|불명", "desc": "1-2문장 설명"}],
+  "new_characters": [{"id": "영문소문자_언더바", "name": "이름", "epithet": "별칭(없으면 빈 문자열)", "disposition": "동맹|우호|중립|비우호|적대|불명", "desc": "1-2문장 설명"}],
   "dead_characters": ["id1", "id2"],
-  "new_factions": [{"id": "영문소문자_언더바", "name": "세력명", "type": "세력 유형", "disposition": "우호|적대|중립|불명", "strength": "extreme|very high|high|medium|low|very low|impotent", "notes": "1-2문장 설명"}],
+  "new_factions": [{"id": "영문소문자_언더바", "name": "세력명", "type": "세력 유형", "disposition": "동맹|우호|중립|비우호|적대|불명", "strength": "extreme|very high|high|medium|low|very low|impotent", "notes": "1-2문장 설명"}],
   "defeated_factions": ["세력id1"],
   "faction_strength_changes": [{"id": "기존세력id", "delta": 숫자}],
   "faction_battle_damage": [{"id": "기존세력id", "damage": 숫자}],
   "faction_battle_recovery": [{"id": "기존세력id", "amount": 숫자}],
   "character_troop_changes": [{"id": "기존인물id", "delta": 숫자}],
   "faction_diplomacy_changes": [{"id": "기존세력id", "delta": 숫자}],
-  "character_disposition_changes": [{"id": "기존인물id", "disposition": "우호|적대|중립|불명"}],
+  "character_disposition_changes": [{"id": "기존인물id", "disposition": "동맹|우호|중립|비우호|적대|불명"}],
   "new_locations": [{"id": "영문소문자_언더바", "name": "지명", "controller": "지배세력id", "terrain": "지형 특성", "notes": "1-2문장 설명"}],
   "location_changes": [{"id": "기존거점id", "controller": "새로운지배세력id"}]
 }
@@ -86,7 +86,7 @@ N장 요약: 최소 8항목 표
   - 현재 병력은 시스템 컨텍스트 플레이어 항목에 표기됨.
 - `faction_diplomacy_changes`: 이번 씬에서 세력의 플레이어에 대한 외교 수치 변화. `delta`는 정수(-100~+100 범위 내로 자동 클램프).
   - 간단한 부탁·협조: ±5~10 / 중요한 협력·배신: ±15~25 / 결정적 사건(동맹 결성·선전포고): ±30~50
-  - 외교 수치는 UI에 직접 노출되지 않으며, 내부적으로 -33 미만=적대, -33~33=중립, 33 초과=우호로 표시됨.
+  - 외교 수치는 UI에 직접 노출되지 않으며, 내부적으로 -67 미만=적대, -67~-34=비우호, -33~33=중립, 34~66=우호, 67 이상=동맹으로 표시됨.
   - 현재 수치는 시스템 컨텍스트의 세력 목록에 `[+50]` 형태로 표기됨.
 - `character_disposition_changes`: 이번 씬에서 인물의 플레이어에 대한 태도가 바뀐 경우.
 - `new_locations`: 이번 씬에서 새롭게 등장하는 거점. 이미 등록된 거점은 생략.
