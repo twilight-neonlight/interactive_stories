@@ -1,7 +1,7 @@
 [
   {
     "id": "suleyman", "name": "술레이만 첼레비파", "type": "faction",
-    "strength_score": 520, "disposition": "중립", "color": "#3a7abf",
+    "strength_score": 430, "disposition": "중립", "color": "#3a7abf",
     "notes": "루멜리아 전역과 비잔틴·제노바 외교망을 보유한 형제 중 가장 강력한 왕자. 귀족·봉신 의존 구조로 중앙집권이 약하며, 외교 결단에 내부 반발이 따르기 쉽다."
   },
   {
@@ -16,7 +16,7 @@
   },
   {
     "id": "mehmed", "name": "마흐메트 첼레비파", "type": "faction",
-    "strength_score": 280, "disposition": "중립", "color": "#C5932A",
+    "strength_score": 270, "disposition": "중립", "color": "#C5932A",
     "notes": "아마스야 요새와 흑해 교역 수입을 기반으로 한 가장 신중한 왕자. 초반에는 열세지만 균형 외교와 장기 전략에 능하다."
   },
   {
@@ -26,7 +26,7 @@
   },
   {
     "id": "karamanids", "name": "카라만 왕조", "type": "emirate",
-    "strength_score": 390, "disposition": "적대", "color": "#E24B4A",
+    "strength_score": 340, "disposition": "적대", "color": "#E24B4A",
     "notes": "티무르 이후 아나톨리아 패권을 노리는 가장 강력한 베이릭. 오스만 내전을 영역 확장의 기회로 삼으며, 어느 왕자가 강해져도 결국 충돌이 불가피하다."
   },
   {
@@ -36,12 +36,12 @@
   },
   {
     "id": "jandarids", "name": "잔다르 왕조", "type": "emirate",
-    "strength_score": 150, "disposition": "중립", "color": "#6B8E23",
+    "strength_score": 160, "disposition": "중립", "color": "#6B8E23",
     "notes": "시노프를 거점으로 흑해 남안을 장악한 이스펜디야르 왕조. 오스만과 트레비존드 사이에서 독립을 유지하며 실리 외교를 추구한다."
   },
   {
     "id": "trebizond", "name": "트레비존드 제국", "type": "empire",
-    "strength_score": 170, "disposition": "중립", "color": "#4682B4",
+    "strength_score": 160, "disposition": "중립", "color": "#4682B4",
     "notes": "그랑 콤네노스 왕조의 소제국. 오스만 내전의 혼란 속에서도 동방 교역로 덕분에 독자 생존을 이어가며 어느 세력과도 섣불리 동맹하지 않는다."
   },
   {
@@ -51,7 +51,7 @@
   },
   {
     "id": "serbia", "name": "세르비아 전제공국", "type": "kingdom",
-    "strength_score": 300, "disposition": "중립", "color": "#6B4C8A",
+    "strength_score": 330, "disposition": "중립", "color": "#6B4C8A",
     "notes": "스테판 라자레비치가 이끄는 발칸의 강소국. 명목상 오스만 종주권 아래 있으나 실질적 독립을 유지하며, 술레이만의 루멜리아 전략에 깊이 연루되어 있다."
   },
   {
@@ -63,6 +63,16 @@
     "id": "germiyanids", "name": "게르미얀 왕조", "type": "emirate",
     "strength_score": 120, "disposition": "중립", "color": "#8B7355",
     "notes": "야쿱 2세가 이끄는 아나톨리아 서부 베이릭. 티무르가 오스만으로부터 복원해준 왕조로, 퀴타히야를 거점으로 부르사와 코냐 사이의 완충 지대를 장악하고 있다. 과거 오스만과 혼인 동맹을 맺은 전례가 있어 적대보다 실리 외교를 선호하나, 오스만 통일이 이루어지면 독립이 위협받을 것을 알기에 섣불리 어느 왕자 편도 들지 않는다."
+  },
+  {
+    "id": "mamluks", "name": "맘루크 술탄국", "type": "empire",
+    "strength_score": 680, "disposition": "중립", "color": "#1B7A6E",
+    "notes": "카이로를 수도로 이집트·시리아·헤자즈를 지배하는 공위기 최강국. 티무르의 침공도 저지한 군사 강국으로 오스만 내전에 직접 개입하지 않으나, 시리아 북부 국경을 맞댄 관계로 어느 왕자가 승리하든 종국에는 협상이 불가피한 대세력이다."
+  },
+  {
+    "id": "latin_athens", "name": "아테네 공국", "type": "kingdom",
+    "strength_score": 75, "disposition": "중립", "color": "#8B5E3C",
+    "notes": "피렌체 귀족 아치아이올리 가문이 지배하는 그리스 본토의 라틴 공국. 군사력이 미약해 독자 행동이 어려우나 에게해 서안의 항구를 보유해 베네치아·비잔틴 모두와 관계를 유지한다."
   },
   {
     "id": "tekke", "name": "테케 왕조", "type": "emirate",

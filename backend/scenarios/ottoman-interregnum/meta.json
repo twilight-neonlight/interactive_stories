@@ -10,8 +10,7 @@
   "color": "#C5932A",
   "colorSoft": "rgba(197,147,42,0.07)",
   "iconBg": "rgba(197,147,42,0.09)",
-  "status": "partial",
-  "protagonistMode": "select",
+"protagonistMode": "select",
   "characterSelectPage": "prince_select.html",
   "troops_per_strength_point": 65
 }

@@ -44,7 +44,6 @@ The following examples show the required output format. Follow this structure ex
 1. 요압의 건의를 받아들여 야간에 선제 기습을 감행한다.
 2. 잇대의 조언에 따라 병력을 에브라임 숲 입구에 배치해 방어 진지를 구축한다.
 3. 추가 정찰대를 파견해 적 기동을 재확인하고, 결과에 따라 판단한다.
-4. 성문을 굳게 닫고 농성을 유지하며 적의 첫 공세를 받아낸다.
 
 위 선택지 중 하나를 고르거나, 직접 명령을 내리십시오.
 

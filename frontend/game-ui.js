@@ -143,8 +143,7 @@ function renderMapMarkers(state) {
 
     pin.innerHTML = `
       <div class="pin-pulse" style="border-color:${color};"></div>
-      <div class="pin-dot"   style="background:${color};"></div>
-      <div class="pin-label">${loc.name.split(' ')[0]}</div>`;
+      <div class="pin-dot"   style="background:${color};"></div>`;
 
     layer.appendChild(pin);
   });
@@ -162,8 +161,7 @@ function renderMapMarkers(state) {
         transitPin.className = 'map-marker map-pin is-player is-transit';
         transitPin.innerHTML = `
           <div class="pin-pulse" style="border-color:#3A9E5F;"></div>
-          <div class="pin-dot"   style="background:#3A9E5F;"></div>
-          <div class="pin-label">진군 중</div>`;
+          <div class="pin-dot"   style="background:#3A9E5F;"></div>`;
         layer.appendChild(transitPin);
       }
       transitPin.style.left = `${mx}%`;

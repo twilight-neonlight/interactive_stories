@@ -63,5 +63,6 @@ function extractChoices(text) {
   return section
     .split('\n')
     .filter(l => /^(-|\d+[.)]) .{4,}/.test(l.trim()))
-    .map(l => l.trim().replace(/^(-|\d+[.)]) /, '').trim());
+    .map(l => l.trim().replace(/^(-|\d+[.)]) /, '').trim())
+    .slice(0, 3);
 }
