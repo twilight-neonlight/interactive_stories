@@ -360,11 +360,19 @@ const CONFIGS = {
       return { color, statusText: '중립' };
     },
 
-    /** trigger_condition을 평가해 현재 시점에 활성화된 이벤트만 반환 */
+    /** trigger_condition / end_condition을 평가해 현재 시점에 활성화된 이벤트만 반환 */
     getEvents(state) {
       const year    = _parseYear(state.progress?.timestamp);
-      const context = _buildEventConditionContext(state, year);
-      return (state.events ?? []).filter(ev => _evaluateEventCondition(_eventConditionExpr(ev), context));
+      const context = {
+        ..._buildEventConditionContext(state, year),
+        active_princes: Array.from(state.factions.values())
+          .filter(f => f.type === 'faction' && f.id !== state.protagonist)
+          .length,
+      };
+      return (state.events ?? []).filter(ev =>
+        _evaluateEventCondition(_eventConditionExpr(ev), context) &&
+        !(ev.end_condition && _evaluateEventCondition(ev.end_condition, context))
+      );
     },
 
     /** type:'faction'인 세력들을 왕자로 간주해 disposition 초기화 */

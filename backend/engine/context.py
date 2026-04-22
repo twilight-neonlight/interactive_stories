@@ -48,7 +48,7 @@ def _event_condition_context(state: dict, current_year: int | None) -> dict:
     prince_ids  = {fid for fid, f in facs.items() if f.get("type") == "faction"}
     controllers = {loc.get("controller") for loc in locs.values()}
 
-    return {
+    ctx: dict = {
         "year": current_year,
         "chapter": state.get("progress", {}).get("chapter"),
         "scene": state.get("progress", {}).get("scene"),
@@ -57,6 +57,10 @@ def _event_condition_context(state: dict, current_year: int | None) -> dict:
             for pid in prince_ids
         ),
     }
+    protagonist = state.get("protagonist")
+    if prince_ids:
+        ctx["active_princes"] = sum(1 for pid in prince_ids if pid != protagonist)
+    return ctx
 
 
 def _event_condition_expr(ev: dict) -> str | None:
@@ -232,6 +236,7 @@ def build_scenario_context(state: dict) -> str:
     active_events = [
         ev for ev in events
         if _evaluate_event_condition(_event_condition_expr(ev), cond_ctx)
+        and not (ev.get("end_condition") and _evaluate_event_condition(ev["end_condition"], cond_ctx))
     ]
     future_events = [
         ev for ev in events

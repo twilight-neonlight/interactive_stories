@@ -241,6 +241,13 @@ body::before {
   border: 1px solid var(--border-mid);
   border-radius: 4px; padding: 2px 7px;
 }
+.recommended-badge {
+  position: absolute; top: 10px; right: 10px; z-index: 2;
+  font-family: sans-serif; font-size: 9px; letter-spacing: 0.10em;
+  background: rgba(197,147,42,0.12); color: #9a6e10;
+  border: 1px solid rgba(197,147,42,0.35);
+  border-radius: 4px; padding: 2px 7px;
+}
 
 /* ─── 선택 확인 버튼 ─── */
 .confirm-wrap {
@@ -340,10 +347,11 @@ async function renderCharacters() {
 
     const locationHtml = c.location.replace('\n', '<br>');
     const traits = (c.traits || []).map(t => `<span class="trait">${t}</span>`).join('');
-    const wipBadge = isAvailable ? '' : '<div class="wip-badge">준비 중</div>';
+    const wipBadge         = isAvailable ? '' : '<div class="wip-badge">준비 중</div>';
+    const recommendedBadge = c.recommended  ? '<div class="recommended-badge">추천</div>' : '';
 
     card.innerHTML = `
-      ${wipBadge}
+      ${wipBadge}${recommendedBadge}
       <div class="pc-inner">
         <div class="pc-top">
           <div class="pc-emblem">${c.icon}</div>
