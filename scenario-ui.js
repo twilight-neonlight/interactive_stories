@@ -343,7 +343,7 @@ const CONFIGS = {
         disp === '동맹'   ? { cls: 'rel-ally', label: '동맹' } :
         disp === '우호'   ? { cls: 'rel-coop', label: '협력' } :
         disp === '중립'   ? { cls: 'rel-unk',  label: '중립' } :
-        disp === '비우호' ? { cls: 'rel-dist', label: '경쟝' } :
+        disp === '비우호' ? { cls: 'rel-dist', label: '경쟁' } :
         disp === '적대'   ? { cls: 'rel-host', label: '숙적' } :
                             { cls: 'rel-dist', label: '불명' }
       );
