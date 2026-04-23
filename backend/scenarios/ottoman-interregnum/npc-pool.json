@@ -31,6 +31,7 @@
     {
       "id": "karamanid-envoy-m",
       "name": "알리 베이 카라마니", "epithet": "카라만 사절",
+      "faction_id": "karamanids",
       "disposition": "중립", "status_tag": "불명",
       "weight": 7, "tags": ["외교"],
       "require_location": ["ankara"],
@@ -50,6 +51,7 @@
     {
       "id": "yakob-grillo",
       "name": "야코보 그릴로", "epithet": "제노바 상인 대표",
+      "faction_id": "genoa",
       "disposition": "우호", "status_tag": "확인됨",
       "weight": 6, "tags": ["외교", "상인"],
       "desc": "제노바 무역 거점의 대리인. 술레이만의 외교 자산이지만, 상업적 이익이 보장되는 한에서만 협력한다."
@@ -64,6 +66,7 @@
     {
       "id": "greek-archon-s",
       "name": "디미트리오스 팔라이올로고스", "epithet": "비잔틴 귀족 협력자",
+      "faction_id": "byzantine",
       "disposition": "중립", "status_tag": "불명",
       "weight": 5, "tags": ["외교", "귀족"],
       "desc": "비잔틴 황실 방계 출신으로 에디르네에 거주하는 그리스 귀족. 술레이만에게 비잔틴 내부 정보를 제공하지만, 황제 마누엘과의 관계도 유지하고 있다."
@@ -78,6 +81,7 @@
     {
       "id": "byzantine-envoy-s",
       "name": "요안네스 크리소베르게스", "epithet": "비잔틴 특사",
+      "faction_id": "byzantine",
       "disposition": "중립", "status_tag": "불명",
       "weight": 8, "tags": ["외교"],
       "require_location": ["constantinople", "gallipoli"],

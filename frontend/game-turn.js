@@ -120,6 +120,7 @@ async function submitTurn() {
       }
     }
 
+    _ui.onTurnEnd?.(_state);
     _manager._state = _state;
     _manager.save();
 

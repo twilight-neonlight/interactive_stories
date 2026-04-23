@@ -17,8 +17,9 @@ let _ui      = null;
       _ui = window.getScenarioUI(data.scenarioId);
       tagStyle = { ...BASE_TAG_STYLE, ..._ui.tagExtras };
       _state = GameState.fromJSON(data);
-      _state.npcPool        = scenario.npc_pool ?? {};
-      _state.mapSvg         = scenario.map_svg  ?? '';
+      _state.npcPool        = scenario.npc_pool     ?? {};
+      _state.eventContext   = scenario.event_context ?? {};
+      _state.mapSvg         = scenario.map_svg       ?? '';
       _state.troopsPerPoint = scenario.troops_per_strength_point ?? null;
       const mapContainer = document.getElementById('map-container');
       if (mapContainer) {
@@ -73,12 +74,13 @@ let _ui      = null;
   }
 
   if (_state) {
-    _state.npcPool        = scenario.npc_pool ?? {};
+    _state.npcPool        = scenario.npc_pool     ?? {};
+    _state.eventContext   = scenario.event_context ?? {};
     _state.troopsPerPoint = scenario.troops_per_strength_point ?? null;
     // 히스토리가 없으면 아직 게임이 시작되지 않은 상태 — initial_diplomacy를 재적용해
     // 세션스토리지에 오래된 데이터가 남아있어도 올바른 초기값으로 복구된다.
     if (_state.history.length === 0) {
-      GameState.applyInitialDiplomacy(_state, scenario, _state.protagonist);
+      GameState.applyInitialDiplomacy(_state, _state.protagonist);
       _ui.initDispositions(_state);
       _manager.save();
     }

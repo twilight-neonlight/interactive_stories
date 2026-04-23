@@ -65,7 +65,7 @@ function renderFactionBars(state) {
     const score = Math.max(0, (f.strength_score ?? 350) - (f.battle_damage ?? 0));
     const width = `${Math.min(100, Math.round(score / 7))}%`;
     const color = _ui.factionBarColor(f);
-    const tag   = _ui.factionBarTag(f);
+    const tag   = _ui.factionBarTag(f, state);
     const short = f.name.split(' ')[0];
     return `<div class="faction-item">
       <span class="faction-name" data-name="${f.name}" data-sub="${f.type||''}" data-body="${f.notes||''}" data-tags="${tag}" data-color="${color}">${short}</span>
@@ -184,16 +184,9 @@ function renderEventList(state) {
     container.innerHTML = '<div style="color:var(--text-tertiary);font-size:12px;padding:8px 4px;">진행 중인 사건이 없습니다.</div>';
     rebindTooltips(); return;
   }
-  const competers = state.factions
-    ? Array.from(state.factions.values()).filter(f => f.type === 'faction' && f.id !== state.protagonist).length
-    : null;
-
   container.innerHTML = events.map(ev => {
-    const extraRows = (competers !== null && ev.end_condition?.includes('active_princes'))
-      ? `|남은 경쟁자:${competers}명`
-      : '';
     return `<div class="event-item"
-    data-name="${ev.name}" data-sub="${ev.sub}" data-body="${ev.body}" data-rows="${ev.rows}${extraRows}">
+    data-name="${ev.name}" data-sub="${ev.sub}" data-body="${ev.body}" data-rows="${ev.rows}">
     <div class="event-header">
       <div class="event-dot" style="background:${ev.dot};"></div>
       <div class="event-title">${ev.name}</div>

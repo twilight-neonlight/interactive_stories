@@ -132,7 +132,7 @@ class GameState {
       this.locations.set(location.id, structuredClone(location));
     }
 
-    GameState.applyInitialDiplomacy(this, scenario, protagonistId);
+    GameState.applyInitialDiplomacy(this, protagonistId);
 
   }
 
@@ -414,18 +414,11 @@ class GameState {
     return state;
   }
 
-  /**
-   * 주인공의 initial_diplomacy를 state의 factions에 적용합니다.
-   * 생성자와 sessionStorage 복원 경로 모두에서 사용합니다.
-   * @param {GameState} state
-   * @param {{ characters?: Array }} scenario
-   * @param {string|null} protagonistId
-   */
-  static applyInitialDiplomacy(state, scenario, protagonistId) {
+  static applyInitialDiplomacy(state, protagonistId) {
     if (!protagonistId) return;
-    const pChar = (scenario.characters ?? []).find(c => c.id === protagonistId);
-    if (!pChar?.initial_diplomacy) return;
-    for (const [factionId, value] of Object.entries(pChar.initial_diplomacy)) {
+    const diplomacy = state.factions.get(protagonistId)?.initial_diplomacy;
+    if (!diplomacy) return;
+    for (const [factionId, value] of Object.entries(diplomacy)) {
       const faction = state.factions.get(factionId);
       if (!faction) continue;
       const score = typeof value === 'number'

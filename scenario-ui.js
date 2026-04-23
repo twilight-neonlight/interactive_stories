@@ -27,22 +27,10 @@ function _parseYear(timestamp) {
 }
 
 function _buildEventConditionContext(state, year = _parseYear(state.progress?.timestamp)) {
-  const princeFactionIds = Array.from(state.factions.values())
-    .filter(f => f.type === 'faction')
-    .map(f => f.id);
-  const controllersInUse = new Set(
-    Array.from(state.locations.values()).map(l => l.controller)
-  );
-
   return {
     year,
     chapter: state.progress?.chapter ?? null,
-    scene: state.progress?.scene ?? null,
-    has_exiled_prince: princeFactionIds.some(id => {
-      if (controllersInUse.has(id)) return false;
-      const f = state.factions.get(id);
-      return (f?.battle_damage ?? 0) > 0;
-    }),
+    scene:   state.progress?.scene   ?? null,
   };
 }
 
@@ -263,6 +251,24 @@ function defaultCommanderInfo(state) {
   ]};
 }
 
+function defaultMapMarkerStyle(loc, state) {
+  if (loc.controller === 'contested') return { color: '#EF9F27', statusText: '불안정' };
+  const faction = state.factions.get(loc.controller);
+  const color   = faction?.color || '#888780';
+  const disp    = faction?.disposition;
+  if (disp === '우호') {
+    const char = state.characters.get(state.protagonist);
+    const homeFactionId = char?.faction_id || char?.faction
+      || (state.factions.has(state.protagonist) ? state.protagonist : null);
+    if (homeFactionId && loc.controller === homeFactionId) {
+      return { color, statusText: '본국 영토' };
+    }
+    return { color, statusText: '동맹 거점' };
+  }
+  if (disp === '적대') return { color, statusText: '적 점거' };
+  return { color, statusText: '중립' };
+}
+
 // ════════════════════════════════════════════════════════════════
 const CONFIGS = {
 
@@ -287,24 +293,12 @@ const CONFIGS = {
     },
 
     factionBarColor(faction) { return DISP_COLOR[faction.disposition] || '#888780'; },
-    factionBarTag(faction)   { return { 우호: '아군', 적대: '적대', 중립: '중립' }[faction.disposition] || '불명'; },
-
-    mapMarkerStyle(loc, state) {
-      if (loc.controller === 'contested') return { color: '#EF9F27', statusText: '불안정' };
-      const faction = state.factions.get(loc.controller);
-      const disp    = faction?.disposition;
-      if (disp === '우호') {
-        const char = state.characters.get(state.protagonist);
-        const homeFactionId = char?.faction_id || char?.faction
-          || (state.factions.has(state.protagonist) ? state.protagonist : null);
-        if (homeFactionId && loc.controller === homeFactionId) {
-          return { color: '#5DBB8B', statusText: '본국 영토' };
-        }
-        return { color: '#378ADD', statusText: '동맹 거점' };
-      }
-      if (disp === '적대') return { color: '#E24B4A', statusText: '적 점거' };
-      return { color: '#888780', statusText: '중립' };
+    factionBarTag(faction, state) {
+      if (faction.id === state?.protagonist) return '아군';
+      return { 우호: '우호', 적대: '적대', 중립: '중립' }[faction.disposition] || '불명';
     },
+
+    mapMarkerStyle: defaultMapMarkerStyle,
 
     /** 적대 세력의 점거 거점을 동적으로 사건 목록으로 변환 */
     getEvents(state) {
@@ -334,11 +328,19 @@ const CONFIGS = {
 
     commanderInfo: defaultCommanderInfo,
 
-    /** 캐릭터 데이터의 color 필드 사용 */
-    charDotColor(char) { return char.color || '#888780'; },
+    charDotColor(char, state) {
+      if (char.color) return char.color;
+      const factionId = char.faction_id
+        || (state.factions.has(char.id) ? char.id : null);
+      return state.factions.get(factionId)?.color || '#888780';
+    },
     charRelInfo(char, state) {
       if (char.id === state.protagonist) return { cls: 'rel-player', label: '플레이어' };
-      const disp = state.factions.get(char.id)?.disposition ?? char.disposition;
+      // 외부 세력 소속(faction_id 또는 char.id가 세력 ID)이면 해당 세력의 외교 관계를 따름
+      const externalFactionId = char.faction_id
+        || (state.factions.has(char.id) ? char.id : null);
+      const faction = externalFactionId ? state.factions.get(externalFactionId) : null;
+      const disp = faction ? faction.disposition : (char.disposition ?? '중립');
       return (
         disp === '동맹'   ? { cls: 'rel-ally', label: '동맹' } :
         disp === '우호'   ? { cls: 'rel-coop', label: '협력' } :
@@ -351,8 +353,9 @@ const CONFIGS = {
 
     /** 세력 데이터의 color 필드 사용 */
     factionBarColor(faction) { return faction.color || '#888780'; },
-    factionBarTag(faction) {
-      return { 동맹: '동맹', 우호: '아군', 중립: '중립', 비우호: '경쟁', 적대: '숙적' }[faction.disposition] || '불명';
+    factionBarTag(faction, state) {
+      if (faction.id === state?.protagonist) return '아군';
+      return { 동맹: '동맹', 우호: '우호', 중립: '중립', 비우호: '경쟁', 적대: '숙적' }[faction.disposition] || '불명';
     },
 
     mapMarkerStyle(loc, state) {
@@ -360,7 +363,8 @@ const CONFIGS = {
       const faction = state.factions.get(loc.controller);
       const color   = faction?.color || '#888780';
       const disp    = faction?.disposition;
-      if (disp === '동맹' || disp === '우호') return { color, statusText: '아군 거점' };
+      if (disp === '동맹') return { color, statusText: '동맹 거점' };
+      if (disp === '우호') return { color, statusText: '우호 거점' };
       if (disp === '비우호') return { color, statusText: '경쟁 세력' };
       if (disp === '적대')   return { color, statusText: '숙적' };
       return { color, statusText: '중립' };
@@ -368,28 +372,64 @@ const CONFIGS = {
 
     /** trigger_condition / end_condition을 평가해 현재 시점에 활성화된 이벤트만 반환 */
     getEvents(state) {
-      const year    = _parseYear(state.progress?.timestamp);
+      const year      = _parseYear(state.progress?.timestamp);
+      const factions  = state.factions;
+      const princeFactionIds = Array.from(factions.values())
+        .filter(f => f.type === 'faction').map(f => f.id);
+      const controllersInUse = new Set(
+        Array.from(state.locations.values()).map(l => l.controller)
+      );
       const context = {
         ..._buildEventConditionContext(state, year),
-        active_princes: Array.from(state.factions.values())
-          .filter(f => f.type === 'faction' && f.id !== state.protagonist)
-          .length,
+        active_princes: princeFactionIds
+          .filter(id => id !== state.protagonist && !factions.get(id)?.defeated).length,
+        has_exiled_prince: princeFactionIds.some(id => {
+          if (controllersInUse.has(id)) return false;
+          return (factions.get(id)?.battle_damage ?? 0) > 0;
+        }),
       };
-      return (state.events ?? []).filter(ev =>
-        _evaluateEventCondition(_eventConditionExpr(ev), context) &&
-        !(ev.end_condition && _evaluateEventCondition(ev.end_condition, context))
-      );
+      // event_context.json 의 faction_vars 목록에 따라 {id}_defeated / {id}_score 추가
+      for (const id of (state.eventContext?.faction_vars ?? [])) {
+        const f = factions.get(id);
+        context[`${id}_defeated`] = f?.defeated ?? false;
+        context[`${id}_score`]    = f?.diplomacy_score ?? 0;
+      }
+      return (state.events ?? [])
+        .filter(ev =>
+          _evaluateEventCondition(_eventConditionExpr(ev), context) &&
+          !(ev.end_condition && _evaluateEventCondition(ev.end_condition, context))
+        )
+        .map(ev => ev.end_condition?.includes('active_princes')
+          ? { ...ev, rows: `${ev.rows}|남은 경쟁자:${context.active_princes}명` }
+          : ev
+        );
     },
 
-    /** 캐릭터 disposition을 대응하는 세력의 disposition과 동기화 */
     initDispositions(state) {
       for (const [id, char] of state.characters) {
-        const faction = state.factions.get(id);
-        char.disposition = faction?.disposition ?? char.disposition ?? '중립';
+        const factionId = char.faction_id || id;
+        const faction   = state.factions.get(factionId);
+        // 외부 세력 소속 인물만 세력 외교 상태를 따름; 주인공 진영 내부 인물은 개별 disposition 유지
+        if (faction && faction.id !== state.protagonist) {
+          char.disposition = faction.disposition;
+        }
       }
     },
 
     onInit: defaultOnInit,
+
+    onTurnEnd(state) {
+      const protagonist = state.factions.get(state.protagonist);
+      if (!protagonist || protagonist.type === 'sultanate') return;
+      // 오스만 공위 분쟁 이벤트가 아직 활성이면 스킵
+      if (this.getEvents(state).some(ev => ev.name === '오스만 공위 분쟁')) return;
+      Object.assign(protagonist, {
+        name:  '오스만 술탄국',
+        type:  'sultanate',
+        color: '#8B1A1A',
+        notes: '공위 분쟁을 종식하고 세워진 통합 오스만 술탄국. 왕좌의 정통성은 확립됐으나, 아나톨리아 재건과 잔존 베이릭 복속이 새로운 과제로 떠오른다.',
+      });
+    },
   },
 };
 

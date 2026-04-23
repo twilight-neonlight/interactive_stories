@@ -57,6 +57,8 @@ def load_scenarios() -> list[dict]:
             scenario[key] = json.loads(path.read_text(encoding="utf-8")) if path.exists() else []
         npc_pool_path = scenario_dir / "npc-pool.json"
         scenario["npc_pool"] = json.loads(npc_pool_path.read_text(encoding="utf-8")) if npc_pool_path.exists() else {}
+        event_context_path = scenario_dir / "event_context.json"
+        scenario["event_context"] = json.loads(event_context_path.read_text(encoding="utf-8")) if event_context_path.exists() else {}
         map_path = scenario_dir / "map.svg"
         scenario["map_svg"] = map_path.read_text(encoding="utf-8") if map_path.exists() else ""
         if "troops_per_strength_point" not in scenario:
