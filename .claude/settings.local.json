@@ -1,7 +1,0 @@
-{
-  "permissions": {
-    "allow": [
-      "Bash(python -c \"import main; print\\('app created:', main.app.title\\)\")"
-    ]
-  }
-}
