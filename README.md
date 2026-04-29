@@ -9,17 +9,19 @@
 ## 기능 개요
 
 ### 시나리오 시스템
-- 프리셋 시나리오와 **자유 커스텀 시나리오** 모두 지원
-- 커스텀 시나리오: 시대, 세계관, 지휘관, 목표, 주요 위협을 자유 텍스트로 입력해 즉시 시작
+- 프리셋 시나리오 중심으로 지원
+- 커스텀 시나리오 입력 UI는 존재하지만, 현재 버전에서는 게임 초기화 흐름과 완전히 연결되지 않은 실험 기능
 - 시나리오마다 고유한 배경 지도, 세력 배치, 등장 인물 설정 보유
 - 주인공 선택형(`protagonistMode: select`) / 고정형(`fixed`) 분기 지원
 - 시나리오 데이터(`backend/scenarios/{id}/`)는 JSON 파일로 분리 관리 — 코드 수정 없이 편집 가능
+- 선택형 시나리오는 `character-select.json`에서 선택 카드 데이터를 관리하고, `characters.json`의 인물 원본 데이터와 조합해 표시
 
 ### AI 내러티브 엔진 (TurnEngine)
 - Google Gemini(`gemini-3-flash-preview`)를 내러티브 생성 모델로 사용
 - 플레이어 입력 → 백엔드 `/api/turn` → AI 응답 → 상태 갱신의 단방향 흐름
-- 행동 판정 5단계: **대성공 / 성공 / 부분 성공 / 실패 / 대실패** — 주사위(1–100) + 병력·외교·지형 수정치로 결정
-- 병력 비교에 중립 구간(0.91–1.09배) 적용 — 호각 전투에서 불필요한 열세 패널티 없음
+- 행동 판정 5단계: **대성공 / 성공 / 부분 성공 / 실패 / 대실패**
+- 판정은 주사위(1–100)에 행동 품질 평가 보정치를 더해 결정하며, 군사 행동은 지형·수비대 보정도 함께 반영
+- 수동적 관찰·대기 등은 별도 주사위 판정 없이 서술형으로 처리
 - 장(Chapter) / 씬(Scene) 구조 자동 추적: LLM 응답 텍스트에서 `## N장, SCENE M` 패턴을 파싱해 진행 위치를 갱신
 
 ### 상태 관리 (GameState / StateManager)
@@ -58,15 +60,17 @@
 | 속성 | 범위 | 설명 |
 |---|---|---|
 | `diplomacy_score` | −100 – +100 | 플레이어에 대한 우호도 수치 |
-| `disposition` | 우호 / 중립 / 적대 | 수치에서 자동 산출 |
+| `disposition` | 동맹 / 우호 / 중립 / 비우호 / 적대 | 수치에서 자동 산출 |
 
 수치 → 태도 변환 기준:
 
-- `> 33` → **우호**
+- `>= 67` → **동맹**
+- `34 ~ 66` → **우호**
 - `−33 ~ 33` → **중립**
-- `< −33` → **적대**
+- `−66 ~ −34` → **비우호**
+- `< −66` → **적대**
 
-초기값: 우호 → 50, 중립 → 0, 적대 → −50. `faction_diplomacy_changes`로 delta 누적 시 태도 자동 재계산. `faction_disposition_changes`로 태도를 직접 설정하면 점수도 해당 초기값으로 보정됩니다.
+초기값: 동맹 → 80, 우호 → 50, 중립 → 0, 비우호 → −50, 적대 → −80. `faction_diplomacy_changes`로 delta 누적 시 태도 자동 재계산. `faction_disposition_changes`로 태도를 직접 설정하면 점수도 해당 초기값으로 보정됩니다.
 
 **거점 (`locations`)**
 - `controller`: 현재 지배 세력 id
@@ -137,12 +141,13 @@ interactive_stories/
 ├── backend/
 │   ├── main.py                     # FastAPI 앱 팩토리 (미들웨어, 라우터 등록)
 │   ├── config.py                   # 환경변수·모델 설정 (API 키, Gemini URL 등)
-│   ├── scenarios_loader.py         # 시나리오 JSON 로딩 + 병력 규모 자동 추정
+│   ├── scenarios_loader.py         # 시나리오 JSON 로딩 + 병력 규모·수비대 자동 추정
 │   ├── gemini_client.py            # Gemini API 호출 헬퍼
 │   ├── requirements.txt
 │   ├── .env                        # GOOGLE_API_KEY 설정 (직접 생성 필요)
 │   ├── engine/
-│   │   ├── resolver.py             # 행동 판정 엔진 (키워드 분류, 지형·병력 수정치, 5단계 등급)
+│   │   ├── quality.py              # 행동 품질 평가용 보조 컨텍스트 구성 및 LLM 평가
+│   │   ├── resolver.py             # 행동 판정 엔진 (키워드 분류, 품질·지형·수비대 보정, 5단계 등급)
 │   │   ├── turn.py                 # 턴 파싱 (장/씬 번호, 시각, STATE_UPDATE 블록 추출)
 │   │   └── context.py              # LLM 컨텍스트 빌더 (시나리오 상태 주입, 오프닝 NPC)
 │   ├── routers/
@@ -154,10 +159,14 @@ interactive_stories/
 │           ├── meta.json           # 표시 메타데이터 (제목·섹션·troops_per_strength_point 등)
 │           ├── locations.json      # 거점 목록 (x/y는 이미지 기준 퍼센트 좌표)
 │           ├── factions.json       # 세력 목록 (strength_score 직접 지정)
-│           ├── characters.json     # 인물 목록 (playable: true/false로 선택 가능 여부 지정)
+│           ├── characters.json     # 인물 원본 목록 (이름·직위·설명·소속 세력 등)
+│           ├── character-select.json # 선택형 시나리오의 주인공 선택 카드 데이터
 │           ├── events.json         # 세계 사건 목록
+│           ├── event_context.json  # 이벤트 조건 평가에 노출할 보조 변수 목록 (선택)
+│           ├── rules.json          # 시나리오별 진행·역사 규칙
 │           ├── npc-pool.json       # NPC 풀 (가중치·거점 조건부 등장 지원)
-│           └── map.png             # 배경 지도 이미지 (선택, PNG/JPG/WEBP 모두 가능)
+│           ├── map.png             # 배경 지도 이미지 (선택, PNG/JPG/WEBP 모두 가능)
+│           └── map_preview.html    # 시나리오별 지도 미리보기/검수용 HTML (선택)
 ├── frontend/
 │   ├── main_menu.html              # 메인 메뉴 (새 게임 / 불러오기)
 │   ├── scenario_select.html        # 시나리오 선택 화면
@@ -179,6 +188,7 @@ interactive_stories/
 ├── saves/                          # 서버 측 세이브 파일 저장소 (JSON)
 ├── tools/
 │   └── map-coord-picker.html       # 지도 이미지 좌표 픽업 도구
+├── .gitignore
 ├── scenario-loader.js              # 백엔드 REST API 클라이언트
 ├── scenario-ui.js                  # 시나리오별 UI 렌더링 로직 (색상·마커·NPC 소환)
 ├── prompt_rules.md                 # AI 시스템 프롬프트 — 역할·세계 시뮬레이션·행동 판정·진행 규칙
@@ -243,7 +253,7 @@ uvicorn main:app --reload --port 8000
 
 ## 게임 플레이 흐름
 
-1. **시나리오 선택** — 프리셋 시나리오 선택 또는 커스텀 시나리오 직접 입력
+1. **시나리오 선택** — 프리셋 시나리오 선택. 커스텀 입력 UI는 있으나 현재 게임 시작 흐름에는 아직 연결되지 않음
 2. **주인공 선택** — 시나리오에 따라 플레이어블 캐릭터 선택 (선택형 시나리오)
 3. **씬 진행** — AI가 상황을 묘사하고 2~4개의 선택지를 제시
 4. **명령 입력** — 선택지를 고르거나 자유 텍스트로 직접 명령 입력
@@ -257,6 +267,7 @@ uvicorn main:app --reload --port 8000
 1. `backend/scenarios/` 아래 새 폴더 생성 (예: `my-scenario/`)
 2. `meta.json` 작성 (기존 시나리오 참고)
 3. `locations.json`, `factions.json`, `characters.json` 등 필요한 파일 작성
-4. `map.png` 배치 + `tools/map-coord-picker.html`로 좌표 확보
-5. `scenario-ui.js`의 `CONFIGS`에 시나리오 ID 키로 UI 설정 추가
-6. 백엔드 서버 재시작 시 자동으로 목록에 포함됨
+4. 선택형 시나리오라면 `character-select.json`을 작성해 선택 카드, 플레이 가능 여부, 추천 표시 등을 정의
+5. `map.png` 배치 + `tools/map-coord-picker.html`로 좌표 확보
+6. `scenario-ui.js`의 `CONFIGS`에 시나리오 ID 키로 UI 설정 추가
+7. 백엔드 서버 재시작 시 자동으로 목록에 포함됨
