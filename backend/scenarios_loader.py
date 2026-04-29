@@ -8,6 +8,14 @@ from pathlib import Path
 
 SCENARIOS_DIR = Path(__file__).parent / "scenarios"
 
+_GARRISON_BY_TIER: dict[str, int] = {
+    "metropolis":    5000,
+    "major_city":    3000,
+    "regional_city": 1500,
+    "small_city":    800,
+    "town":          300,
+}
+
 _EASTERN_KW = {
     "중국", "일본", "몽골", "오스만", "인도", "페르시아", "아랍", "한국", "조선", "청",
     "명", "당", "송", "무굴", "티무르", "오리엔트", "비잔틴", "사파비", "맘루크",
@@ -43,6 +51,18 @@ def _estimate_troops_per_point(scenario: dict) -> int:
     return base
 
 
+def _resolve_garrison(loc: dict) -> int:
+    """tier + garrison_modifier → garrison 병력수 계산. 명시적 garrison이 있으면 그대로 사용."""
+    if "garrison" in loc:
+        return int(loc["garrison"])
+    tier = loc.get("tier")
+    if not tier:
+        return 0
+    base     = _GARRISON_BY_TIER.get(tier, 0)
+    modifier = loc.get("garrison_modifier", 1.0)
+    return round(base * modifier)
+
+
 def load_scenarios() -> list[dict]:
     scenarios = []
     for scenario_dir in sorted(SCENARIOS_DIR.iterdir()):
@@ -55,6 +75,10 @@ def load_scenarios() -> list[dict]:
         for key in ("locations", "factions", "characters", "events", "rules"):
             path = scenario_dir / f"{key}.json"
             scenario[key] = json.loads(path.read_text(encoding="utf-8")) if path.exists() else []
+        for loc in scenario["locations"]:
+            loc["garrison"] = _resolve_garrison(loc)
+        char_select_path = scenario_dir / "character-select.json"
+        scenario["character_select"] = json.loads(char_select_path.read_text(encoding="utf-8")) if char_select_path.exists() else []
         npc_pool_path = scenario_dir / "npc-pool.json"
         scenario["npc_pool"] = json.loads(npc_pool_path.read_text(encoding="utf-8")) if npc_pool_path.exists() else {}
         event_context_path = scenario_dir / "event_context.json"

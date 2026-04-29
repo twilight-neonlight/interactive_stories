@@ -273,6 +273,8 @@ body {
 .map-pin.is-player .pin-dot { background:#3A9E5F !important; width:12px; height:12px; border-color:rgba(255,255,255,0.9); }
 .map-pin.is-player .pin-pulse { border-color:#3A9E5F !important; width:24px; height:24px; animation-duration:1.6s; }
 .map-pin.is-player .pin-label { color:#1a6e3e; font-weight:700; }
+.map-pin.is-unknown .pin-dot   { opacity: 0.55; }
+.map-pin.is-unknown .pin-pulse { opacity: 0.35; animation-duration: 2.6s; }
 
 /* ── 선택지 ── */
 .choice-list { display: flex; flex-direction: column; gap: 7px; flex: 1; min-height: 0; overflow-y: auto; padding-right: 2px; }

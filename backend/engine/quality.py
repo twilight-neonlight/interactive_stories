@@ -65,14 +65,21 @@ def _build_military_context(state: dict, player_faction_id: str | None) -> list[
     lines = []
 
     if player_faction_id and player_faction_id in factions:
-        pf  = factions[player_faction_id]
-        dmg = pf.get("battle_damage", 0)
-        eff = pf.get("strength_score", 0) - dmg
-        lines.append(
-            f"\n[아군] {pf.get('name', player_faction_id)} "
-            f"실효 전력 {eff} (잠재 {pf.get('strength_score', '?')}"
-            + (f", 전투 피해 -{dmg}" if dmg else "") + ")"
-        )
+        pf         = factions[player_faction_id]
+        dmg        = pf.get("battle_damage", 0)
+        eff        = pf.get("strength_score", 0) - dmg
+        field_army = pf.get("field_army")
+        if field_army is not None:
+            lines.append(
+                f"\n[아군] {pf.get('name', player_faction_id)} "
+                f"야전군 {field_army:,}명" + (f" (전투 피해 -{dmg}" + ")" if dmg else "")
+            )
+        else:
+            lines.append(
+                f"\n[아군] {pf.get('name', player_faction_id)} "
+                f"실효 전력 {eff} (잠재 {pf.get('strength_score', '?')}"
+                + (f", 전투 피해 -{dmg}" if dmg else "") + ")"
+            )
 
     enemy = [f for fid, f in factions.items()
              if fid != player_faction_id and f.get("disposition") == "적대"]
@@ -82,14 +89,22 @@ def _build_military_context(state: dict, player_faction_id: str | None) -> list[
     if enemy:
         lines.append("\n[적군]")
         for f in enemy:
-            dmg = f.get("battle_damage", 0)
-            eff = f.get("strength_score", 0) - dmg
-            lines.append(f"  {f.get('name', '?')} 실효 전력 {eff}")
+            dmg        = f.get("battle_damage", 0)
+            eff        = f.get("strength_score", 0) - dmg
+            field_army = f.get("field_army")
+            if field_army is not None:
+                lines.append(f"  {f.get('name', '?')} 야전군 {field_army:,}명")
+            else:
+                lines.append(f"  {f.get('name', '?')} 실효 전력 {eff}")
 
     if ally:
         lines.append("\n[우군]")
         for f in ally:
-            lines.append(f"  {f.get('name', '?')} 잠재 전력 {f.get('strength_score', '?')}")
+            field_army = f.get("field_army")
+            if field_army is not None:
+                lines.append(f"  {f.get('name', '?')} 야전군 {field_army:,}명")
+            else:
+                lines.append(f"  {f.get('name', '?')} 잠재 전력 {f.get('strength_score', '?')}")
 
     return lines
 

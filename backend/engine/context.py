@@ -211,8 +211,12 @@ def build_scenario_context(state: dict) -> str:
             s_base     = f.get("strength_score")
             s_dmg      = f.get("battle_damage", 0)
             s_eff      = (s_base - s_dmg) if s_base is not None else None
-            str_str    = (f" [병력 {_troops_range(int(s_eff), tpp)}" + (f" / 피해 -{int(s_dmg)}" if s_dmg else "") + "]"
-                          if s_eff is not None and tpp else "")
+            field_army = f.get("field_army")
+            if field_army is not None:
+                str_str = (f" [야전군 {field_army:,}명" + (f" / 피해 -{int(s_dmg)}" if s_dmg else "") + "]")
+            else:
+                str_str = (f" [병력 {_troops_range(int(s_eff), tpp)}" + (f" / 피해 -{int(s_dmg)}" if s_dmg else "") + "]"
+                           if s_eff is not None and tpp else "")
             lines.append(
                 f"  - {f.get('name', '?')} | {f.get('disposition', '?')}{dipl_str}{str_str}"
                 + (f"\n    {note_short}" if note_short else "")
@@ -225,7 +229,9 @@ def build_scenario_context(state: dict) -> str:
             controller = loc.get("controller", "?")
             if controller in factions:
                 controller = factions[controller].get("name", controller)
-            lines.append(f"  - {loc.get('name', '?')} | 지배: {controller}")
+            garrison = loc.get("garrison")
+            garrison_str = f" | 수비대 {garrison:,}명" if garrison else ""
+            lines.append(f"  - {loc.get('name', '?')} | 지배: {controller}{garrison_str}")
 
     events       = state.get("events", [])
     ts           = state.get("progress", {}).get("timestamp", "")

@@ -331,10 +331,16 @@ let selectedCharacter = null;
 
 // ── 왕자 카드 동적 렌더링 ──────────────────────
 async function renderCharacters() {
-  const characters = await ScenarioLoader.fetchCharacters('ottoman-interregnum');
+  const scenario = await ScenarioLoader.fetchOne('ottoman-interregnum');
+  const characterSelect = scenario.character_select ?? [];
+  const charactersMap = Object.fromEntries((scenario.characters ?? []).map(c => [c.id, c]));
   const list = document.getElementById('princeList');
 
-  characters.forEach((c, i) => {
+  characterSelect.forEach((c, i) => {
+    const charData = charactersMap[c.character_id] ?? {};
+    const name = charData.name ?? c.character_id;
+    const epithet = charData.epithet ?? '';
+
     const isAvailable = !!c.playable;
     const card = document.createElement('div');
     card.className = 'prince-card' + (isAvailable ? '' : ' wip');
@@ -342,8 +348,8 @@ async function renderCharacters() {
     card.setAttribute('tabindex', '0');
     card.style.cssText = `--prince-color:${c.color}; --prince-color-soft:${c.colorSoft};`;
     card.style.animationDelay = `${0.15 + i * 0.07}s`;
-    card.dataset.characterId = c.id;
-    card.dataset.characterName = c.name;
+    card.dataset.characterId = c.character_id;
+    card.dataset.characterName = name;
 
     const locationHtml = c.location.replace('\n', '<br>');
     const traits = (c.traits || []).map(t => `<span class="trait">${t}</span>`).join('');
@@ -357,8 +363,8 @@ async function renderCharacters() {
           <div class="pc-emblem">${c.icon}</div>
           <div class="pc-location">${locationHtml}</div>
         </div>
-        <div class="pc-name">${c.name}</div>
-        <div class="pc-epithet">${c.epithet}</div>
+        <div class="pc-name">${name}</div>
+        <div class="pc-epithet">${epithet}</div>
         <div class="pc-divider"></div>
         <div class="pc-desc">${c.desc}</div>
         <div class="pc-traits">${traits}</div>

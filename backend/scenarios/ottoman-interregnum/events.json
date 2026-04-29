@@ -1,46 +1,151 @@
 [
   {
+    "id": "civil_war",
     "name": "오스만 공위 분쟁", "sub": "1402년~ · 오스만 제국 전역",
     "end_condition": "active_princes == 0",
     "body": "앙카라 전투 패배와 바야지트 1세 사망으로 술탄위가 공석이다. 루멜리아와 아나톨리아를 아우르던 영토는 왕자들과 복권된 구 베일리크들로 분열되었다. 어느 왕자도 단독으로 전체를 통제하지 못하는 불안정한 균형.",
-    "rows": "성격:제국 전역 권력 공백|전선:루멜리아·아나톨리아 동시 분열",
+    "effects": [
+      { "key": "병력 회복", "desc": "내전 지속 중 전군 병력 회복 속도 대폭 저하 (×0.2)", "type": "recovery_rate", "value": 0.2, "target": "protagonist" },
+      { "key": "외교 비용", "desc": "분열 상황으로 모든 세력과의 협상 비용 상승" }
+    ],
     "dot": "#C5932A", "region": "제국 전역", "badge": "badge-active", "badgeText": "진행 중"
   },
   {
+    "id": "beylik_restoration",
     "name": "아나톨리아 베이릭 복원", "sub": "1402년~ · 아나톨리아 중·서부",
-    "end_condition": "year >= 1405 or (germiyanids_defeated and tekke_defeated and jandarids_defeated)",
+    "end_condition": "year >= 1405 or germiyanids_defeated and tekke_defeated and jandarids_defeated",
     "body": "티무르가 오스만에 흡수됐던 소규모 공국(베이릭)들을 복원시키고 철수했다. 이들은 독립을 주장하며 영역을 회복 중인데, 만약 어느 왕자가 무리하게 재합병을 추진할 경우 티무르가 다시 이 지역에 개입할 명분이 생길 수 있다.",
-    "rows": "성격:소규모 공국의 독립 운동|위험:티무르가 살아있는 한 재침공 명분 제공",
+    "effects": [
+      { "key": "티무르 경고", "desc": "복권 베이릭 중 하나라도 흡수 시 즉각 경고 이벤트 발동" },
+      { "key": "외교 우선", "desc": "전쟁보다 외교적 복속이 티무르 재침 위험을 낮춤" },
+      { "key": "베이릭 자립", "desc": "1405년 시한 만료 시 생존 베이릭의 전력 50% 즉시 증가", "type": "on_end_boost", "value": 0.5, "targets": ["germiyanids", "tekke", "jandarids"], "trigger": "year >= 1405" }
+    ],
     "dot": "#EF9F27", "region": "아나톨리아 중·서부", "badge": "badge-ongoing", "badgeText": "진행 중"
   },
   {
+    "id": "timur_warning",
+    "name": "티무르의 경고서", "sub": "1402~1404년 · 사마르칸트→아나톨리아",
+    "trigger_condition": "germiyanids_defeated and year < 1405 or tekke_defeated and year < 1405 or jandarids_defeated and year < 1405",
+    "end_condition": "timur_expedition_defeated or year >= 1405",
+    "body": "티무르가 복권시킨 베이릭 중 하나가 무너졌다는 소식이 사마르칸트에 전해졌다. 그의 결정을 노골적으로 무시한 행위로, 사절을 통해 강경 경고가 전달됐다. 복권된 공국들을 건드리지 말라는 것이 티무르의 분명한 뜻이다. 외교적으로 봉합하지 못한 채 시간을 보내면 재침의 빌미로 삼을 것이다.",
+    "effects": [
+      { "key": "추가 외교 비용", "desc": "전방위 외교 협상 비용 +50%", "type": "diplomacy_cost_multiplier", "value": 1.5 },
+      { "key": "재침 위험", "desc": "추가 베이릭 합병 또는 6개월 내 외교 실패 시 티무르 재침공 명분 확정" }
+    ],
+    "dot": "#EF9F27", "region": "사마르칸트·아나톨리아", "badge": "badge-ongoing", "badgeText": "외교 위기"
+  },
+  {
+    "id": "karaman_ambition",
     "name": "카라만의 아나톨리아 패권 시도", "sub": "1402년~ · 아나톨리아 중남부",
-    "end_condition": "karamanids_defeated or (active_princes == 0 and karamanids_score >= 34)",
+    "end_condition": "karamanids_defeated or civil_war_ended and karamanids_score >= 34 or karaman_dominance_active",
     "body": "오스만 공위 분쟁을 틈타 중앙 아나톨리아에서 영향력을 확대하는 중이다. 내전이 길어질수록 위험성이 커진다. 어느 왕자가 통일하더라도 가장 먼저 맞닥뜨릴 외부 위협.",
-    "rows": "성격:외부 세력의 공백 활용|위협:오스만 재건 이후에도 충돌 불가피",
+    "effects": [
+      { "key": "카라만 성장", "desc": "내전 방치 중 연간 세력 확대 (+15)", "type": "faction_growth", "frequency": "annual", "value": 15, "target": "karamanids" }
+    ],
     "dot": "#E24B4A", "region": "아나톨리아 중남부", "badge": "badge-ongoing", "badgeText": "진행 중"
   },
   {
+    "id": "karaman_dominance",
+    "name": "카라만의 아나톨리아 지배 공고화", "sub": "1413년 이후 · 아나톨리아 중남부",
+    "trigger_condition": "year >= 1413 and karamanids_defeated == false",
+    "end_condition": "karamanids_defeated or karamanids_score >= 34",
+    "body": "10년 넘게 오스만 내전의 어부지리를 누린 카라만이 사실상 아나톨리아 패권을 확립했다. 중부 고원의 주요 교역로와 요충지를 장악하고 있으며, 이제는 공위 분쟁의 승자를 상대로도 대등하게 협상을 요구할 수 있는 위치에 올라섰다. 내전 종식 후 첫 번째 외부 전쟁이 될 가능성이 높다.",
+    "effects": [
+      { "key": "카라만 급성장", "desc": "패권 공고화로 연간 대규모 세력 확대 (+25)", "type": "faction_growth", "frequency": "annual", "value": 25, "target": "karamanids" },
+      { "key": "협상 요구", "desc": "대등 협상 요구로 외교적 복속 불가 — 전쟁만이 해결책" }
+    ],
+    "dot": "#E24B4A", "region": "아나톨리아 중남부", "badge": "badge-ongoing", "badgeText": "위협 고조"
+  },
+  {
+    "id": "musa_rumelia_journey",
+    "name": "루멜리아로의 길", "sub": "1402년~ · 아나톨리아→루멜리아",
+    "protagonist_only": ["musa"],
+    "end_condition": "musa_rumelia_boost_applied",
+    "body": "포로에서 탈출한 무사에게 아나톨리아는 더 이상 안전한 땅이 아니다. 술레이만의 세력이 루멜리아를 장악하고 있지만 그 내부에는 술레이만의 통치에 불만을 품은 귀족과 가지 전사들이 있다. 루멜리아로 건너가 그 불만 세력을 규합하는 것만이 역전의 발판이 된다.",
+    "effects": [
+      { "key": "루멜리아 도달 시", "desc": "현지 3개월 거점 유지 후 술레이만 반대파 흡수 — 전력 +100 증가" }
+    ],
+    "dot": "#8b2020", "region": "아나톨리아→루멜리아", "badge": "badge-unknown", "badgeText": "잠재적 기회"
+  },
+  {
+    "id": "bulgarian_unrest",
     "name": "트라키아·불가리아 기독교 세력 동요", "sub": "1402년~ · 루멜리아 전역",
     "end_condition": "bulgarian-rebels_defeated",
+    "protagonist_only": ["suleyman"],
     "body": "앙카라 패배 소식이 퍼지자 오스만 치하 불가리아·트라키아 지역의 기독교 귀족과 도시들이 권력의 공백을 감지하고 있다. 공납 거부와 지방 무장 움직임이 산발적으로 보고되며, 루멜리아를 기반으로 삼은 왕자에게는 후방 안정이 최우선 과제가 됐다.",
-    "rows": "성격:피지배 기독교 세력의 기회주의적 이탈|위험:방치 시 루멜리아 수세 기반 자체가 흔들림",
+    "effects": [
+      { "key": "후방 교란", "desc": "루멜리아 공납 일부 거부, 병력 회복 속도 저하 (×0.5)", "type": "recovery_rate", "value": 0.5, "target": "protagonist" }
+    ],
     "dot": "#7F77DD", "region": "루멜리아 전역", "badge": "badge-ongoing", "badgeText": "진행 중"
   },
   {
+    "id": "rumelia_instability",
+    "name": "루멜리아 후방 불안정화 위협", "sub": "1405년 이후 · 루멜리아",
+    "trigger_condition": "year >= 1405",
+    "end_condition": "year >= 1415 or civil_war_ended or bulgarian-rebels_defeated",
+    "protagonist_only": ["isa", "musa", "mehmed"],
+    "body": "술레이만과 경쟁자들 사이의 분쟁이 장기화되는 사이, 트라키아·불가리아의 기독교 귀족들이 세력 공백을 감지했다는 첩보가 입수됐다. 아직 조직적 봉기로 발전하지는 않았으나, 루멜리아를 차지한 세력이 이를 방치하면 반란이 현실화될 수 있다.",
+    "effects": [
+      { "key": "봉기 위험", "desc": "1415년까지 해소하지 못하면 불가리아 대봉기로 격화" }
+    ],
+    "dot": "#7F77DD", "region": "루멜리아", "badge": "badge-unknown", "badgeText": "잠재적 위협"
+  },
+  {
+    "id": "exiled_prince",
     "name": "왈라키아로 망명한 왕자", "sub": "망명 왕자 발생 후 · 다뉴브 이북",
     "trigger_condition": "has_exiled_prince",
     "end_condition": "has_exiled_prince == false",
     "body": "거점을 잃고 망명한 왕자가 왈라키아의 지배자인 미르체아 대공의 궁정에 피신했다. 미르체아는 이 망명자를 빌미로 다뉴브 이남 거점 반환을 요구하는 동시에, 경쟁 왕자들에게도 사신을 보내 이중 외교를 펼치고 있다. 망명 왕자를 지원할 수도 있고 고립시킬 수도 있는 왈라키아의 입장이 루멜리아 전선의 새로운 변수가 된다.",
-    "rows": "성격:망명 왕자를 지렛대로 삼은 외부 개입|변수:미르체아 회유 성공 시 루멜리아 후방 안정 가능",
+    "effects": [
+      { "key": "왈라키아 레버리지", "desc": "망명 왕자를 빌미로 왈라키아 외교 협상 비용 2배 증가", "type": "diplomacy_cost_multiplier", "value": 2.0, "target": "wallachia" }
+    ],
     "dot": "#3a7abf", "region": "다뉴브 이북", "badge": "badge-unknown", "badgeText": "잠재적 위협"
   },
   {
+    "id": "mustafa_rumor",
     "name": "무스타파 왕자의 귀환", "sub": "1410년 이후 · 루멜리아·아나톨리아",
     "trigger_condition": "year >= 1410",
-    "end_condition": "mustafa_defeated",
-    "body": "티무르의 진영에서 실종된 바야지트의 아들 무스타파가 생존해 있다는 소문이 번지기 시작한다. 진위가 불분명한 이 주장은 각 왕자에게 새로운 경쟁자이자 외세 개입의 빌미가 된다. 비잔틴과 베이릭들이 무스타파를 활용해 현 균형을 교란할 가능성이 높아진다.",
-    "rows": "성격:예측 불가 왕위 주장자 및 지지 세력 등장|위험:지지 세력 확보 시 기존 왕자 모두에게 위협",
+    "end_condition": "mustafa_defeated or year >= 1412",
+    "body": "티무르의 진영에서 실종된 바야지트의 아들 무스타파가 생존해 있다는 소문이 번지기 시작한다. 진위가 불분명하지만 비잔틴과 베이릭들이 이 주장에 귀를 기울이기 시작했다. 빠른 진위 확인과 대응이 없으면 소문은 실체 있는 위협으로 자라날 것이다.",
+    "effects": [
+      { "key": "소문 확산", "desc": "비잔틴·베이릭과의 외교 불안정, 조기 진압 시 이 단계에서 차단 가능" }
+    ],
     "dot": "#9B59B6", "region": "루멜리아·아나톨리아", "badge": "badge-unknown", "badgeText": "잠재적 위협"
+  },
+  {
+    "id": "mustafa_army",
+    "name": "무스타파의 루멜리아 출병", "sub": "1412년 이후 · 루멜리아",
+    "trigger_condition": "mustafa_rumor_ended and mustafa_defeated == false",
+    "end_condition": "mustafa_defeated",
+    "body": "무스타파 왕자의 존재가 소문에서 현실이 됐다. 비잔틴의 묵인과 일부 루멜리아 귀족의 지지를 등에 업고 실질적인 군세를 구성해 오스만 계승권을 정면으로 요구하고 있다. 공위 분쟁을 종식하고 싶다면 이 새로운 경쟁자를 먼저 처리해야 한다.",
+    "effects": [
+      { "key": "무스타파 성장", "desc": "비잔틴 묵인·귀족 지원으로 연간 세력 확대 (+20)", "type": "faction_growth", "frequency": "annual", "value": 20, "target": "mustafa" }
+    ],
+    "dot": "#9B59B6", "region": "루멜리아", "badge": "badge-ongoing", "badgeText": "위협 현실화"
+  },
+  {
+    "id": "byzantine_mustafa",
+    "name": "비잔틴의 무스타파 공식 후원", "sub": "1415년 이후 · 콘스탄티노플·루멜리아",
+    "trigger_condition": "mustafa_army_active and year >= 1415",
+    "end_condition": "mustafa_defeated",
+    "body": "무스타파가 3년 넘게 건재하자 비잔틴 황제가 공식적으로 그를 오스만 합법 후계자로 인정하고 군사 지원에 나섰다. 단순한 묵인을 넘어 제국의 자원이 무스타파 진영으로 흘러들어가고 있다. 오스만의 통일 자체를 방해하려는 비잔틴의 전략이 구체화됐으며, 무스타파를 처리하지 않고는 술탄국 재건이 불가능해졌다.",
+    "effects": [
+      { "key": "제국 직접 지원", "desc": "비잔틴 군사 자원 투입으로 무스타파 추가 성장 (+20)", "type": "faction_growth", "frequency": "annual", "value": 20, "target": "mustafa" },
+      { "key": "이중 전선", "desc": "비잔틴과 무스타파를 동시에 상대해야 하는 구도" }
+    ],
+    "dot": "#9B59B6", "region": "콘스탄티노플·루멜리아", "badge": "badge-ongoing", "badgeText": "위협 현실화"
+  },
+  {
+    "id": "bulgarian_revolt",
+    "name": "불가리아 대봉기", "sub": "1415년 이후 · 루멜리아 전역",
+    "trigger_condition": "rumelia_instability_ended and year >= 1415 and bulgarian-rebels_defeated == false",
+    "end_condition": "bulgarian-rebels_defeated or civil_war_ended",
+    "protagonist_only": ["isa", "musa", "mehmed"],
+    "body": "오랜 혼란을 틈타 규모를 키운 트라키아·불가리아의 기독교 귀족 연합이 전면 봉기에 나섰다. 더 이상 산발적 불만이 아닌 조직화된 반오스만 세력으로, 루멜리아 전역의 오스만 거점을 동시에 위협한다. 이들을 방치한 채 왕좌를 차지하더라도 통치 기반이 흔들릴 것이다.",
+    "effects": [
+      { "key": "반군 성장", "desc": "봉기군이 연간 루멜리아 거점 확대 (+25)", "type": "faction_growth", "frequency": "annual", "value": 25, "target": "bulgarian-rebels" },
+      { "key": "후방 교란", "desc": "루멜리아 지배 불안정으로 병력 회복 속도 저하 (×0.4)", "type": "recovery_rate", "value": 0.4, "target": "protagonist" }
+    ],
+    "dot": "#7B4F2E", "region": "루멜리아 전역", "badge": "badge-ongoing", "badgeText": "위협 현실화"
   }
 ]

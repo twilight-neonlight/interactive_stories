@@ -62,5 +62,61 @@
     "region": "드니프로강 하류",
     "controlling_faction": "zaporozhian-host",
     "notes": "자포로지아 코사크의 본진(시치). 연방의 통제권 밖에 있으며 코사크 전사들의 집결지."
+  },
+  {
+    "id": "moscow",
+    "name": "모스크바",
+    "label": "모스크바",
+    "region": "모스크바 공국",
+    "controlling_faction": "muscovy",
+    "notes": "차르국의 수도. 알렉세이 1세의 궁정에서 코사크 사절단 수용 여부가 저울질된다. 연방 개입 결정의 정치적 원점."
+  },
+  {
+    "id": "pskov",
+    "name": "프스코프",
+    "label": "프스코프",
+    "region": "노브고로드 변경",
+    "controlling_faction": "muscovy",
+    "notes": "리투아니아·스웨덴 양쪽 국경에 인접한 모스크바의 서방 전진 거점. 차르국이 연방 북동부로 개입할 경우 병력 집결지가 된다."
+  },
+  {
+    "id": "riga",
+    "name": "리가",
+    "label": "리가",
+    "region": "리보니아",
+    "controlling_faction": "sweden",
+    "notes": "스웨덴령 리보니아의 수도이자 발트해 최대 항구. 리투아니아 국경과 직접 맞닿으며, 스웨덴의 연방 개입 시 주력 침공로의 출발점."
+  },
+  {
+    "id": "reval",
+    "name": "레발",
+    "label": "레발",
+    "region": "에스토니아",
+    "controlling_faction": "sweden",
+    "notes": "스웨덴령 에스토니아의 항구 요새. 발트해 북안의 해상 지배권을 뒷받침하는 스웨덴의 제2 발트 거점."
+  },
+  {
+    "id": "stockholm",
+    "name": "스톡홀름",
+    "label": "스톡홀름",
+    "region": "스웨덴 본토",
+    "controlling_faction": "sweden",
+    "notes": "스웨덴 왕국의 수도. 크리스티나 여왕의 퇴위 협상과 대폴란드 전쟁 준비가 동시에 진행된다. 이곳의 정치 결정이 연방의 운명을 좌우한다."
+  },
+  {
+    "id": "bakhchisaray",
+    "name": "바흐치사라이",
+    "label": "바흐치사라이",
+    "region": "크림반도",
+    "controlling_faction": "crimean-khanate",
+    "notes": "크림 칸국의 수도이자 이슬람 기레이 칸의 궁정. 코사크 동맹 조건을 조율하고 타타르 기병대 파견 규모를 결정하는 곳."
+  },
+  {
+    "id": "perekop",
+    "name": "페레코프",
+    "label": "페레코프",
+    "region": "크림반도",
+    "controlling_faction": "crimean-khanate",
+    "notes": "크림반도 입구를 막는 지협의 요새. 타타르 기병이 스텝으로 출격하거나 후퇴할 때 반드시 통과하는 단일 육로 병목."
   }
 ]

@@ -3,7 +3,9 @@
     "id": "aksaray",
     "x": 70.2, "y": 68.6,
     "name": "악사라이 (Aksaray)",
+    "region": "중앙 아나톨리아", "continent": "아나톨리아",
     "controller": "karamanids",
+    "tier": "small_city",
     "terrain": "아나톨리아 고원 남부 — 카파도키아 교통 요지",
     "notes": "카라만 왕조가 앙카라 전투 이후 장악한 중앙 아나톨리아의 교통 요충. 실크로드 지선이 통과하는 이 도시는 카라만의 아나톨리아 패권 주장을 뒷받침하는 물류·상징 거점이다."
   },
@@ -11,7 +13,9 @@
     "id": "aleppo",
     "x": 84.4, "y": 84.2,
     "name": "알레포 (Aleppo / Ḥalab)",
+    "region": "시리아", "continent": "레반트",
     "controller": "mamluks",
+    "tier": "major_city",
     "terrain": "시리아 북부 내륙 — 오론테스 강 상류 교역 도시",
     "notes": "맘루크 술탄국이 지배하는 시리아 북부의 최대 도시. 지중해와 메소포타미아를 잇는 동서 교역로의 요충으로, 오스만 남방 국경과 직접 맞닿은 시리아의 관문이자 맘루크 북방 방어의 핵심."
   },
@@ -19,7 +23,9 @@
     "id": "amasya",
     "x": 77.3, "y": 49,
     "name": "아마스야 (Amasya)",
+    "region": "폰투스", "continent": "아나톨리아",
     "controller": "mehmed",
+    "tier": "regional_city",
     "terrain": "예실으르막 강 협곡 — 절벽 위 요새 도시",
     "notes": "아나톨리아 북부 흑해 교역로의 관문. 예실으르막 강 협곡에 자리한 천연 요새로, 오스만 왕자들의 분봉지로 오래 쓰인 전략 거점."
   },
@@ -27,7 +33,10 @@
     "id": "ankara",
     "x": 64.6, "y": 55.9,
     "name": "앙카라 (Ankara / Ancyra)",
+    "region": "중앙 아나톨리아", "continent": "아나톨리아",
     "controller": "contested",
+    "tier": "regional_city",
+    "garrison_modifier": 0.2,
     "terrain": "아나톨리아 고원 — 성채 언덕",
     "notes": "1402년 앙카라 전투의 현장. 중앙 아나톨리아의 교통 교차로로, 티무르의 침공이 남긴 상흔이 집약된 심리적 트라우마 지점."
   },
@@ -35,7 +44,9 @@
     "id": "antalya",
     "x": 56.4, "y": 81.1,
     "name": "안탈리아 (Antalya / Attalia)",
+    "region": "남부 아나톨리아", "continent": "아나톨리아",
     "controller": "tekke",
+    "tier": "small_city",
     "terrain": "지중해 연안 — 토로스 산맥 관문 항구",
     "notes": "테케 왕조의 해양 거점. 티무르가 복원한 테케 베이릭이 지배하며, 지중해 교역과 내륙 아나톨리아를 잇는 관문으로 베네치아 상인들의 이해관계가 교차하는 항구 도시."
   },
@@ -43,7 +54,9 @@
     "id": "athens",
     "x": 27.1, "y": 72,
     "name": "아테네 (Athína / Athenae)",
+    "region": "그리스", "continent": "루멜리아",
     "controller": "latin_athens",
+    "tier": "small_city",
     "terrain": "아티카 반도 — 아크로폴리스 언덕 도시",
     "notes": "피렌체 귀족 아치아이올리 가문이 지배하는 아테네 공국의 수도. 발칸 남단에 자리해 에게해 서안 해상로를 감시하며, 비잔틴·베네치아·오스만 세력권이 교차하는 그리스 남부의 요충지."
   },
@@ -51,7 +64,9 @@
     "id": "belgrade",
     "x": 15.9, "y": 14.6,
     "name": "베오그라드 (Beograd / Belgrade)",
+    "region": "세르비아", "continent": "루멜리아",
     "controller": "serbia",
+    "tier": "regional_city",
     "terrain": "사바·다뉴브 합류부 — 강안 요새 도시",
     "notes": "세르비아 전제공국의 전략 거점. 두 강의 합류부를 장악한 천연 요새로, 발칸 내륙과 헝가리를 잇는 교통의 요충이자 오스만 루멜리아 북진의 관문."
   },
@@ -59,7 +74,9 @@
     "id": "bursa",
     "x": 49.9, "y": 55.2,
     "name": "부르사 (Bursa / Prusa)",
+    "region": "비티니아", "continent": "아나톨리아",
     "controller": "isa",
+    "tier": "major_city",
     "terrain": "울루다으 산 북록 — 비옥한 평원",
     "notes": "오스만 최초의 수도이자 상업 중심지. 비단 교역로의 요충으로 상징성이 강하며, 아나톨리아 서부 패권의 핵심."
   },
@@ -67,7 +84,9 @@
     "id": "caffa",
     "x": 74.3, "y": 12.7,
     "name": "카파 (Caffa / Kaffa)",
+    "region": "크림 반도", "continent": "흑해",
     "controller": "genoa",
+    "tier": "regional_city",
     "terrain": "흑해 북안 항구 — 제노바 식민지 요새",
     "notes": "제노바의 흑해 교역 독점 거점. 오스만·타타르 양측과 외교 줄타기를 이어가며 크림 반도의 교역 이익을 수호하는 중립 항구."
   },
@@ -75,7 +94,9 @@
     "id": "candia",
     "x": 31.6, "y": 93.6,
     "name": "칸디아 (Candia / Heraklion)",
+    "region": "크레타", "continent": "지중해",
     "controller": "venice",
+    "tier": "regional_city",
     "terrain": "크레타 섬 북안 — 항구 요새 도시",
     "notes": "베네치아령 크레타의 수도. 동지중해 제해권의 핵심 거점으로, 오스만 어느 왕자가 승리해도 베네치아의 해상 교역권은 협상 없이 무력으로 빼앗을 수 없다."
   },
@@ -83,7 +104,9 @@
     "id": "chios",
     "x": 36.4, "y": 68.6,
     "name": "히오스 (Χίος / Sakız Adası)",
+    "region": "에게해", "continent": "지중해",
     "controller": "genoa",
+    "tier": "small_city",
     "terrain": "에게해 동부 — 아나톨리아 해안 근접 도서",
     "notes": "제노바 마오나 상회가 독점 지배하는 에게해 교역의 요충 섬. 유향 생산지로 유명하며, 스미르나와 콘스탄티노폴리스를 잇는 해상로를 통제한다. 오스만 왕자 누구든 서방 해상 교역에 접근하려면 제노바와의 관계를 협상해야 하는 변수."
   },
@@ -91,7 +114,9 @@
     "id": "constantinople",
     "x": 49.1, "y": 47,
     "name": "콘스탄티노폴리스 (Konstantinoupolis)",
+    "region": "트라키아", "continent": "루멜리아",
     "controller": "byzantine",
+    "tier": "metropolis",
     "terrain": "삼면이 바다 — 테오도시우스 성벽",
     "notes": "비잔틴 제국의 수도. 테오도시우스 성벽이 직접 공략을 막고 있으며, 이 도시의 외교적 승인은 오스만 술탄 정통성의 핵심 변수."
   },
@@ -99,7 +124,9 @@
     "id": "edirne",
     "x": 39.8, "y": 41.7,
     "name": "에디르네 (Edirne / Adrianople)",
+    "region": "트라키아", "continent": "루멜리아",
     "controller": "suleyman",
+    "tier": "major_city",
     "terrain": "강변 평지 — 마리차·통자·아르다 강 합류부",
     "notes": "루멜리아(유럽 영토) 행정·군사 수도. 비잔틴·제노바 교역로의 결절점으로 유럽 귀족과 상인 세력의 영향력이 집중된 오스만 최대의 유럽 거점."
   },
@@ -107,7 +134,10 @@
     "id": "erzinzan",
     "x": 91.9, "y": 53.1,
     "name": "에르진잔 (Erzincan / Erzinjan)",
+    "region": "동부 아나톨리아", "continent": "아나톨리아",
     "controller": "contested",
+    "tier": "small_city",
+    "garrison_modifier": 0.25,
     "terrain": "유프라테스 강 상류(카라수) 분지 — 산악 포위 내륙 도시",
     "notes": "아나톨리아와 코카서스·이란을 잇는 내륙 교역로의 결절점. 티무르 침공 이후 현지 투르코만 세력이 각축하는 동부 아나톨리아의 관문으로, 동방으로 뻗어나가려는 오스만 왕자에게 반드시 확보해야 할 전략 거점."
   },
@@ -115,7 +145,9 @@
     "id": "filibe",
     "x": 32.6, "y": 37.6,
     "name": "필리베 (Filibe / Plovdiv)",
+    "region": "불가리아", "continent": "루멜리아",
     "controller": "suleyman",
+    "tier": "regional_city",
     "terrain": "마리차 강 중류 — 트라키아 평원 요충",
     "notes": "에디르네와 테살로니카를 잇는 루멜리아 간선도로의 중심 거점. 술레이만의 발칸 통제망에서 에디르네 다음으로 중요한 내륙 요충으로, 루멜리아 병력 집결과 보급의 핵심 중계지."
   },
@@ -123,7 +155,9 @@
     "id": "gallipoli",
     "x": 40.4, "y": 51.9,
     "name": "갈리폴리 (Gelibolu)",
+    "region": "트라키아", "continent": "루멜리아",
     "controller": "suleyman",
+    "tier": "regional_city",
     "terrain": "다르다넬스 해협 서안 — 반도 요새",
     "notes": "유럽-아나톨리아 해협 도하의 핵심 거점. 루멜리아 병력이 아나톨리아로 진출할 때 반드시 통과해야 하는 병목."
   },
@@ -131,7 +165,9 @@
     "id": "iznik",
     "x": 53.3, "y": 49.8,
     "name": "이즈니크 (İznik / Nicaea)",
+    "region": "비티니아", "continent": "아나톨리아",
     "controller": "isa",
+    "tier": "small_city",
     "terrain": "이즈니크 호 동안 — 로마 성벽",
     "notes": "아나톨리아 서북부의 요충지. 부르사와 콘스탄티노폴리스 사이의 방어선을 이루며, 로마 성벽이 온존한 아나톨리아 서부 패권의 핵심 거점."
   },
@@ -139,7 +175,9 @@
     "id": "kastamonu",
     "x": 67.1, "y": 44.1,
     "name": "카스타모누 (Kastamonu)",
+    "region": "파플라고니아", "continent": "아나톨리아",
     "controller": "jandarids",
+    "tier": "regional_city",
     "terrain": "폰투스 산맥 내륙 — 요새 도시",
     "notes": "잔다르 왕조의 수도. 시노프와 함께 흑해 남안 지대를 장악하는 양대 거점으로, 아나톨리아 북부 메흐메드의 세력권과 직접 맞닿은 전략적 완충지."
   },
@@ -147,7 +185,9 @@
     "id": "konya",
     "x": 63.7, "y": 73.7,
     "name": "코냐 (Konya)",
+    "region": "카라만", "continent": "아나톨리아",
     "controller": "karamanids",
+    "tier": "major_city",
     "terrain": "아나톨리아 고원 분지 — 성채 도시",
     "notes": "카라만 왕조의 수도이자 셀주크 술탄국의 옛 수도. 루미의 영묘가 자리한 이슬람 세계의 성지로, 아나톨리아 고원 분지의 비옥한 농경 배후지를 배경으로 한 종교·상징 중심지."
   },
@@ -155,7 +195,9 @@
     "id": "kutahya",
     "x": 52.9, "y": 62.7,
     "name": "퀴타히야 (Kütahya / Cotyaeum)",
+    "region": "서부 아나톨리아", "continent": "아나톨리아",
     "controller": "germiyanids",
+    "tier": "small_city",
     "terrain": "아나톨리아 서부 고원 — 내륙 분지 도시",
     "notes": "게르미얀 왕조의 수도이자 아나톨리아 서부 도자기·타일 산업의 중심지. 부르사에서 코냐로 이어지는 아나톨리아 횡단로 상의 내륙 요충으로, 앙카라 전투 이후 티무르에 의해 오스만 지배에서 벗어난 거점이다."
   },
@@ -163,7 +205,9 @@
     "id": "pristina",
     "x": 19, "y": 31.5,
     "name": "프리슈티나 (Prishtina / Pristina)",
+    "region": "세르비아", "continent": "루멜리아",
     "controller": "serbia",
+    "tier": "small_city",
     "terrain": "코소보 평원 — 내륙 분지 행정 거점",
     "notes": "1389년 코소보 전투의 현장 근방에 위치한 세르비아 전제공국의 내륙 핵심 거점. 오스만 종주권 아래 있으나 스테판 라자레비치가 실질적으로 통제하며, 발칸 내륙 병력 동원의 핵심 집결지."
   },
@@ -171,7 +215,9 @@
     "id": "sinop",
     "x": 73.8, "y": 37.5,
     "name": "시노프 (Sinop)",
+    "region": "파플라고니아", "continent": "아나톨리아",
     "controller": "jandarids",
+    "tier": "regional_city",
     "terrain": "흑해 남안 천연 항구 — 반도 성채",
     "notes": "이스펜디야르 왕조(잔다르 왕조)의 거점. 흑해 제해권의 핵심 항구로, 오스만 왕자 모두가 탐내는 전략적 관문."
   },
@@ -179,7 +225,10 @@
     "id": "smyrna",
     "x": 41.6, "y": 68.8,
     "name": "스미르나 (Smyrna / İzmir)",
+    "region": "서부 아나톨리아", "continent": "아나톨리아",
     "controller": "contested",
+    "tier": "small_city",
+    "garrison_modifier": 0.5,
     "terrain": "에게해 만 항구 — 평지 해안 도시",
     "notes": "에게해 교역의 핵심 항구. 티무르의 침공 이후 성요한 기사단이 물러나며 지배권이 공백 상태. 아나톨리아 베이릭과 오스만 형제 모두가 탐내는 서부 아나톨리아의 관문."
   },
@@ -187,7 +236,9 @@
     "id": "targoviste",
     "x": 36.3, "y": 15.2,
     "name": "타르고비슈테 (Târgoviște)",
+    "region": "왈라키아", "continent": "루멜리아",
     "controller": "wallachia",
+    "tier": "small_city",
     "terrain": "다뉴브 북안 평원 — 왈라키아 공국 수도",
     "notes": "왈라키아 공국의 수도. 카르파티아 산맥 남록의 평원에 자리해 트란실바니아와 다뉴브 평원을 연결하는 교역 중계지로, 미르체아 대공이 통치하는 왈라키아의 행정·군사 중심지."
   },
@@ -195,7 +246,9 @@
     "id": "thessaloniki",
     "x": 24.9, "y": 49.3,
     "name": "테살로니카 (Thessaloniki)",
+    "region": "마케도니아", "continent": "루멜리아",
     "controller": "byzantine",
+    "tier": "major_city",
     "terrain": "에게해 연안 평지 — 성벽 도시",
     "notes": "비잔틴 제국의 제2도시. 술레이만 왕자가 비잔티움의 지지를 대가로 할양한 영토로, 콘스탄티노폴리스로 가는 서방 교역로의 관문이다."
   },
@@ -203,7 +256,9 @@
     "id": "trebizond",
     "x": 92.5, "y": 42.6,
     "name": "트레비존드 (Trabzon / Trebizond)",
+    "region": "폰투스", "continent": "아나톨리아",
     "controller": "trebizond",
+    "tier": "regional_city",
     "terrain": "폰투스 산악 해안 — 요새 항구 도시",
     "notes": "그랑 콤네노스 왕조의 트레비존드 제국 수도. 실크로드 동방 교역의 종착지로, 오스만 내전 속에서도 독자 생존을 유지하는 소제국."
   },
@@ -211,7 +266,9 @@
     "id": "varna",
     "x": 45.2, "y": 29.4,
     "name": "바르나 (Varna)",
+    "region": "불가리아", "continent": "루멜리아",
     "controller": "suleyman",
+    "tier": "small_city",
     "terrain": "흑해 서안 — 항구 도시",
     "notes": "술레이만이 장악한 흑해 서안의 전략 항구. 카파의 제노바 교역로와 연결되는 흑해 서부의 관문으로, 루멜리아 병력의 해상 이동과 흑해 교역망 통제에 핵심적인 항구 거점."
   }

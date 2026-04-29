@@ -116,8 +116,9 @@ function renderMapMarkers(state) {
     pin.dataset.faction = factionName;
     pin.dataset.status  = statusText;
     pin.dataset.color   = color;
-    if (loc.terrain) pin.dataset.terrain = loc.terrain;
-    if (loc.notes)   pin.dataset.note    = loc.notes;
+    if (loc.terrain)  pin.dataset.terrain  = loc.terrain;
+    if (loc.notes)    pin.dataset.note     = loc.notes;
+    if (loc.garrison) pin.dataset.garrison = `${loc.garrison.toLocaleString()}명`;
     pin.classList.toggle('is-player', pos?.type === 'fixed' && pin.dataset.id === pos.id);
   });
 
@@ -138,6 +139,7 @@ function renderMapMarkers(state) {
     pin.dataset.status  = statusText;
     pin.dataset.color   = color;
     pin.dataset.note    = loc.notes || '';
+    if (loc.garrison) pin.dataset.garrison = `${loc.garrison.toLocaleString()}명`;
     pin.style.left = `${loc.x}%`;
     pin.style.top  = `${loc.y}%`;
 
@@ -147,6 +149,12 @@ function renderMapMarkers(state) {
 
     layer.appendChild(pin);
   });
+
+  // 고정 위치일 때 마지막 확인 위치 저장
+  if (pos?.type === 'fixed') {
+    if (!state.flags) state.flags = {};
+    state.flags.lastKnownLocationId = pos.id;
+  }
 
   let transitPin = layer.querySelector('#player-transit-pin');
   if (pos?.type === 'transit') {
@@ -167,9 +175,51 @@ function renderMapMarkers(state) {
       transitPin.style.left = `${mx}%`;
       transitPin.style.top  = `${my}%`;
       transitPin.style.display = '';
+      const regionText = from.region === to.region
+        ? `${from.region} 지방`
+        : `${from.region} → ${to.region}`;
+      transitPin.dataset.city    = regionText;
+      transitPin.dataset.status  = '이동 중';
+      transitPin.dataset.faction = state.factions.get(state.protagonist)?.name || '';
+      transitPin.dataset.color   = '#3A9E5F';
     }
   } else if (transitPin) {
     transitPin.style.display = 'none';
+  }
+
+  // 미등록 장소: 타임스탬프 원문 + 마지막 확인 도시 인근에 임시 마커
+  let unknownPin = layer.querySelector('#player-unknown-pin');
+  if (pos === null) {
+    const anchorId = state.flags?.lastKnownLocationId;
+    const anchor   = anchorId ? state.locations.get(anchorId) : null;
+    const ts = state.progress?.timestamp || '';
+    const m  = ts.match(/[,，]\s*(.+)$/) || ts.match(/\d년[^,，]*\s+(.+)$/);
+    const locationText = m ? m[1].trim() : '미상';
+    if (anchor?.x != null) {
+      if (!unknownPin) {
+        unknownPin = document.createElement('div');
+        unknownPin.id        = 'player-unknown-pin';
+        unknownPin.className = 'map-marker map-pin is-player is-unknown';
+        unknownPin.innerHTML = `
+          <div class="pin-pulse" style="border-color:#3A9E5F;"></div>
+          <div class="pin-dot"   style="background:#3A9E5F;"></div>`;
+        layer.appendChild(unknownPin);
+      }
+      // 장소 이름 기반의 결정론적 오프셋 (같은 이름이면 항상 같은 위치)
+      const hash = [...locationText].reduce((acc, c) => acc + c.charCodeAt(0), 0);
+      const dx = ((hash % 7) - 3) * 0.9;
+      const dy = ((hash % 5) - 2) * 0.9;
+      unknownPin.style.left    = `${anchor.x + dx}%`;
+      unknownPin.style.top     = `${anchor.y + dy}%`;
+      unknownPin.style.display = '';
+      unknownPin.dataset.city    = locationText;
+      unknownPin.dataset.status  = '야전 주둔';
+      unknownPin.dataset.faction = state.factions.get(state.protagonist)?.name || '';
+      unknownPin.dataset.color   = '#3A9E5F';
+      unknownPin.dataset.note    = `${anchor.name.split(' ')[0]} 인근 (미등록 위치)`;
+    }
+  } else if (unknownPin) {
+    unknownPin.style.display = 'none';
   }
 
   rebindTooltips();

@@ -51,19 +51,26 @@ def _classify_terrain(terrain_text: str) -> str:
     return "plain"
 
 
-def _terrain_modifier(command: str, state: dict, is_defense: bool) -> tuple[int, str | None]:
+def _terrain_modifier(command: str, state: dict, is_defense: bool) -> list[tuple[str, int]]:
     locations = state.get("locations", {})
     for loc in locations.values():
         name  = loc.get("name", "")
         short = name.split("(")[0].strip()
         if short and len(short) >= 2 and short in command:
+            mods: list[tuple[str, int]] = []
             terrain_type        = _classify_terrain(loc.get("terrain", ""))
             def_v, atk_v, label = _TERRAIN_TABLE.get(terrain_type, (0, 0, ""))
-            if is_defense and def_v:
-                return def_v, f"{label} 방어"
-            if not is_defense and atk_v:
-                return atk_v, f"{label} 공략"
-    return 0, None
+            terrain_v = def_v if is_defense else atk_v
+            if terrain_v and label:
+                mods.append((f"{label} {'방어' if is_defense else '공략'}", terrain_v))
+            garrison = loc.get("garrison", 0)
+            if garrison:
+                g_v = min(20, garrison // 500 * 2)
+                if g_v:
+                    mods.append(("수비대 지원" if is_defense else "수비대 저항",
+                                 g_v if is_defense else -g_v))
+            return mods
+    return []
 
 
 def classify_action_type(command: str) -> str:
@@ -109,9 +116,7 @@ def _resolve_military_action(command: str, state: dict, action_type: str,
         modifiers.append(quality_modifier)
 
     is_defense = action_type == "defense"
-    terrain_v, terrain_label = _terrain_modifier(command, state, is_defense)
-    if terrain_v and terrain_label:
-        modifiers.append((terrain_label, terrain_v))
+    modifiers.extend(_terrain_modifier(command, state, is_defense))
 
     return _graded_resolution(action_type, roll, modifiers)
 

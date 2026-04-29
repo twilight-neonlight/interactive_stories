@@ -1,0 +1,643 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>대홍수 · 지도 시안 — 3안 (편집 모드)</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  background: #0f0d0b;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 20px;
+  font-family: system-ui, -apple-system, sans-serif;
+  min-height: 100vh;
+}
+.title {
+  color: #7a6e60;
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  margin-bottom: 14px;
+  text-align: center;
+}
+.title em { color: #a89878; font-style: normal; }
+
+.layout {
+  display: flex;
+  gap: 14px;
+  max-width: 1100px;
+  width: 100%;
+  align-items: flex-start;
+}
+
+/* ── 지도 ── */
+.map-col { flex: 1; min-width: 0; }
+svg {
+  display: block;
+  width: 100%;
+  border: 1px solid #222018;
+  user-select: none;
+}
+.region-label { cursor: grab; }
+.region-label:active { cursor: grabbing; }
+.region-label.dragging text { opacity: 1 !important; }
+.region-label:hover text { filter: brightness(1.8); }
+
+/* ── 좌표 패널 ── */
+.panel-col {
+  width: 230px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.panel-box {
+  background: #161310;
+  border: 1px solid #242018;
+  border-radius: 3px;
+  padding: 12px;
+}
+.panel-title {
+  color: #6a5e50;
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  margin-bottom: 10px;
+  text-transform: uppercase;
+}
+.hint {
+  color: #4a4038;
+  font-size: 10px;
+  line-height: 1.6;
+  margin-bottom: 10px;
+}
+.hint kbd {
+  background: #1e1c18;
+  border: 1px solid #2e2c28;
+  border-radius: 2px;
+  padding: 0 4px;
+  font-family: system-ui;
+  font-size: 10px;
+  color: #6a5e50;
+}
+#coord-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.coord-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  padding: 3px 0;
+  border-bottom: 1px solid #1a1814;
+  cursor: pointer;
+}
+.coord-row:hover { background: #1a1814; }
+.coord-row.active .coord-name { color: #b8a888; }
+.coord-name {
+  color: #5a5048;
+  font-size: 10px;
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.coord-val {
+  color: #7a8870;
+  font-size: 10px;
+  font-variant-numeric: tabular-nums;
+  flex-shrink: 0;
+  margin-left: 6px;
+  letter-spacing: 0.03em;
+}
+
+/* ── 버튼 ── */
+.btn {
+  width: 100%;
+  padding: 7px 0;
+  background: #1a1814;
+  border: 1px solid #2a2820;
+  border-radius: 2px;
+  color: #7a6e60;
+  font-size: 11px;
+  cursor: pointer;
+  transition: color 0.12s, border-color 0.12s;
+  letter-spacing: 0.03em;
+}
+.btn:hover { color: #a89878; border-color: #3a3428; }
+.btn.success { color: #6a9870; border-color: #2a4830; }
+
+/* ── 코드 출력 ── */
+#code-output {
+  display: none;
+  margin-top: 8px;
+  background: #0c0a09;
+  border: 1px solid #1e1c18;
+  border-radius: 2px;
+  padding: 8px;
+  font-family: ui-monospace, monospace;
+  font-size: 9px;
+  color: #6a9870;
+  line-height: 1.7;
+  white-space: pre;
+  overflow-x: auto;
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+/* ── 캡션 ── */
+.caption {
+  max-width: 1100px;
+  width: 100%;
+  margin-top: 12px;
+  color: #4a4038;
+  font-size: 10px;
+  line-height: 1.8;
+}
+.caption strong { color: #6a5e50; }
+</style>
+</head>
+<body>
+
+<p class="title">대홍수 (1648–) · 지도 시안 — <em>3안: 권역명 내장 · 드래그로 위치 조정</em></p>
+
+<div class="layout">
+
+<!-- ═══════════════ 지도 ═══════════════ -->
+<div class="map-col">
+<svg id="map-svg" viewBox="0 0 800 580" xmlns="http://www.w3.org/2000/svg">
+
+  <!-- ── 배경 & 지형 ── -->
+  <rect width="800" height="580" fill="#2d2820"/>
+
+  <!-- 발트해 -->
+  <path d="M 155,0 L 365,0 L 360,25 L 325,72
+           L 315,162 L 285,190 L 248,178
+           L 205,190 L 168,176 L 145,148
+           L 148,78 L 155,0 Z"
+        fill="#182638" opacity="0.90"/>
+  <path d="M 155,0 L 365,0 L 360,25 L 325,72
+           L 315,162 L 285,190 L 248,178
+           L 205,190 L 168,176 L 145,148
+           L 148,78 L 155,0 Z"
+        fill="none" stroke="#243448" stroke-width="1.2" opacity="0.55"/>
+
+  <!-- 흑해 -->
+  <path d="M 500,565 L 514,534 L 534,523
+           L 568,537 L 574,520 L 592,514
+           L 638,528 L 688,516 L 748,526
+           L 800,518 L 800,580 L 500,580 Z"
+        fill="#182638" opacity="0.87"/>
+  <path d="M 500,565 L 514,534 L 534,523
+           L 568,537 L 574,520 L 592,514
+           L 638,528 L 688,516 L 748,526 L 800,518"
+        fill="none" stroke="#243448" stroke-width="1.2" opacity="0.5"/>
+
+  <!-- 크림반도 육지 -->
+  <path d="M 526,525 L 535,506 L 549,510
+           L 560,527 L 549,534 L 526,525 Z"
+        fill="#2d2820"/>
+
+  <!-- 드니프로 강 -->
+  <path d="M 392,176 Q 415,238 442,302 Q 458,347 467,362
+           Q 491,398 514,434 Q 533,463 545,488
+           Q 549,505 551,524"
+        stroke="#243448" stroke-width="2.4" fill="none" opacity="0.68"/>
+
+  <!-- 비스와 강 -->
+  <path d="M 213,292 Q 207,340 196,378 Q 182,415 168,447"
+        stroke="#243448" stroke-width="1.7" fill="none" opacity="0.52"/>
+
+  <!-- ══════════════════════════════════════════════════ -->
+  <!--  권역 레이블 — 각 <g>를 드래그하여 위치 조정      -->
+  <!--  transform="translate(x,y)" 값이 최종 좌표        -->
+  <!-- ══════════════════════════════════════════════════ -->
+
+  <g id="labels"
+     font-family="'Palatino Linotype', Palatino, 'Book Antiqua', Georgia, serif"
+     font-style="italic" fill="#c8b890" text-anchor="middle">
+
+    <g class="region-label" data-name="발트해"       transform="translate(235, 80)">
+      <text font-size="13" opacity="0.18" letter-spacing="3.5" transform="rotate(-20)">발 트 해</text>
+    </g>
+    <g class="region-label" data-name="흑해"         transform="translate(672, 558)">
+      <text font-size="12" opacity="0.18" letter-spacing="3">흑  해</text>
+    </g>
+    <g class="region-label" data-name="스웨덴 본토"  transform="translate(66, 62)">
+      <text font-size="13" opacity="0.28" letter-spacing="2.5">스웨덴 본토</text>
+    </g>
+    <g class="region-label" data-name="에스토니아"   transform="translate(342, 60)">
+      <text font-size="11" opacity="0.26" letter-spacing="2.5">에스토니아</text>
+    </g>
+    <g class="region-label" data-name="리보니아"     transform="translate(308, 142)">
+      <text font-size="12" opacity="0.27" letter-spacing="2" transform="rotate(-8)">리보니아</text>
+    </g>
+    <g class="region-label" data-name="노브고로드 변경" transform="translate(428, 110)">
+      <text font-size="10" opacity="0.23" letter-spacing="1.5">노브고로드 변경</text>
+    </g>
+    <g class="region-label" data-name="리투아니아"   transform="translate(285, 207)">
+      <text font-size="17" opacity="0.30" letter-spacing="5">리 투 아 니 아</text>
+    </g>
+    <g class="region-label" data-name="마조프셰"     transform="translate(208, 270)">
+      <text font-size="12" opacity="0.27" letter-spacing="2">마조프셰</text>
+    </g>
+    <g class="region-label" data-name="소폴란드"     transform="translate(150, 352)">
+      <text font-size="11" opacity="0.26" letter-spacing="2">소폴란드</text>
+    </g>
+    <g class="region-label" data-name="갈리치아"     transform="translate(255, 365)">
+      <text font-size="11" opacity="0.26" letter-spacing="2" transform="rotate(-5)">갈리치아</text>
+    </g>
+    <g class="region-label" data-name="포돌리아"     transform="translate(355, 424)">
+      <text font-size="11" opacity="0.25" letter-spacing="2">포돌리아</text>
+    </g>
+    <g class="region-label" data-name="우크라이나"   transform="translate(496, 320)">
+      <text font-size="18" opacity="0.28" letter-spacing="5.5">우 크 라 이 나</text>
+    </g>
+    <g class="region-label" data-name="드니프로강 하류" transform="translate(630, 462)">
+      <text font-size="10" opacity="0.23" letter-spacing="1.5" transform="rotate(-14)">드니프로강 하류</text>
+    </g>
+    <g class="region-label" data-name="모스크바 공국" transform="translate(714, 183)">
+      <text font-size="15" opacity="0.28" letter-spacing="3">모스크바 공국</text>
+    </g>
+    <g class="region-label" data-name="크림반도"     transform="translate(564, 547)">
+      <text font-size="11" opacity="0.27" letter-spacing="2.5">크림반도</text>
+    </g>
+
+  </g>
+
+  <!-- ══════════════════════════════════════════════════ -->
+  <!--  세력 마커 (동적 오버레이 시뮬레이션)              -->
+  <!-- ══════════════════════════════════════════════════ -->
+
+  <!-- 폴란드 왕국 #9E2020 -->
+  <g transform="translate(213,313)">
+    <circle r="10" fill="#9E2020" opacity="0.20"/>
+    <circle r="5.5" fill="#9E2020" stroke="rgba(255,255,255,0.80)" stroke-width="1.3"/>
+    <text text-anchor="middle" font-family="system-ui,sans-serif" font-size="9" fill="#f0e8d8" opacity="0.90" y="19">바르샤바</text>
+  </g>
+  <g transform="translate(184,375)">
+    <circle r="7" fill="#9E2020" opacity="0.18"/>
+    <circle r="4" fill="#9E2020" stroke="rgba(255,255,255,0.72)" stroke-width="1.1"/>
+    <text text-anchor="middle" font-family="system-ui,sans-serif" font-size="9" fill="#f0e8d8" opacity="0.85" y="16">크라쿠프</text>
+  </g>
+  <g transform="translate(293,384)">
+    <circle r="7" fill="#9E2020" opacity="0.18"/>
+    <circle r="4" fill="#9E2020" stroke="rgba(255,255,255,0.72)" stroke-width="1.1"/>
+    <text text-anchor="middle" font-family="system-ui,sans-serif" font-size="9" fill="#f0e8d8" opacity="0.85" y="16">르비우</text>
+  </g>
+  <g transform="translate(341,388)">
+    <circle r="7" fill="#9E2020" opacity="0.18"/>
+    <circle r="4" fill="#9E2020" stroke="rgba(255,255,255,0.72)" stroke-width="1.1"/>
+    <text text-anchor="middle" font-family="system-ui,sans-serif" font-size="9" fill="#f0e8d8" opacity="0.85" y="16">즈바라시</text>
+  </g>
+
+  <!-- 리투아니아 대공국 #4A7A3A -->
+  <g transform="translate(328,241)">
+    <circle r="10" fill="#4A7A3A" opacity="0.20"/>
+    <circle r="5.5" fill="#4A7A3A" stroke="rgba(255,255,255,0.80)" stroke-width="1.3"/>
+    <text text-anchor="middle" font-family="system-ui,sans-serif" font-size="9" fill="#f0e8d8" opacity="0.90" y="19">빌뉴스</text>
+  </g>
+
+  <!-- 자포로지아 코사크 #C44E3A -->
+  <g transform="translate(467,362)">
+    <circle r="10" fill="#C44E3A" opacity="0.20"/>
+    <circle r="5.5" fill="#C44E3A" stroke="rgba(255,255,255,0.80)" stroke-width="1.3"/>
+    <text text-anchor="middle" font-family="system-ui,sans-serif" font-size="9" fill="#f0e8d8" opacity="0.90" y="19">키예프</text>
+  </g>
+  <g transform="translate(525,404)">
+    <circle r="7" fill="#C44E3A" opacity="0.18"/>
+    <circle r="4" fill="#C44E3A" stroke="rgba(255,255,255,0.72)" stroke-width="1.1"/>
+    <text text-anchor="middle" font-family="system-ui,sans-serif" font-size="9" fill="#f0e8d8" opacity="0.85" y="16">치히린</text>
+  </g>
+  <g transform="translate(592,441)">
+    <circle r="7" fill="#C44E3A" opacity="0.18"/>
+    <circle r="4" fill="#C44E3A" stroke="rgba(255,255,255,0.72)" stroke-width="1.1"/>
+    <text text-anchor="middle" font-family="system-ui,sans-serif" font-size="9" fill="#f0e8d8" opacity="0.85" y="16">자포리자</text>
+  </g>
+
+  <!-- 크림 칸국 #C8981A -->
+  <g transform="translate(557,529)">
+    <circle r="10" fill="#C8981A" opacity="0.20"/>
+    <circle r="5.5" fill="#C8981A" stroke="rgba(255,255,255,0.80)" stroke-width="1.3"/>
+    <text text-anchor="middle" font-family="system-ui,sans-serif" font-size="9" fill="#f0e8d8" opacity="0.90" y="19">바흐치사라이</text>
+  </g>
+  <g transform="translate(540,494)">
+    <circle r="7" fill="#C8981A" opacity="0.18"/>
+    <circle r="4" fill="#C8981A" stroke="rgba(255,255,255,0.72)" stroke-width="1.1"/>
+    <text text-anchor="middle" font-family="system-ui,sans-serif" font-size="9" fill="#f0e8d8" opacity="0.85" y="16">페레코프</text>
+  </g>
+
+  <!-- 모스크바 차르국 #4050A0 -->
+  <g transform="translate(656,209)">
+    <circle r="10" fill="#4050A0" opacity="0.20"/>
+    <circle r="5.5" fill="#4050A0" stroke="rgba(255,255,255,0.80)" stroke-width="1.3"/>
+    <text text-anchor="middle" font-family="system-ui,sans-serif" font-size="9" fill="#f0e8d8" opacity="0.90" y="19">모스크바</text>
+  </g>
+  <g transform="translate(408,151)">
+    <circle r="7" fill="#4050A0" opacity="0.18"/>
+    <circle r="4" fill="#4050A0" stroke="rgba(255,255,255,0.72)" stroke-width="1.1"/>
+    <text text-anchor="middle" font-family="system-ui,sans-serif" font-size="9" fill="#f0e8d8" opacity="0.85" y="16">프스코프</text>
+  </g>
+
+  <!-- 스웨덴 왕국 #3A78C8 -->
+  <g transform="translate(136,107)">
+    <circle r="10" fill="#3A78C8" opacity="0.20"/>
+    <circle r="5.5" fill="#3A78C8" stroke="rgba(255,255,255,0.80)" stroke-width="1.3"/>
+    <text text-anchor="middle" font-family="system-ui,sans-serif" font-size="9" fill="#f0e8d8" opacity="0.90" y="19">스톡홀름</text>
+  </g>
+  <g transform="translate(296,177)">
+    <circle r="7" fill="#3A78C8" opacity="0.18"/>
+    <circle r="4" fill="#3A78C8" stroke="rgba(255,255,255,0.72)" stroke-width="1.1"/>
+    <text text-anchor="middle" font-family="system-ui,sans-serif" font-size="9" fill="#f0e8d8" opacity="0.85" y="16">리가</text>
+  </g>
+  <g transform="translate(315,104)">
+    <circle r="7" fill="#3A78C8" opacity="0.18"/>
+    <circle r="4" fill="#3A78C8" stroke="rgba(255,255,255,0.72)" stroke-width="1.1"/>
+    <text text-anchor="middle" font-family="system-ui,sans-serif" font-size="9" fill="#f0e8d8" opacity="0.85" y="16">레발</text>
+  </g>
+
+</svg>
+</div><!-- /map-col -->
+
+<!-- ═══════════════ 사이드 패널 ═══════════════ -->
+<div class="panel-col">
+
+  <div class="panel-box">
+    <div class="panel-title">권역 레이블 좌표</div>
+    <p class="hint">
+      <strong style="color:#6a5e50">드래그</strong> — 위치 이동<br>
+      <strong style="color:#6a5e50">스크롤</strong> — 회전 (Shift: 0.5°씩)<br>
+      <strong style="color:#6a5e50">더블클릭</strong> — 텍스트 편집<br>
+      <kbd>←↑→↓</kbd> 1px · <kbd>Shift</kbd>+방향키 10px
+    </p>
+    <div id="coord-panel"></div>
+  </div>
+
+  <button class="btn" id="copy-btn" onclick="copyCode()">좌표 복사 (SVG 코드)</button>
+  <button class="btn" onclick="resetAll()" style="margin-top:0">원래 위치로 초기화</button>
+
+  <div id="code-output"></div>
+
+</div><!-- /panel-col -->
+
+</div><!-- /layout -->
+
+<p class="caption">
+  <strong>작업 흐름:</strong>
+  레이블 드래그 → 좌표 확정 → "좌표 복사" → 복사된 값으로 SVG 파일 갱신 → PNG export → <code style="background:#1a1714;border:1px solid #2a2420;border-radius:2px;padding:0 4px;color:#8a9878;font-size:10px">map.png</code> 저장.
+  세력 마커는 기존 <code style="background:#1a1714;border:1px solid #2a2420;border-radius:2px;padding:0 4px;color:#8a9878;font-size:10px">.map-pin</code> 오버레이 유지.
+</p>
+
+<script>
+const svg = document.getElementById('map-svg');
+
+// ── 초기 상태 저장 (초기화용) ──────────────────
+const origState = new Map();
+document.querySelectorAll('.region-label').forEach(el => {
+  origState.set(el, {
+    x:   parseTranslate(el)[0],
+    y:   parseTranslate(el)[1],
+    rot: getRotation(el),
+    txt: el.querySelector('text').textContent,
+  });
+});
+
+// ── SVG 좌표 변환 ────────────────────────────────
+function svgPoint(evt) {
+  const pt = svg.createSVGPoint();
+  pt.x = evt.clientX;
+  pt.y = evt.clientY;
+  return pt.matrixTransform(svg.getScreenCTM().inverse());
+}
+
+// ── translate 파싱 / 설정 ─────────────────────────
+function parseTranslate(el) {
+  const m = el.getAttribute('transform')
+    .match(/translate\(\s*(-?[\d.]+)\s*,\s*(-?[\d.]+)\s*\)/);
+  return m ? [parseFloat(m[1]), parseFloat(m[2])] : [0, 0];
+}
+function setTranslate(el, x, y) {
+  el.setAttribute('transform',
+    el.getAttribute('transform').replace(
+      /translate\([^)]+\)/,
+      `translate(${x.toFixed(1)}, ${y.toFixed(1)})`
+    ));
+}
+
+// ── rotate 파싱 / 설정 (text 요소 기준) ──────────
+function getRotation(el) {
+  const t = (el.querySelector('text').getAttribute('transform') || '');
+  const m = t.match(/rotate\(\s*(-?[\d.]+)\s*\)/);
+  return m ? parseFloat(m[1]) : 0;
+}
+function setRotation(el, angle) {
+  const textEl = el.querySelector('text');
+  const cur    = textEl.getAttribute('transform') || '';
+  const val    = parseFloat(angle.toFixed(1));
+  if (cur.includes('rotate(')) {
+    textEl.setAttribute('transform', cur.replace(/rotate\([^)]+\)/, `rotate(${val})`));
+  } else {
+    textEl.setAttribute('transform', cur ? `${cur} rotate(${val})` : `rotate(${val})`);
+  }
+}
+
+// ── 드래그 / 선택 상태 ───────────────────────────
+let active   = null;
+let selected = null;
+let drag     = null;
+let editing  = false;
+
+document.querySelectorAll('.region-label').forEach(el => {
+  // 드래그 시작
+  el.addEventListener('mousedown', e => {
+    if (editing) return;
+    e.preventDefault();
+    selectLabel(el);
+    drag = { startMouse: svgPoint(e), startPos: parseTranslate(el) };
+    active = el;
+    el.classList.add('dragging');
+  });
+
+  // 더블클릭 → 텍스트 편집
+  el.addEventListener('dblclick', e => {
+    e.preventDefault();
+    e.stopPropagation();
+    selectLabel(el);
+    startEditing(el, e);
+  });
+});
+
+svg.addEventListener('mousemove', e => {
+  if (!active || !drag) return;
+  const p = svgPoint(e);
+  setTranslate(active,
+    drag.startPos[0] + (p.x - drag.startMouse.x),
+    drag.startPos[1] + (p.y - drag.startMouse.y));
+  updatePanel();
+});
+
+window.addEventListener('mouseup', () => {
+  if (active) {
+    active.classList.remove('dragging');
+    active = drag = null;
+    updatePanel();
+  }
+});
+
+// ── 스크롤 → 회전 ────────────────────────────────
+svg.addEventListener('wheel', e => {
+  if (!selected || editing) return;
+  e.preventDefault();
+  const step  = e.shiftKey ? 0.5 : 2;
+  const delta = e.deltaY > 0 ? step : -step;
+  setRotation(selected, getRotation(selected) + delta);
+  updatePanel();
+}, { passive: false });
+
+// ── 키보드 미세 이동 ─────────────────────────────
+window.addEventListener('keydown', e => {
+  if (!selected || editing) return;
+  const dirs = { ArrowLeft:[-1,0], ArrowRight:[1,0], ArrowUp:[0,-1], ArrowDown:[0,1] };
+  const d = dirs[e.key];
+  if (!d) return;
+  e.preventDefault();
+  const step = e.shiftKey ? 10 : 1;
+  const [x, y] = parseTranslate(selected);
+  setTranslate(selected, x + d[0]*step, y + d[1]*step);
+  updatePanel();
+});
+
+// ── 레이블 선택 ──────────────────────────────────
+function selectLabel(el) {
+  if (selected && selected !== el)
+    selected.querySelector('text').style.filter = '';
+  selected = el;
+  el.querySelector('text').style.filter = 'brightness(2.5)';
+  updatePanel();
+}
+
+document.getElementById('coord-panel').addEventListener('click', e => {
+  const row = e.target.closest('.coord-row');
+  if (!row) return;
+  const el = document.querySelector(`.region-label[data-name="${row.dataset.name}"]`);
+  if (el) selectLabel(el);
+});
+
+// ── 텍스트 편집 (더블클릭) ───────────────────────
+function startEditing(el, evt) {
+  editing = true;
+  const textEl = el.querySelector('text');
+
+  const inp = document.createElement('input');
+  inp.type  = 'text';
+  inp.value = textEl.textContent;
+
+  Object.assign(inp.style, {
+    position:     'fixed',
+    left:         `${evt.clientX - 80}px`,
+    top:          `${evt.clientY - 14}px`,
+    width:        '200px',
+    fontFamily:   "'Palatino Linotype', Palatino, serif",
+    fontStyle:    'italic',
+    fontSize:     '13px',
+    background:   'rgba(8,6,4,0.95)',
+    color:        '#c8b890',
+    border:       '1px solid #5a4e38',
+    borderRadius: '2px',
+    padding:      '3px 8px',
+    outline:      'none',
+    zIndex:       '9999',
+    letterSpacing:'0.05em',
+    boxShadow:    '0 2px 12px rgba(0,0,0,0.7)',
+  });
+
+  document.body.appendChild(inp);
+  inp.focus();
+  inp.select();
+
+  let done = false;
+  function commit() {
+    if (done) return; done = true;
+    const val = inp.value.trim();
+    if (val) textEl.textContent = val;
+    inp.remove();
+    editing = false;
+    updatePanel();
+  }
+  function cancel() {
+    if (done) return; done = true;
+    inp.remove();
+    editing = false;
+  }
+
+  inp.addEventListener('keydown', e => {
+    e.stopPropagation(); // 방향키가 레이블 이동을 트리거하지 않도록
+    if (e.key === 'Enter')  { e.preventDefault(); commit(); }
+    if (e.key === 'Escape') { cancel(); }
+  });
+  inp.addEventListener('blur', commit);
+}
+
+// ── 좌표 패널 갱신 ───────────────────────────────
+function updatePanel() {
+  document.getElementById('coord-panel').innerHTML =
+    Array.from(document.querySelectorAll('.region-label')).map(el => {
+      const [x, y] = parseTranslate(el);
+      const rot    = getRotation(el);
+      const name   = el.dataset.name;
+      const rotStr = rot !== 0 ? ` · ${rot > 0 ? '+' : ''}${Math.round(rot)}°` : '';
+      return `<div class="coord-row${el === selected ? ' active' : ''}" data-name="${name}">
+        <span class="coord-name">${name}</span>
+        <span class="coord-val">${Math.round(x)}, ${Math.round(y)}${rotStr}</span>
+      </div>`;
+    }).join('');
+}
+
+// ── 좌표 복사 ────────────────────────────────────
+function copyCode() {
+  const lines = Array.from(document.querySelectorAll('.region-label')).map(el => {
+    const [x, y] = parseTranslate(el);
+    const rot    = getRotation(el);
+    const name   = el.dataset.name;
+    const txt    = el.querySelector('text').textContent;
+    const rotPart = rot !== 0 ? `  rotate(${Math.round(rot)})` : '';
+    return `<!-- ${name} -->\ntranslate(${Math.round(x)}, ${Math.round(y)})${rotPart}  "${txt}"`;
+  });
+  const text = lines.join('\n');
+
+  navigator.clipboard.writeText(text).then(() => {
+    const btn = document.getElementById('copy-btn');
+    btn.textContent = '복사됨 ✓';
+    btn.classList.add('success');
+    setTimeout(() => {
+      btn.textContent = '좌표 복사 (SVG 코드)';
+      btn.classList.remove('success');
+    }, 1800);
+  });
+
+  const out = document.getElementById('code-output');
+  out.style.display = 'block';
+  out.textContent = text;
+}
+
+// ── 전체 초기화 ──────────────────────────────────
+function resetAll() {
+  origState.forEach(({ x, y, rot, txt }, el) => {
+    setTranslate(el, x, y);
+    setRotation(el, rot);
+    el.querySelector('text').textContent = txt;
+  });
+  if (selected) {
+    selected.querySelector('text').style.filter = '';
+    selected = null;
+  }
+  updatePanel();
+  document.getElementById('code-output').style.display = 'none';
+}
+
+// ── 초기 렌더 ────────────────────────────────────
+updatePanel();
+</script>
+</body>
+</html>

@@ -113,6 +113,8 @@ class GameState {
       });
     }
     for (const faction of scenario.factions ?? []) {
+      if (faction.protagonist_only?.length && protagonistId &&
+          !faction.protagonist_only.includes(protagonistId)) continue;
       const f = structuredClone(faction);
       // 외교 수치 초기화: JSON에 없으면 disposition에서 환산
       if (f.diplomacy_score == null) {

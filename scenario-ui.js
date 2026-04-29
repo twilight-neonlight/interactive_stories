@@ -19,16 +19,31 @@ const DISP_COLOR = { '우호': '#378ADD', '적대': '#E24B4A', '중립': '#88878
 
 // ── 공통 헬퍼 ──────────────────────────────────────────────────────
 
-/** 타임스탬프 문자열에서 연도를 추출. "1403년 봄, 에디르네" → 1403. 파싱 불가 시 null. */
+/** 타임스탬프 문자열에서 연도를 추출. "1403년 3월, 에디르네" → 1403. 파싱 불가 시 null. */
 function _parseYear(timestamp) {
   if (!timestamp) return null;
   const m = timestamp.match(/(\d{3,4})년/);
   return m ? parseInt(m[1]) : null;
 }
 
+/** 타임스탬프 문자열에서 월을 추출. "1403년 3월, 에디르네" → 3. 파싱 불가 시 null. */
+function _parseMonth(timestamp) {
+  if (!timestamp) return null;
+  const m = timestamp.match(/(\d{1,2})월/);
+  return m ? parseInt(m[1]) : null;
+}
+
+/** 연·월을 절대 개월 수로 변환. 6개월 경과 판단 등에 사용. */
+function _totalMonths(year, month) {
+  if (year == null || month == null) return null;
+  return year * 12 + month;
+}
+
 function _buildEventConditionContext(state, year = _parseYear(state.progress?.timestamp)) {
+  const month = _parseMonth(state.progress?.timestamp);
   return {
     year,
+    month,
     chapter: state.progress?.chapter ?? null,
     scene:   state.progress?.scene   ?? null,
   };
@@ -90,6 +105,26 @@ function _evaluateEventCondition(expression, context) {
   if (andParts.length > 1) return andParts.every(part => _evaluateEventCondition(part, context));
 
   return _evalConditionAtom(expr, context);
+}
+
+/**
+ * 이벤트 상태 컨텍스트 빌더.
+ * id가 있는 이벤트마다 {id}_active / {id}_ended 불리언 변수를 생성해 반환.
+ * baseContext만 사용해 평가하므로 순환 의존 없이 단일 패스로 동작한다.
+ */
+function _buildEventStateContext(events, baseContext) {
+  const evCtx = {};
+  for (const ev of events ?? []) {
+    if (!ev.id) continue;
+    const triggerExpr = _eventConditionExpr(ev);
+    const triggerMet  = _evaluateEventCondition(triggerExpr, baseContext);
+    const endMet      = ev.end_condition
+      ? _evaluateEventCondition(ev.end_condition, baseContext)
+      : false;
+    evCtx[`${ev.id}_active`] = triggerMet && !endMet;
+    evCtx[`${ev.id}_ended`]  = endMet;
+  }
+  return evCtx;
 }
 
 /**
@@ -379,7 +414,8 @@ const CONFIGS = {
       const controllersInUse = new Set(
         Array.from(state.locations.values()).map(l => l.controller)
       );
-      const context = {
+      // 1패스: 기본 컨텍스트 (세력·진행 변수)
+      const baseContext = {
         ..._buildEventConditionContext(state, year),
         active_princes: princeFactionIds
           .filter(id => id !== state.protagonist && !factions.get(id)?.defeated).length,
@@ -388,21 +424,31 @@ const CONFIGS = {
           return (factions.get(id)?.battle_damage ?? 0) > 0;
         }),
       };
+      // 무사 루멜리아 흡수 완료 여부
+      baseContext.musa_rumelia_boost_applied = state.flags?.musa_rumelia_boost_applied ?? false;
       // event_context.json 의 faction_vars 목록에 따라 {id}_defeated / {id}_score 추가
       for (const id of (state.eventContext?.faction_vars ?? [])) {
         const f = factions.get(id);
-        context[`${id}_defeated`] = f?.defeated ?? false;
-        context[`${id}_score`]    = f?.diplomacy_score ?? 0;
+        baseContext[`${id}_defeated`] = f?.defeated ?? false;
+        baseContext[`${id}_score`]    = f?.diplomacy_score ?? 0;
       }
+      // 2패스: 이벤트 상태 변수 ({id}_active / {id}_ended) 를 기본 컨텍스트로 평가해 병합
+      const context = { ...baseContext, ..._buildEventStateContext(state.events, baseContext) };
       return (state.events ?? [])
-        .filter(ev =>
-          _evaluateEventCondition(_eventConditionExpr(ev), context) &&
-          !(ev.end_condition && _evaluateEventCondition(ev.end_condition, context))
-        )
-        .map(ev => ev.end_condition?.includes('active_princes')
-          ? { ...ev, rows: `${ev.rows}|남은 경쟁자:${context.active_princes}명` }
-          : ev
-        );
+        .filter(ev => {
+          if (ev.protagonist_only?.length && state.protagonist &&
+              !ev.protagonist_only.includes(state.protagonist)) return false;
+          return (
+            _evaluateEventCondition(_eventConditionExpr(ev), context) &&
+            !(ev.end_condition && _evaluateEventCondition(ev.end_condition, context))
+          );
+        })
+        .map(ev => {
+          let rows = (ev.effects ?? []).map(e => `${e.key}:${e.desc}`).join('|');
+          if (ev.end_condition?.includes('active_princes'))
+            rows += `|남은 경쟁자:${context.active_princes}명`;
+          return { ...ev, rows };
+        });
     },
 
     initDispositions(state) {
@@ -419,10 +465,117 @@ const CONFIGS = {
     onInit: defaultOnInit,
 
     onTurnEnd(state) {
+      const year  = _parseYear(state.progress?.timestamp);
+      const month = _parseMonth(state.progress?.timestamp);
+
+      // 무스타파 세력 동적 등장 (1412년 이후)
+      if (year >= 1412 && !state.factions.has('mustafa')) {
+        state.addFaction({
+          id: 'mustafa', name: '무스타파 왕자파', type: 'faction',
+          strength_score: 180, disposition: '적대', color: '#9B59B6',
+          notes: '티무르 진영에서 귀환한 바야지트의 아들 무스타파. 비잔틴과 루멜리아 일부 귀족의 지원을 받아 정통 계승권을 내세우며 세력을 구축했다. 공위 분쟁을 끝낸 왕자에게도 즉각적인 도전이 된다.',
+        });
+      }
+
+      // 불가리아 대봉기 동적 등장 (1415년 이후, 술레이만 외 주인공)
+      if (year >= 1415 && state.protagonist !== 'suleyman' &&
+          !state.factions.has('bulgarian-rebels')) {
+        state.addFaction({
+          id: 'bulgarian-rebels', name: '불가리아 독립 반군', type: 'rebels',
+          strength_score: 220, disposition: '적대', color: '#7B4F2E',
+          notes: '오스만 내전의 장기화를 틈타 조직화된 트라키아·불가리아 기독교 귀족 연합. 초기 산발적 불만이 전면 봉기로 발전했으며, 루멜리아를 차지한 세력에게는 즉각적인 후방 위협이 된다.',
+        });
+      }
+
       const protagonist = state.factions.get(state.protagonist);
       if (!protagonist || protagonist.type === 'sultanate') return;
-      // 오스만 공위 분쟁 이벤트가 아직 활성이면 스킵
-      if (this.getEvents(state).some(ev => ev.name === '오스만 공위 분쟁')) return;
+      // on_end_boost: 이벤트 시한 만료 시 생존 세력 전력 1회 증폭
+      if (!state.flags) state.flags = {};
+      for (const ev of state.events ?? []) {
+        if (!ev.id || !ev.effects) continue;
+        const flagKey = `${ev.id}_end_boost_applied`;
+        if (state.flags[flagKey]) continue;
+        for (const effect of ev.effects) {
+          if (effect.type !== 'on_end_boost') continue;
+          if (!_evaluateEventCondition(effect.trigger, { year })) continue;
+          state.flags[flagKey] = true;
+          for (const id of effect.targets ?? []) {
+            const f = state.factions.get(id);
+            if (f && !f.defeated) f.strength_score = Math.round((f.strength_score ?? 0) * (1 + effect.value));
+          }
+        }
+      }
+
+      // 활성 이벤트 목록 — 이하 여러 로직에서 재사용
+      const activeEvents = this.getEvents(state);
+
+      // 무사: 루멜리아 거점 확보 후 3개월 생존 → 술레이만 반대파 흡수
+      if (state.protagonist === 'musa' && !state.flags.musa_rumelia_boost_applied) {
+        const inRumelia = Array.from(state.locations.values())
+          .some(l => l.continent === '루멜리아' && l.controller === 'musa');
+        if (inRumelia) {
+          state.flags.musa_rumelia_arrival_months ??= _totalMonths(year, month);
+        }
+        const am = state.flags.musa_rumelia_arrival_months;
+        const cm = _totalMonths(year, month);
+        if (am != null && cm != null && cm >= am + 3) {
+          state.flags.musa_rumelia_boost_applied = true;
+          const musa = state.factions.get('musa');
+          if (musa) musa.strength_score += 100;
+        }
+      }
+
+      // 티무르 경고 6개월 방치 → 원정군 등장
+      if (!state.flags.timur_expedition_triggered) {
+        if (activeEvents.some(ev => ev.id === 'timur_warning')) {
+          state.flags.timur_warning_total_months ??= _totalMonths(year, month);
+        }
+        const wm = state.flags.timur_warning_total_months;
+        const cm = _totalMonths(year, month);
+        if (wm != null && cm != null && cm >= wm + 6 &&
+            !state.factions.has('timur_expedition')) {
+          state.flags.timur_expedition_triggered = true;
+          // 플레이어와 적대하는 원정군 등장; 우호 세력도 진격 경로에서 위협받음
+          const alliedIds = Array.from(state.factions.values())
+            .filter(f => f.disposition === '우호' || f.disposition === '동맹')
+            .map(f => f.id);
+          state.addFaction({
+            id: 'timur_expedition', name: '티무르 원정군', type: 'empire',
+            strength_score: 700, disposition: '적대', color: '#5C2A0A', is_dynamic: true,
+            notes: `경고를 묵살한 왕자를 응징하기 위해 사마르칸트에서 출발한 티무르의 원정군. 아나톨리아 어느 세력보다 압도적인 전력을 보유하며, 진격 경로의 세력(${alliedIds.join('·') || '동맹 없음'})도 위협 대상이다. 정면 대결은 전멸, 외교적 복속 또는 연합 방어만이 생존 가능성을 열어준다.`,
+          });
+          state.flags.pendingCrisis = {
+            scene_override: [
+              '**[긴급] 티무르의 원정군이 아나톨리아 국경을 돌파했다**',
+              '',
+              '경고를 묵살한 대가가 현실이 됐다. 사마르칸트에서 출발한 티무르의 응징군이 동부 국경을 넘었다는 급보가 각지에서 동시에 전해졌다. 전력 700 — 지금의 아나톨리아 어느 세력도 홀로 맞설 수 없는 규모다. 진격 경로에 놓인 우방들도 공포에 떨며 입장 표명을 미루고 있다.',
+              '',
+              '정면 충돌은 전멸과 같다. **지금 이 순간 어떻게 대응할 것인가?**',
+            ].join('\n'),
+            user_prompt_hint: '티무르 원정군에 대한 즉각 대응책을 결정한다.',
+          };
+        }
+      }
+
+      // 활성 이벤트의 faction_growth 효과 적용
+      for (const ev of activeEvents) {
+        for (const effect of ev.effects ?? []) {
+          if (effect.type !== 'faction_growth') continue;
+          // annual: 해당 연도에 이미 적용했으면 스킵
+          if (effect.frequency === 'annual') {
+            const flagKey = `${ev.id}_${effect.target}_growth_year`;
+            if (state.flags[flagKey] === year) continue;
+            state.flags[flagKey] = year;
+          }
+          const f = state.factions.get(effect.target);
+          if (f && !f.defeated) f.strength_score = (f.strength_score ?? 0) + effect.value;
+        }
+      }
+
+      // 경쟁 왕자가 남아 있으면 스킵 (공위 분쟁 진행 중)
+      const remainingPrinces = Array.from(state.factions.values())
+        .filter(f => f.type === 'faction' && !f.defeated && f.id !== state.protagonist).length;
+      if (remainingPrinces > 0) return;
       Object.assign(protagonist, {
         name:  '오스만 술탄국',
         type:  'sultanate',
