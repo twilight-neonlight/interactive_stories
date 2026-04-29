@@ -190,9 +190,15 @@ def build_scenario_context(state: dict) -> str:
             troops_str = f" / 병력 {troops:,}명"
         else:
             pf = factions.get(c.get("faction_id") or protagonist_id) if factions else None
-            if pf and pf.get("strength_score") is not None and tpp:
-                s_eff = pf["strength_score"] - pf.get("battle_damage", 0)
-                troops_str = f" / 병력 {_troops_range(int(s_eff), tpp)}"
+            if pf:
+                fa = pf.get("field_army")
+                if fa is not None:
+                    troops_str = f" / 야전군 {fa:,}명"
+                elif pf.get("strength_score") is not None and tpp:
+                    s_eff = pf["strength_score"] - pf.get("battle_damage", 0)
+                    troops_str = f" / 병력 {_troops_range(int(s_eff), tpp)}"
+                else:
+                    troops_str = ""
             else:
                 troops_str = ""
         lines.append(
@@ -212,10 +218,19 @@ def build_scenario_context(state: dict) -> str:
             s_dmg      = f.get("battle_damage", 0)
             s_eff      = (s_base - s_dmg) if s_base is not None else None
             field_army = f.get("field_army")
+            mult       = f.get("combat_multiplier", 1)
             if field_army is not None:
-                str_str = (f" [야전군 {field_army:,}명" + (f" / 피해 -{int(s_dmg)}" if s_dmg else "") + "]")
+                if mult > 1:
+                    total = field_army * mult
+                    mult_str = f" (본국 증원 포함 최대 {total:,}명)"
+                else:
+                    mult_str = ""
+                if s_base is not None and tpp:
+                    str_str = f" [전력 {_troops_range(int(s_base), tpp)} / 야전군 {field_army:,}명{mult_str}]"
+                else:
+                    str_str = f" [야전군 {field_army:,}명{mult_str}]"
             else:
-                str_str = (f" [병력 {_troops_range(int(s_eff), tpp)}" + (f" / 피해 -{int(s_dmg)}" if s_dmg else "") + "]"
+                str_str = (f" [병력 {_troops_range(int(s_eff), tpp)}]"
                            if s_eff is not None and tpp else "")
             lines.append(
                 f"  - {f.get('name', '?')} | {f.get('disposition', '?')}{dipl_str}{str_str}"

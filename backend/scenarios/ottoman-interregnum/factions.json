@@ -1,7 +1,7 @@
 [
   {
     "id": "suleyman", "name": "술레이만 첼레비파", "type": "faction",
-    "strength_score": 254, "battle_damage": 90, "field_army": 13000, "disposition": "중립", "color": "#3a7abf",
+    "strength_score": 254, "field_army": 13000, "disposition": "중립", "color": "#3a7abf",
     "notes": "루멜리아 전역과 비잔틴·제노바 외교망을 보유한 형제 중 가장 강력한 왕자. 귀족·봉신 의존 구조로 중앙집권이 약하며, 외교 결단에 내부 반발이 따르기 쉽다.",
     "initial_diplomacy": {
       "byzantine": 50, "genoa": 35, "karamanids": -25,
@@ -10,16 +10,16 @@
   },
   {
     "id": "isa", "name": "이사 첼레비파", "type": "faction",
-    "strength_score": 81, "battle_damage": 38, "field_army": 2500, "disposition": "중립", "color": "#888780",
+    "strength_score": 81, "field_army": 2500, "disposition": "중립", "color": "#888780",
     "notes": "부르사를 거점으로 한 왕자. 아나톨리아 서부를 장악했으나 사방이 경쟁 세력에 노출된 구조적으로 취약한 위치. 기동전에 강하고 고위험 고수익 전략을 구사한다.",
     "initial_diplomacy": {
       "byzantine": -20, "karamanids": -50, "germiyanids": 50, "tekke": 50,
-      "suleyman": -50, "musa": -50, "mehmed": -80, "anatolian-bandits": -80
+      "suleyman": -50, "musa": -50, "mehmed": -80
     }
   },
   {
     "id": "musa", "name": "무사 첼레비파", "type": "faction",
-    "strength_score": 32, "battle_damage": 26, "field_army": 2500, "disposition": "중립", "color": "#8b2020",
+    "strength_score": 32, "field_army": 2500, "disposition": "중립", "color": "#8b2020",
     "notes": "아나톨리아 가지·유목 세력을 기반으로 한 전투형 왕자. 외교보다 전쟁을 선호해 협상 비용이 높으며, 전투력은 강하나 장기 행정 능력이 부재하다.",
     "initial_diplomacy": {
       "byzantine": -30, "karamanids": -50, "suleyman": -80, "isa": -50, "mehmed": -50
@@ -27,7 +27,7 @@
   },
   {
     "id": "mehmed", "name": "마흐메트 첼레비파", "type": "faction",
-    "strength_score": 128, "battle_damage": 56, "field_army": 8500, "disposition": "중립", "color": "#C5932A",
+    "strength_score": 128, "field_army": 8500, "disposition": "중립", "color": "#C5932A",
     "notes": "아마스야 요새와 흑해 교역 수입을 기반으로 한 가장 신중한 왕자. 초반에는 열세지만 균형 외교와 장기 전략에 능하다.",
     "initial_diplomacy": {
       "byzantine": -20, "genoa": 25, "karamanids": -50,
@@ -36,18 +36,18 @@
   },
   {
     "id": "byzantine", "name": "비잔틴 제국", "type": "empire",
-    "strength_score": 110, "field_army": 580, "disposition": "중립", "color": "#7F77DD",
+    "strength_score": 141, "field_army": 3000, "disposition": "중립", "color": "#7F77DD",
     "notes": "마누엘 2세가 이끄는 쇠락한 제국. 군사 지원보다 외교 승인의 가치가 크며, 오스만 내전을 활용해 세력 균형을 유지하고 내정 간섭을 도모한다."
   },
   {
     "id": "karamanids", "name": "카라만 왕조", "type": "emirate",
-    "strength_score": 340, "field_army": 22720, "disposition": "중립", "color": "#E24B4A",
+    "strength_score": 200, "field_army": 11800, "disposition": "중립", "color": "#E24B4A",
     "notes": "티무르 이후 아나톨리아 패권을 노리는 가장 강력한 베이릭. 오스만 내전을 영역 확장의 기회로 삼으며, 어느 왕자가 강해져도 결국 충돌이 불가피하다."
   },
   {
     "id": "genoa", "name": "제노바 공화국", "type": "republic",
-    "strength_score": 220, "field_army": 14860, "disposition": "중립", "color": "#2E8B57",
-    "notes": "카파를 거점으로 흑해 교역을 독점하는 해상 강국. 오스만 내전에 직접 개입하지 않으나 어느 왕자가 승리하든 교역권 협상이 불가피하다."
+    "strength_score": 220, "field_army": 7430, "combat_multiplier": 2, "disposition": "중립", "color": "#2E8B57",
+    "notes": "카파를 거점으로 흑해 교역을 독점하는 해상 강국. 현지 야전군은 상시 주둔 규모이며, 본국 지원 시 실효 전투력이 2배에 달한다. 오스만 내전에 직접 개입하지 않으나 어느 왕자가 승리하든 교역권 협상이 불가피하다."
   },
   {
     "id": "jandarids", "name": "잔다르 왕조", "type": "emirate",
@@ -61,8 +61,8 @@
   },
   {
     "id": "venice", "name": "베네치아 공화국", "type": "republic",
-    "strength_score": 310, "field_army": 22680, "disposition": "중립", "color": "#B5682A",
-    "notes": "동지중해 제해권을 장악한 해상 강국. 크레타·스미르나 등 거점을 보유하며, 오스만 내전을 교역권 확대의 기회로 삼되 어느 편도 섣불리 들지 않는다."
+    "strength_score": 310, "field_army": 11340, "combat_multiplier": 2, "disposition": "중립", "color": "#B5682A",
+    "notes": "동지중해 제해권을 장악한 해상 강국. 현지 야전군은 상시 주둔 규모이며, 본국 지원 시 실효 전투력이 2배에 달한다. 크레타·스미르나 등 거점을 보유하며, 오스만 내전을 교역권 확대의 기회로 삼되 어느 편도 섣불리 들지 않는다."
   },
   {
     "id": "serbia", "name": "세르비아 전제공국", "type": "kingdom",
@@ -81,7 +81,7 @@
   },
   {
     "id": "mamluks", "name": "맘루크 술탄국", "type": "empire",
-    "strength_score": 610, "field_army": 44580, "disposition": "중립", "color": "#1B7A6E",
+    "strength_score": 610, "field_army": 41580, "disposition": "중립", "color": "#1B7A6E",
     "notes": "카이로를 수도로 이집트·시리아·헤자즈를 지배하는 공위기 최강국. 티무르의 침공도 저지한 군사 강국으로 오스만 내전에 직접 개입하지 않으나, 시리아 북부 국경을 맞댄 관계로 어느 왕자가 승리하든 종국에는 협상이 불가피한 대세력이다."
   },
   {
@@ -96,7 +96,7 @@
   },
   {
     "id": "bulgarian-rebels", "name": "불가리아 독립 반군", "type": "rebels",
-    "strength_score": 150, "field_army": 11700, "disposition": "중립", "color": "#7B4F2E",
+    "strength_score": 95, "field_army": 7410, "disposition": "중립", "color": "#7B4F2E",
     "protagonist_only": ["suleyman"],
     "notes": "앙카라 패배 소식 이후 봉기한 트라키아·불가리아 일대의 기독교 귀족 연합. 오스만 지배에서 벗어나 구 불가리아 차르국의 독립을 꿈꾸며, 루멜리아를 기반으로 삼은 세력에게는 후방의 즉각적 위협이 된다."
   },
@@ -105,11 +105,5 @@
     "strength_score": 85, "field_army": 6630, "disposition": "중립", "color": "#5C4A2A",
     "protagonist_only": ["mehmed"],
     "notes": "오스만에 흡수된 에레트나 왕조의 잔존 세력. 흑해 남안과 아마스야 인근에서 세력을 유지하며 내전의 혼란을 틈타 영역 회복을 노린다. 마흐메트의 아마스야 거점과 흑해 교역 수입에 직접적 위협이 된다."
-  },
-  {
-    "id": "anatolian-bandits", "name": "아나톨리아 산적 연합", "type": "bandits",
-    "strength_score": 45, "field_army": 3510, "disposition": "중립", "color": "#6B6B4F",
-    "protagonist_only": ["isa"],
-    "notes": "아나톨리아 내전의 혼란 속에 집결한 탈영병·유랑민·지방 산적의 연합. 조직력은 낮으나 부르사 인근 보급로를 위협해 이사 왕자의 후방 관리를 방해한다."
   }
 ]

@@ -164,6 +164,20 @@ function weightedPickDiverse(pool, count) {
 }
 
 /**
+ * field_army가 없는 세력에 대해 strength_score × troopsPerPoint 로 field_army를 초기화한다.
+ * 동적으로 추가된 세력(무스타파, 티무르 원정군 등)이 대상이며, 이미 field_army가 있으면 무시.
+ */
+function _recomputeStrengthScores(state) {
+  const tpp = state.troopsPerPoint;
+  if (!tpp) return;
+  for (const f of state.factions.values()) {
+    if (f.field_army == null && f.strength_score != null) {
+      f.field_army = Math.round(f.strength_score * tpp);
+    }
+  }
+}
+
+/**
  * 게임 시작 시 NPC 풀에서 휘하 인물을 생성한다.
  * - 군주/영주(faction type: kingdom·faction·empire, 또는 title에 왕·군주 등): 3–5명 (성향 다양)
  * - 일반 장군·지휘관: 1–2명
@@ -200,6 +214,7 @@ function defaultOnInit(state) {
   for (const pick of weightedPickDiverse(eligible, count)) {
     state.addCharacter(structuredClone(pick));
   }
+  _recomputeStrengthScores(state);
 }
 
 /** troops_count 숫자를 읽기 좋은 문자열로 변환 */
@@ -472,7 +487,8 @@ const CONFIGS = {
       if (year >= 1412 && !state.factions.has('mustafa')) {
         state.addFaction({
           id: 'mustafa', name: '무스타파 왕자파', type: 'faction',
-          strength_score: 180, disposition: '적대', color: '#9B59B6',
+          strength_score: 180, field_army: Math.round(180 * (state.troopsPerPoint ?? 78)),
+          disposition: '적대', color: '#9B59B6',
           notes: '티무르 진영에서 귀환한 바야지트의 아들 무스타파. 비잔틴과 루멜리아 일부 귀족의 지원을 받아 정통 계승권을 내세우며 세력을 구축했다. 공위 분쟁을 끝낸 왕자에게도 즉각적인 도전이 된다.',
         });
       }
@@ -482,7 +498,8 @@ const CONFIGS = {
           !state.factions.has('bulgarian-rebels')) {
         state.addFaction({
           id: 'bulgarian-rebels', name: '불가리아 독립 반군', type: 'rebels',
-          strength_score: 220, disposition: '적대', color: '#7B4F2E',
+          strength_score: 220, field_army: Math.round(220 * (state.troopsPerPoint ?? 78)),
+          disposition: '적대', color: '#7B4F2E',
           notes: '오스만 내전의 장기화를 틈타 조직화된 트라키아·불가리아 기독교 귀족 연합. 초기 산발적 불만이 전면 봉기로 발전했으며, 루멜리아를 차지한 세력에게는 즉각적인 후방 위협이 된다.',
         });
       }
@@ -501,7 +518,7 @@ const CONFIGS = {
           state.flags[flagKey] = true;
           for (const id of effect.targets ?? []) {
             const f = state.factions.get(id);
-            if (f && !f.defeated) f.strength_score = Math.round((f.strength_score ?? 0) * (1 + effect.value));
+            if (f && !f.defeated) f.field_army = Math.round((f.field_army ?? 0) * (1 + effect.value));
           }
         }
       }
@@ -521,7 +538,7 @@ const CONFIGS = {
         if (am != null && cm != null && cm >= am + 3) {
           state.flags.musa_rumelia_boost_applied = true;
           const musa = state.factions.get('musa');
-          if (musa) musa.strength_score += 100;
+          if (musa) musa.field_army = (musa.field_army ?? 0) + Math.round(100 * (state.troopsPerPoint ?? 78));
         }
       }
 
@@ -541,7 +558,8 @@ const CONFIGS = {
             .map(f => f.id);
           state.addFaction({
             id: 'timur_expedition', name: '티무르 원정군', type: 'empire',
-            strength_score: 700, disposition: '적대', color: '#5C2A0A', is_dynamic: true,
+            strength_score: 700, field_army: Math.round(700 * (state.troopsPerPoint ?? 78)),
+            disposition: '적대', color: '#5C2A0A', is_dynamic: true,
             notes: `경고를 묵살한 왕자를 응징하기 위해 사마르칸트에서 출발한 티무르의 원정군. 아나톨리아 어느 세력보다 압도적인 전력을 보유하며, 진격 경로의 세력(${alliedIds.join('·') || '동맹 없음'})도 위협 대상이다. 정면 대결은 전멸, 외교적 복속 또는 연합 방어만이 생존 가능성을 열어준다.`,
           });
           state.flags.pendingCrisis = {
@@ -568,7 +586,7 @@ const CONFIGS = {
             state.flags[flagKey] = year;
           }
           const f = state.factions.get(effect.target);
-          if (f && !f.defeated) f.strength_score = (f.strength_score ?? 0) + effect.value;
+          if (f && !f.defeated) f.field_army = (f.field_army ?? 0) + Math.round(effect.value * (state.troopsPerPoint ?? 78));
         }
       }
 

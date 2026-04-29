@@ -18,7 +18,7 @@
     "effects": [
       { "key": "티무르 경고", "desc": "복권 베이릭 중 하나라도 흡수 시 즉각 경고 이벤트 발동" },
       { "key": "외교 우선", "desc": "전쟁보다 외교적 복속이 티무르 재침 위험을 낮춤" },
-      { "key": "베이릭 자립", "desc": "1405년 시한 만료 시 생존 베이릭의 전력 50% 즉시 증가", "type": "on_end_boost", "value": 0.5, "targets": ["germiyanids", "tekke", "jandarids"], "trigger": "year >= 1405" }
+      { "key": "베이릭 자립", "desc": "1405년 시한 만료 시 생존 베이릭의 전력 50% 즉시 증가", "type": "on_end_boost", "value": 0.5, "targets": ["germiyanids", "tekke", "jandarids", "karamanids"], "trigger": "year >= 1405" }
     ],
     "dot": "#EF9F27", "region": "아나톨리아 중·서부", "badge": "badge-ongoing", "badgeText": "진행 중"
   },

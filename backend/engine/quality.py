@@ -66,15 +66,12 @@ def _build_military_context(state: dict, player_faction_id: str | None) -> list[
 
     if player_faction_id and player_faction_id in factions:
         pf         = factions[player_faction_id]
-        dmg        = pf.get("battle_damage", 0)
-        eff        = pf.get("strength_score", 0) - dmg
         field_army = pf.get("field_army")
         if field_army is not None:
-            lines.append(
-                f"\n[아군] {pf.get('name', player_faction_id)} "
-                f"야전군 {field_army:,}명" + (f" (전투 피해 -{dmg}" + ")" if dmg else "")
-            )
+            lines.append(f"\n[아군] {pf.get('name', player_faction_id)} 야전군 {field_army:,}명")
         else:
+            dmg = pf.get("battle_damage", 0)
+            eff = pf.get("strength_score", 0) - dmg
             lines.append(
                 f"\n[아군] {pf.get('name', player_faction_id)} "
                 f"실효 전력 {eff} (잠재 {pf.get('strength_score', '?')}"
@@ -86,23 +83,27 @@ def _build_military_context(state: dict, player_faction_id: str | None) -> list[
     ally  = [f for fid, f in factions.items()
              if fid != player_faction_id and f.get("disposition") == "우호"]
 
+    def _faction_army_str(f: dict) -> str:
+        fa   = f.get("field_army")
+        mult = f.get("combat_multiplier", 1)
+        if fa is not None:
+            suffix = f" (본국 증원 포함 최대 {fa * mult:,}명)" if mult > 1 else ""
+            return f"야전군 {fa:,}명{suffix}"
+        dmg = f.get("battle_damage", 0)
+        eff = f.get("strength_score", 0) - dmg
+        return f"실효 전력 {eff}"
+
     if enemy:
         lines.append("\n[적군]")
         for f in enemy:
-            dmg        = f.get("battle_damage", 0)
-            eff        = f.get("strength_score", 0) - dmg
-            field_army = f.get("field_army")
-            if field_army is not None:
-                lines.append(f"  {f.get('name', '?')} 야전군 {field_army:,}명")
-            else:
-                lines.append(f"  {f.get('name', '?')} 실효 전력 {eff}")
+            lines.append(f"  {f.get('name', '?')} {_faction_army_str(f)}")
 
     if ally:
         lines.append("\n[우군]")
         for f in ally:
             field_army = f.get("field_army")
             if field_army is not None:
-                lines.append(f"  {f.get('name', '?')} 야전군 {field_army:,}명")
+                lines.append(f"  {f.get('name', '?')} {_faction_army_str(f)}")
             else:
                 lines.append(f"  {f.get('name', '?')} 잠재 전력 {f.get('strength_score', '?')}")
 
@@ -147,15 +148,17 @@ def _build_intrigue_context(state: dict, player_faction_id: str | None) -> list[
     if other:
         lines.append("\n[세력 현황]")
         for f in other:
-            fid   = f.get("id", "")
-            score = diplomacy.get(fid, 0) if isinstance(diplomacy, dict) else 0
-            dmg   = f.get("battle_damage", 0)
-            eff   = f.get("strength_score", 0) - dmg
-            disp  = f.get("disposition", "중립")
-            lines.append(
-                f"  [{disp}] {f.get('name', '?')} "
-                f"실효 전력 {eff}, 관계도 {score:+d}"
-            )
+            fid        = f.get("id", "")
+            score      = diplomacy.get(fid, 0) if isinstance(diplomacy, dict) else 0
+            disp       = f.get("disposition", "중립")
+            field_army = f.get("field_army")
+            if field_army is not None:
+                strength_str = f"야전군 {field_army:,}명"
+            else:
+                dmg = f.get("battle_damage", 0)
+                eff = f.get("strength_score", 0) - dmg
+                strength_str = f"실효 전력 {eff}"
+            lines.append(f"  [{disp}] {f.get('name', '?')} {strength_str}, 관계도 {score:+d}")
 
     return lines
 

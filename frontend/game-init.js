@@ -96,6 +96,7 @@ let _ui      = null;
 
     if (scenario) {
       _state = _manager.init(scenario, protagonistId);
+      _state.eventContext = scenario.event_context ?? {};
       _ui.initDispositions(_state);
       _ui.onInit?.(_state);
       _manager.save();
