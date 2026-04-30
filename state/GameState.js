@@ -317,6 +317,17 @@ class GameState {
   }
 
   /**
+   * 세력에 대한 첩보 수준을 delta만큼 조정합니다. 0–4로 클램프.
+   * @param {string} id
+   * @param {number} delta - +1(성공), +2(대성공), -1(대실패)
+   */
+  updateFactionIntel(id, delta) {
+    const faction = this.factions.get(id);
+    if (!faction) return;
+    faction.intel_level = Math.max(0, Math.min(4, (faction.intel_level ?? 0) + delta));
+  }
+
+  /**
    * 시간 경과에 따라 battle_damage를 경감합니다.
    * @param {string} id
    * @param {number} amount - 양수. 회복량.

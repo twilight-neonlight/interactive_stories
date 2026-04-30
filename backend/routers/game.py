@@ -74,8 +74,8 @@ async def process_turn(req: TurnRequest):
     for key in ("new_characters", "dead_characters", "new_factions", "defeated_factions",
                 "faction_strength_changes", "faction_battle_damage", "faction_battle_recovery",
                 "faction_diplomacy_changes", "faction_disposition_changes",
-                "character_troop_changes", "character_disposition_changes",
-                "new_locations", "location_changes"):
+                "character_troop_changes", "character_disposition_changes", "character_title_changes",
+                "faction_intel_changes", "new_locations", "location_changes"):
         if extra.get(key):
             state_updates[key] = extra[key]
 

@@ -61,14 +61,31 @@ function renderCharacterList(state) {
 function renderFactionBars(state) {
   const container = document.getElementById('faction-bars');
   if (!container || !_ui) return;
+  const tpp = state.troopsPerPoint ?? null;
+  const INTEL_LABEL = ['없음', '하', '중', '상', '정밀'];
   container.innerHTML = Array.from(state.factions.values()).filter(f => !f.defeated).map(f => {
     const score = Math.max(0, (f.strength_score ?? 350) - (f.battle_damage ?? 0));
     const width = `${Math.min(100, Math.round(score / 7))}%`;
     const color = _ui.factionBarColor(f);
     const tag   = _ui.factionBarTag(f, state);
     const short = f.name.split(' ')[0];
+
+    const parts = [];
+    if (f.notes) parts.push(f.notes);
+    if (tpp) {
+      if (f.id === state.protagonist) {
+        parts.push(`병력: ${window.formatTroops(Math.round(score * tpp))}`);
+      } else {
+        const intel = f.intel_level ?? 0;
+        const est   = window.formatStrengthScore(score, tpp, intel, f.id);
+        if (est) parts.push(`병력 추정: ${est}`);
+        parts.push(`첩보: ${INTEL_LABEL[intel]}`);
+      }
+    }
+    const body = parts.join(' | ');
+
     return `<div class="faction-item">
-      <span class="faction-name" data-name="${f.name}" data-sub="${f.type||''}" data-body="${f.notes||''}" data-tags="${tag}" data-color="${color}">${short}</span>
+      <span class="faction-name" data-name="${f.name}" data-sub="${f.type||''}" data-body="${body}" data-tags="${tag}" data-color="${color}">${short}</span>
       <div class="faction-bar-wrap"><div class="faction-bar" style="width:${width};background:${color};"></div></div>
     </div>`;
   }).join('');

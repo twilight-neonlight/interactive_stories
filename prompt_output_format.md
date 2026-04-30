@@ -38,20 +38,7 @@ N장 요약: 최소 8항목 표
 
 ## Character Relationship Summary
 
-Provide at scenario start and at the start of each new chapter. Do not repeat every scene.
-
-**Format:**
-
-[주요 인물 관계]
-
-| 인물 | 역할 | 성향 파악 | 현재 관계 | 비고 |
-|---|---|---|---|---|
-
-**관계 레이블:** 충성 / 협력 / 경쟁 / 견제 / 불신 / 적대 / 불명
-
-**성향 파악:** 확인됨 / 추정됨 / 불명
-
-Include only characters relevant to the current situation. Keep descriptions concise. If relationships have shifted from the previous chapter, reflect the change.
+The UI sidebar already displays all character and faction relationship data in real time. Do NOT output a character relationship table (`[주요 인물 관계]`) anywhere in the narrative response — not at scenario start, not at chapter start, not mid-scene. Character relationships must only be updated via the STATE_UPDATE block at the end of the response.
 
 ## Choice Design Rules
 
@@ -76,6 +63,8 @@ Include only characters relevant to the current situation. Keep descriptions con
   "character_troop_changes": [{"id": "기존인물id", "delta": 숫자}],
   "faction_diplomacy_changes": [{"id": "기존세력id", "delta": 숫자}],
   "character_disposition_changes": [{"id": "기존인물id", "disposition": "동맹|우호|중립|비우호|적대|불명"}],
+  "character_title_changes": [{"id": "기존인물id", "title": "새 직위명"}],
+  "faction_intel_changes": [{"id": "기존세력id", "delta": 숫자}],
   "new_locations": [{"id": "영문소문자_언더바", "name": "지명", "controller": "지배세력id", "terrain": "지형 특성", "notes": "1-2문장 설명"}],
   "location_changes": [{"id": "기존거점id", "controller": "새로운지배세력id"}]
 }
@@ -106,6 +95,9 @@ Include only characters relevant to the current situation. Keep descriptions con
   - 외교 수치는 UI에 직접 노출되지 않으며, 내부적으로 -67 미만=적대, -67~-34=비우호, -33~33=중립, 34~66=우호, 67 이상=동맹으로 표시됨.
   - 현재 수치는 시스템 컨텍스트의 세력 목록에 `[+50]` 형태로 표기됨.
 - `character_disposition_changes`: 이번 씬에서 인물의 플레이어에 대한 태도가 바뀐 경우.
+- `character_title_changes`: 인물의 직위·칭호가 바뀐 경우 (예: 왕위 주장자 → 술탄, 장군 → 총사령관). 즉위·승진·폐위 등 서사적으로 명확한 전환점에서만 사용.
+- `faction_intel_changes`: 플레이어의 해당 세력에 대한 첩보 수준 변화. `delta`: +1(침투 부분 성공·성공), +2(대성공), -1(대실패). 0–4 범위로 자동 클램프. 시간 감쇠(6개월마다 -1)는 시스템이 자동 처리하므로 여기서 지정하지 않는다.
+  - 첩보 수준별 병력 추정 오차 폭: 0=±30%, 1=±25%, 2=±20%, 3=±15%, 4=±10%. 오차 범위는 실제값을 비대칭 위치에 포함하므로 단순 중앙값으로 역산 불가.
 - `new_locations`: 이번 씬에서 새롭게 등장하는 거점. 이미 등록된 거점은 생략.
 - `location_changes`: 이번 씬에서 지배 세력이 바뀐 거점. id는 기존 locations의 id를 사용.
 

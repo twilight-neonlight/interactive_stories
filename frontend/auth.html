@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Interactive Stories</title>
+<link rel="stylesheet" href="./styles.css">
+<script src="../scenario-loader.js"></script>
+<script src="./nav.js"></script>
+<style>
+  .auth-wrap {
+    position: relative; z-index: 1;
+    min-height: 100vh;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    padding: 40px 24px;
+  }
+  .auth-header { text-align: center; margin-bottom: 36px; animation: fadeDown 0.6s ease both; }
+
+  .auth-card {
+    width: 100%; max-width: 360px;
+    background: var(--bg-primary);
+    border: 1px solid var(--border-mid);
+    border-radius: var(--radius-lg);
+    padding: 28px 24px 24px;
+    display: flex; flex-direction: column; gap: 10px;
+    animation: fadeUp 0.45s 0.1s ease both;
+  }
+
+  /* 구글 버튼 영역 — GIS 라이브러리가 렌더링 */
+  #googleBtnWrap {
+    display: flex; justify-content: center;
+    min-height: 44px;
+  }
+  #googleBtnWrap.hidden { display: none; }
+
+  /* 구분선 */
+  .divider {
+    display: flex; align-items: center; gap: 10px;
+    font-family: sans-serif; font-size: 11px; color: var(--text-tertiary);
+  }
+  .divider::before, .divider::after {
+    content: ''; flex: 1; height: 1px; background: var(--border-light);
+  }
+  .divider.hidden { display: none; }
+
+  /* 버튼 */
+  .auth-btn {
+    width: 100%; padding: 13px;
+    border-radius: var(--radius-md); cursor: pointer;
+    font-family: 'Cinzel', serif; font-size: 13px; font-weight: 600;
+    letter-spacing: 0.1em; text-transform: uppercase; border: none;
+    transition: opacity 0.15s, transform 0.15s;
+  }
+  .auth-btn:hover:not(:disabled) { opacity: 0.86; transform: translateY(-1px); }
+  .auth-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+  .auth-btn-primary   { background: var(--text-primary); color: var(--bg-primary); }
+  .auth-btn-secondary {
+    background: transparent; color: var(--text-primary);
+    border: 1.5px solid var(--border-strong);
+  }
+
+  /* 게스트 안내 메시지 */
+  .guest-note {
+    font-family: sans-serif; font-size: 11px; color: var(--text-tertiary);
+    text-align: center; line-height: 1.5;
+  }
+
+  .auth-error {
+    display: none; padding: 9px 11px;
+    background: var(--accent-soft); border: 1px solid var(--accent);
+    border-radius: var(--radius-md);
+    font-family: sans-serif; font-size: 12px; color: var(--accent); line-height: 1.5;
+  }
+  .auth-error.visible { display: block; }
+
+  @keyframes fadeDown { from { opacity:0; transform:translateY(-12px); } to { opacity:1; transform:none; } }
+  @keyframes fadeUp   { from { opacity:0; transform:translateY(12px);  } to { opacity:1; transform:none; } }
+</style>
+</head>
+<body>
+
+<div class="auth-wrap">
+  <header class="auth-header">
+    <div style="font-family:'Cinzel',serif;font-size:10px;letter-spacing:0.25em;
+      text-transform:uppercase;color:var(--text-tertiary);margin-bottom:10px;">
+      Interactive Wargame &amp; Political Simulation
+    </div>
+    <h1 style="font-family:'Cinzel',serif;font-size:clamp(22px,4vw,36px);font-weight:700;
+      letter-spacing:0.04em;color:var(--text-primary);">
+      Interactive <em style="font-style:italic;color:var(--accent);">Stories</em>
+    </h1>
+  </header>
+
+  <div class="auth-card">
+    <!-- 구글 로그인 (client_id 설정 시에만 표시) -->
+    <div id="googleBtnWrap" class="hidden"></div>
+    <div id="googleDivider" class="divider hidden">또는</div>
+
+    <!-- 게스트 시작 -->
+    <button class="auth-btn auth-btn-primary" id="guestBtn" onclick="startAsGuest()">
+      게스트로 시작하기
+    </button>
+    <p class="guest-note">
+      세이브 데이터는 이 브라우저에 연결됩니다.<br>
+      브라우저 데이터 삭제 시 복구할 수 없습니다.
+    </p>
+
+    <!-- 오류 메시지 -->
+    <div class="auth-error" id="authError"></div>
+  </div>
+</div>
+
+<!-- Google Identity Services — src는 initGoogleAuth()에서 동적 삽입 -->
+<script>
+const BASE = window.API_BASE || '';
+
+// ── 초기화 ──────────────────────────────────────────────────────────────────
+(async function init() {
+  // 이미 로그인된 경우 메인 메뉴로
+  if (NavState.getToken()) {
+    window.location.replace('main_menu.html');
+    return;
+  }
+  // 구글 client_id 조회
+  try {
+    const r = await fetch(`${BASE}/api/auth/config`);
+    const { google_client_id } = await r.json();
+    if (google_client_id) initGoogleAuth(google_client_id);
+  } catch { /* 서버 미응답 시 구글 버튼 미표시 */ }
+})();
+
+// ── 구글 로그인 ─────────────────────────────────────────────────────────────
+function initGoogleAuth(clientId) {
+  const script = document.createElement('script');
+  script.src = 'https://accounts.google.com/gsi/client';
+  script.async = true;
+  script.defer = true;
+  script.onload = () => {
+    google.accounts.id.initialize({
+      client_id: clientId,
+      callback: handleGoogleCredential,
+    });
+    google.accounts.id.renderButton(
+      document.getElementById('googleBtnWrap'),
+      { theme: 'outline', size: 'large', text: 'continue_with', locale: 'ko', width: 312 },
+    );
+    document.getElementById('googleBtnWrap').classList.remove('hidden');
+    document.getElementById('googleDivider').classList.remove('hidden');
+  };
+  document.head.appendChild(script);
+}
+
+async function handleGoogleCredential(response) {
+  showError('');
+  try {
+    const r = await fetch(`${BASE}/api/auth/google`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id_token: response.credential }),
+    });
+    const data = await r.json();
+    if (!r.ok) { showError(data.detail || '구글 로그인에 실패했습니다.'); return; }
+    NavState.setAuth(data.token, data.username);
+    window.location.href = 'main_menu.html';
+  } catch { showError('서버에 연결할 수 없습니다.'); }
+}
+
+// ── 게스트 시작 ─────────────────────────────────────────────────────────────
+async function startAsGuest() {
+  const btn = document.getElementById('guestBtn');
+  btn.disabled = true;
+  showError('');
+  try {
+    const guestId = NavState.getOrCreateGuestId();
+    const r = await fetch(`${BASE}/api/auth/guest`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ uuid: guestId }),
+    });
+    const data = await r.json();
+    if (!r.ok) { showError(data.detail || '게스트 로그인에 실패했습니다.'); return; }
+    NavState.setAuth(data.token, data.username);
+    window.location.href = 'main_menu.html';
+  } catch { showError('서버에 연결할 수 없습니다.'); }
+  finally { btn.disabled = false; }
+}
+
+// ── 오류 표시 ────────────────────────────────────────────────────────────────
+function showError(msg) {
+  const el = document.getElementById('authError');
+  el.textContent = msg;
+  el.classList.toggle('visible', !!msg);
+}
+</script>
+</body>
+</html>

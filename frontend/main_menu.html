@@ -36,6 +36,20 @@
   }
   .menu-btn:disabled { opacity: 0.32; cursor: not-allowed; }
 
+  /* 사용자 정보 + 로그아웃 */
+  .user-bar {
+    position: fixed; top: 16px; right: 20px; z-index: 10;
+    display: flex; align-items: center; gap: 10px;
+    font-family: sans-serif; font-size: 12px; color: var(--text-tertiary);
+  }
+  .logout-btn {
+    background: none; border: 1px solid var(--border-mid);
+    border-radius: 6px; padding: 4px 10px;
+    font-size: 11px; color: var(--text-tertiary); cursor: pointer;
+    transition: color 0.12s, border-color 0.12s;
+  }
+  .logout-btn:hover { color: var(--accent); border-color: var(--accent); }
+
   /* 세이브 목록 모달 */
   .save-overlay {
     display: none; position: fixed; inset: 0; z-index: 200;
@@ -90,6 +104,11 @@
 </head>
 <body>
 
+<div class="user-bar">
+  <span id="usernameDisplay"></span>
+  <button class="logout-btn" onclick="logout()">로그아웃</button>
+</div>
+
 <div class="menu-wrap">
   <header class="menu-header">
     <div style="font-family:'Cinzel',serif;font-size:10px;letter-spacing:0.25em;
@@ -122,6 +141,20 @@
 </div>
 
 <script>
+// ── 인증 확인 ────────────────────────────────────
+(function checkAuth() {
+  if (!NavState.getToken()) {
+    window.location.replace('auth.html');
+  }
+  const name = NavState.getUsername();
+  if (name) document.getElementById('usernameDisplay').textContent = name;
+})();
+
+function logout() {
+  NavState.clearAuth();
+  window.location.href = 'auth.html';
+}
+
 // ── 초기 로드: 세이브 유무 확인 ──────────────────
 async function init() {
   try {

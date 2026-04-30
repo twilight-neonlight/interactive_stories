@@ -221,19 +221,51 @@ function defaultOnInit(state) {
 function formatTroops(count) {
   if (count == null || count < 0) return '불명';
   if (count === 0) return '전멸';
-  if (count >= 10000) return `${Math.floor(count / 1000)}천+`;
-  if (count >= 1000)  return `${+(count / 1000).toFixed(1)}천`;
-  return `${count}명`;
+  return count.toLocaleString();
 }
 
-/** strength_score + troops_per_strength_point → "약 X~Y명" 범위 문자열 */
-function formatStrengthScore(score, perPoint) {
+function _hashStr(s) {
+  let h = 5381;
+  for (let i = 0; i < s.length; i++) h = ((h << 5) + h) ^ s.charCodeAt(i);
+  return Math.abs(h);
+}
+
+/**
+ * strength_score + troops_per_strength_point → "약 X~Y명" 범위 문자열.
+ * intel_level 0–4 → 오차 폭 ±30/25/20/15/10%.
+ * 실제값은 범위 내 비대칭 위치(faction id 기반 결정론적 offset) — 단순 중앙값 역산 방지.
+ */
+function formatStrengthScore(score, perPoint, intelLevel = 0, factionId = '') {
   if (score == null || perPoint == null) return null;
-  const base = score * perPoint;
-  const lo   = Math.round(base * 0.8 / 500) * 500;
-  const hi   = Math.round(base * 1.2 / 500) * 500;
-  const fmt  = n => n >= 10000 ? `${Math.floor(n / 1000)}천` : n.toLocaleString();
+  const base      = score * perPoint;
+  const halfRange = [0.30, 0.25, 0.20, 0.15, 0.10][Math.max(0, Math.min(4, intelLevel))];
+  // p: 실제값이 범위 내에서 차지하는 위치 (0=하단 끝, 1=상단 끝). 0.5 중앙값 배제.
+  const pVals = [0.2, 0.25, 0.3, 0.35, 0.4, 0.6, 0.65, 0.7, 0.75, 0.8];
+  const p     = pVals[_hashStr(factionId || String(score)) % 10];
+  const W     = 2 * halfRange * base;
+  const lo    = Math.round((base - p * W) / 500) * 500;
+  const hi    = Math.round((base + (1 - p) * W) / 500) * 500;
+  const fmt   = n => n >= 10000 ? `${Math.floor(n / 1000)}천` : n.toLocaleString();
   return `약 ${fmt(lo)}~${fmt(hi)}명`;
+}
+
+/** 6개월마다 intel_level > 0인 세력의 첩보 수준을 1 감쇠. 모든 시나리오에서 호출. */
+function defaultOnTurnEnd(state) {
+  const year  = _parseYear(state.progress?.timestamp);
+  const month = _parseMonth(state.progress?.timestamp);
+  const m     = _totalMonths(year, month);
+  if (m == null) return;
+  if (!state.flags) state.flags = {};
+  for (const f of state.factions.values()) {
+    if (f.defeated || (f.intel_level ?? 0) <= 0) continue;
+    const key  = `intel_decay_${f.id}_last`;
+    const last = state.flags[key];
+    if (last == null) { state.flags[key] = m; continue; }
+    if (m - last >= 6) {
+      f.intel_level = Math.max(0, (f.intel_level ?? 1) - 1);
+      state.flags[key] = m;
+    }
+  }
 }
 
 /**
@@ -272,8 +304,10 @@ function defaultCommanderInfo(state) {
         if (strength === '불명') {
           const score = f.strength_score != null
             ? f.strength_score - (f.battle_damage ?? 0) : null;
-          strength = formatStrengthScore(score, tpp)
-                     || STRENGTH_LABEL[f.strength] || '불명';
+          // 플레이어 본인 병력은 범위 없이 중앙값으로 표시
+          strength = (score != null && tpp != null)
+            ? formatTroops(Math.round(score * tpp))
+            : (STRENGTH_LABEL[f.strength] || '불명');
         }
       }
     }
@@ -289,7 +323,7 @@ function defaultCommanderInfo(state) {
       const tpp   = state.troopsPerPoint ?? null;
       const score = friendly[0].strength_score != null
         ? friendly[0].strength_score - (friendly[0].battle_damage ?? 0) : null;
-      strength = formatStrengthScore(score, tpp)
+      strength = formatStrengthScore(score, tpp, friendly[0].intel_level ?? 0, friendly[0].id)
                  || STRENGTH_LABEL[friendly[0].strength] || '불명';
     }
   }
@@ -370,6 +404,7 @@ const CONFIGS = {
 
     initDispositions(_state) { /* 시나리오 데이터에 이미 설정됨 */ },
     onInit: defaultOnInit,
+    onTurnEnd: defaultOnTurnEnd,
   },
 
   // ── 뇌제의 후계자 ─────────────────────────────────────────────
@@ -480,6 +515,7 @@ const CONFIGS = {
     onInit: defaultOnInit,
 
     onTurnEnd(state) {
+      defaultOnTurnEnd(state);
       const year  = _parseYear(state.progress?.timestamp);
       const month = _parseMonth(state.progress?.timestamp);
 
@@ -605,8 +641,10 @@ const CONFIGS = {
 };
 
 // ── 공개 API ─────────────────────────────────────────────────────
-window.getScenarioUI = function (scenarioId) {
+window.getScenarioUI      = function (scenarioId) {
   return CONFIGS[scenarioId] || CONFIGS['great-heathen-army'];
 };
+window.formatTroops       = formatTroops;
+window.formatStrengthScore = formatStrengthScore;
 
 })();

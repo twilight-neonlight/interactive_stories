@@ -12,6 +12,7 @@ from pathlib import Path
 from routers.scenarios import router as scenarios_router
 from routers.saves     import router as saves_router
 from routers.game      import router as game_router
+from routers.auth      import router as auth_router
 
 app = FastAPI(title="Interactive Stories API")
 app.add_middleware(
@@ -21,6 +22,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+app.include_router(auth_router)
 app.include_router(scenarios_router)
 app.include_router(saves_router)
 app.include_router(game_router)

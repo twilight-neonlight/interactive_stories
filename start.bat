@@ -47,6 +47,34 @@ if not exist .venv (
     echo.
 )
 
+:: Check for latest version on GitHub
+git rev-parse --is-inside-work-tree >nul 2>&1
+if not errorlevel 1 (
+    echo [UPDATE] Checking for latest version...
+    git fetch origin >nul 2>&1
+    if not errorlevel 1 (
+        for /f %%i in ('git rev-parse HEAD') do set _LOCAL=%%i
+        for /f %%i in ('git rev-parse @{u} 2^>nul') do set _REMOTE=%%i
+        if defined _REMOTE (
+            if "!_LOCAL!"=="!_REMOTE!" (
+                echo [UPDATE] Already up to date.
+            ) else (
+                echo [UPDATE] New version found. Updating...
+                git pull
+                echo [UPDATE] Reinstalling packages...
+                .venv\Scripts\pip install -r backend\requirements.txt -q --no-warn-script-location
+                echo.
+                echo  Update complete. Please run start.bat again.
+                timeout /t 5 /nobreak >nul
+                exit 0
+            )
+        )
+    ) else (
+        echo [UPDATE] Could not reach GitHub, skipping version check.
+    )
+    echo.
+)
+
 :: Open browser after 2s delay
 start "" cmd /c "timeout /t 2 /nobreak >nul && start http://localhost:8000/frontend/main_menu.html"
 

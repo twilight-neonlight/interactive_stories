@@ -120,6 +120,19 @@ async function submitTurn() {
       }
     }
 
+    if (Array.isArray(su.character_title_changes)) {
+      for (const tc of su.character_title_changes) {
+        const char = _state.characters.get(tc.id);
+        if (char && tc.title) char.title = tc.title;
+      }
+    }
+
+    if (Array.isArray(su.faction_intel_changes)) {
+      for (const ic of su.faction_intel_changes) {
+        if (ic.id && ic.delta != null) _state.updateFactionIntel(ic.id, ic.delta);
+      }
+    }
+
     _ui.onTurnEnd?.(_state);
     _manager._state = _state;
     _manager.save();
