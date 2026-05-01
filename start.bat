@@ -54,13 +54,7 @@ echo.
 
 :venv_ready
 
-:: GitHub auto-update is temporarily disabled for local debugging.
-set AUTO_UPDATE=0
-echo [UPDATE] Auto-update check disabled.
-echo.
-
 :: Check for latest version on GitHub
-if "%AUTO_UPDATE%"=="1" (
 git rev-parse --is-inside-work-tree >nul 2>&1
 if not errorlevel 1 (
     echo [UPDATE] Checking for latest version...
@@ -72,21 +66,26 @@ if not errorlevel 1 (
             if "!_LOCAL!"=="!_REMOTE!" (
                 echo [UPDATE] Already up to date.
             ) else (
-                echo [UPDATE] New version found. Updating...
-                git pull
-                echo [UPDATE] Reinstalling packages...
-                .venv\Scripts\pip install -r backend\requirements.txt -q --no-warn-script-location
+                echo [UPDATE] New version available.
                 echo.
-                echo  Update complete. Please run start.bat again.
-                timeout /t 5 /nobreak >nul
-                exit 0
+                set /p _ANSWER= Update now? (Y/N):
+                if /i "!_ANSWER!"=="Y" (
+                    git pull
+                    echo [UPDATE] Reinstalling packages...
+                    .venv\Scripts\pip install -r backend\requirements.txt -q --no-warn-script-location
+                    echo.
+                    echo  Update complete. Please run start.bat again.
+                    timeout /t 5 /nobreak >nul
+                    exit 0
+                ) else (
+                    echo [UPDATE] Skipped. Running current local version.
+                )
             )
         )
     ) else (
         echo [UPDATE] Could not reach GitHub, skipping version check.
     )
     echo.
-)
 )
 
 :: Open browser after 2s delay
