@@ -10,7 +10,7 @@
   "color": "#8B1A1A",
   "colorSoft": "rgba(139,26,26,0.06)",
   "iconBg": "rgba(139,26,26,0.09)",
-  "status": "wip",
   "protagonistMode": "select",
+  "characterSelectPage": "character_select_deluge.html",
   "troops_per_strength_point": 60
 }

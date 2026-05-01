@@ -1,0 +1,552 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>대홍수 — 인물 선택</title>
+<link rel="stylesheet" href="styles.css">
+<style>
+body::before {
+  content: '';
+  position: fixed; inset: 0; z-index: 0; pointer-events: none;
+  background-image:
+    radial-gradient(ellipse 70% 40% at 50% 0%, rgba(139,26,26,0.05) 0%, transparent 60%),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23n)' opacity='0.025'/%3E%3C/svg%3E");
+}
+
+.page {
+  position: relative; z-index: 1;
+  min-height: 100vh;
+  display: flex; flex-direction: column;
+  align-items: center;
+  padding: 52px 24px 80px;
+}
+
+/* ─── 뒤로가기 ─── */
+.back-btn {
+  position: absolute; top: 24px; left: 24px;
+  display: flex; align-items: center; gap: 6px;
+  font-family: 'Cinzel', serif;
+  font-size: 10px; letter-spacing: 0.16em; text-transform: uppercase;
+  color: var(--text-tertiary);
+  background: none; border: none; cursor: pointer;
+  padding: 6px 0;
+  transition: color 0.15s;
+  text-decoration: none;
+}
+.back-btn:hover { color: var(--text-secondary); }
+.back-btn svg { flex-shrink: 0; }
+
+/* ─── 헤더 ─── */
+.scenario-header {
+  text-align: center;
+  margin-bottom: 48px;
+  animation: fadeDown 0.6s ease both;
+}
+.scenario-label {
+  font-family: 'Cinzel', serif;
+  font-size: 9.5px; letter-spacing: 0.28em; text-transform: uppercase;
+  color: var(--gold); margin-bottom: 10px; display: block;
+}
+.scenario-title {
+  font-family: 'Cinzel', serif;
+  font-size: clamp(22px, 4vw, 34px);
+  font-weight: 700; color: var(--text-primary);
+  letter-spacing: 0.06em; margin-bottom: 8px;
+}
+.scenario-period {
+  font-family: 'IM Fell English', serif;
+  font-style: italic; font-size: 14px;
+  color: var(--text-secondary);
+}
+.header-rule {
+  width: 80px; height: 1px;
+  background: linear-gradient(90deg, transparent, var(--gold), transparent);
+  margin: 16px auto 0;
+}
+
+/* ─── 선택 지문 ─── */
+.prompt-text {
+  font-family: 'IM Fell English', serif;
+  font-style: italic;
+  font-size: 15px; line-height: 1.9;
+  color: var(--text-secondary);
+  text-align: center;
+  max-width: 580px;
+  margin-bottom: 44px;
+  animation: fadeUp 0.6s ease 0.1s both;
+}
+
+/* ─── 카드 그리드 ─── */
+.princes {
+  width: 100%; max-width: 920px;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+  margin-bottom: 20px;
+}
+@media (max-width: 720px) {
+  .princes { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 480px) {
+  .princes { grid-template-columns: 1fr; }
+}
+
+/* ─── 인물 카드 ─── */
+.prince-card {
+  background: var(--bg-primary);
+  border: 1px solid var(--border-mid);
+  border-radius: var(--radius-lg);
+  padding: 24px 22px 20px;
+  cursor: pointer;
+  position: relative; overflow: hidden;
+  transition: border-color 0.2s, transform 0.18s, box-shadow 0.2s;
+  animation: fadeUp 0.55s ease both;
+  outline: none;
+}
+.prince-card:nth-child(1) { animation-delay: 0.15s; }
+.prince-card:nth-child(2) { animation-delay: 0.22s; }
+.prince-card:nth-child(3) { animation-delay: 0.29s; }
+
+.prince-card::before {
+  content: '';
+  position: absolute; top: 0; left: 0; right: 0;
+  height: 3px;
+  background: var(--prince-color, var(--border-mid));
+  opacity: 0; transition: opacity 0.2s;
+}
+.prince-card::after {
+  content: '';
+  position: absolute; inset: 0;
+  background: var(--prince-color-soft, transparent);
+  opacity: 0; transition: opacity 0.2s;
+  border-radius: inherit;
+}
+.prince-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 22px rgba(0,0,0,0.07);
+  border-color: var(--border-strong);
+}
+.prince-card:hover::before,
+.prince-card:hover::after { opacity: 1; }
+.prince-card:focus-visible {
+  box-shadow: 0 0 0 3px rgba(160,120,48,0.3);
+  border-color: var(--gold);
+}
+.prince-card.selected {
+  border-color: var(--prince-color, var(--gold));
+  box-shadow: 0 0 0 1px var(--prince-color, var(--gold));
+}
+.prince-card.selected::before,
+.prince-card.selected::after { opacity: 1; }
+
+/* ─── 카드 내부 ─── */
+.pc-inner { position: relative; z-index: 1; }
+.pc-top {
+  display: flex; align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+.pc-emblem {
+  width: 44px; height: 44px; border-radius: 50%;
+  background: var(--prince-color-soft, var(--bg-secondary));
+  border: 1px solid var(--border-light);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 20px; flex-shrink: 0;
+}
+.pc-location {
+  font-family: 'Cinzel', serif;
+  font-size: 9px; letter-spacing: 0.16em; text-transform: uppercase;
+  color: var(--text-tertiary); text-align: right; line-height: 1.5;
+  padding-top: 2px;
+}
+.pc-name {
+  font-family: 'Cinzel', serif;
+  font-size: 15px; font-weight: 600;
+  color: var(--text-primary); letter-spacing: 0.04em; margin-bottom: 3px;
+}
+.pc-epithet {
+  font-family: 'IM Fell English', serif;
+  font-style: italic; font-size: 12px;
+  color: var(--prince-color, var(--gold)); margin-bottom: 12px;
+}
+.pc-divider { height: 1px; background: var(--border-light); margin-bottom: 12px; }
+.pc-desc { font-size: 12px; color: var(--text-secondary); line-height: 1.8; margin-bottom: 14px; }
+.pc-traits { display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 14px; }
+.trait {
+  font-family: sans-serif; font-size: 10px;
+  padding: 2px 8px; border-radius: 10px;
+  border: 1px solid var(--border-light);
+  color: var(--text-tertiary); background: var(--bg-secondary);
+}
+.pc-base { display: flex; gap: 6px; align-items: baseline; }
+.pc-base-label { font-family: sans-serif; font-size: 10px; color: var(--text-tertiary); white-space: nowrap; }
+.pc-base-val { font-family: sans-serif; font-size: 11px; color: var(--text-secondary); font-weight: 600; }
+
+.recommended-badge {
+  position: absolute; top: 10px; right: 10px; z-index: 2;
+  font-family: sans-serif; font-size: 9px; letter-spacing: 0.10em;
+  background: rgba(197,147,42,0.12); color: #9a6e10;
+  border: 1px solid rgba(197,147,42,0.35);
+  border-radius: 4px; padding: 2px 7px;
+}
+
+/* ─── 커스텀 카드 특수 스타일 ─── */
+.prince-card.custom-card .pc-name {
+  font-style: italic;
+  color: var(--text-secondary);
+}
+.prince-card.custom-card.selected .pc-name {
+  color: var(--text-primary);
+}
+
+/* ─── 커스텀 폼 패널 ─── */
+.custom-form-panel {
+  width: 100%; max-width: 920px;
+  background: var(--bg-primary);
+  border: 1px solid var(--border-mid);
+  border-top: 3px solid #6b6a65;
+  border-radius: var(--radius-lg);
+  padding: 28px 28px 24px;
+  margin-bottom: 20px;
+  display: none;
+  animation: fadeUp 0.3s ease both;
+}
+.custom-form-panel.visible { display: block; }
+
+.form-title {
+  font-family: 'Cinzel', serif;
+  font-size: 11px; letter-spacing: 0.18em; text-transform: uppercase;
+  color: var(--text-tertiary); margin-bottom: 20px;
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px 24px;
+  margin-bottom: 20px;
+}
+@media (max-width: 560px) { .form-grid { grid-template-columns: 1fr; } }
+
+.form-field { display: flex; flex-direction: column; gap: 6px; }
+.form-field.full-width { grid-column: 1 / -1; }
+
+.form-label {
+  font-family: 'Cinzel', serif;
+  font-size: 9.5px; letter-spacing: 0.16em; text-transform: uppercase;
+  color: var(--text-tertiary);
+}
+.form-label span {
+  color: #9E2020; margin-left: 2px;
+  font-family: sans-serif; font-size: 11px;
+}
+
+.form-input,
+.form-select {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-mid);
+  border-radius: var(--radius-sm);
+  padding: 9px 12px;
+  font-family: 'Noto Serif KR', serif;
+  font-size: 13px;
+  color: var(--text-primary);
+  outline: none;
+  transition: border-color 0.15s;
+  width: 100%;
+}
+.form-input:focus,
+.form-select:focus { border-color: var(--gold); }
+.form-input::placeholder { color: var(--text-tertiary); }
+
+/* 소속 라디오 그룹 */
+.affiliation-group {
+  display: flex; gap: 10px; flex-wrap: wrap;
+}
+.affil-option { display: none; }
+.affil-label {
+  display: flex; align-items: center; gap: 7px;
+  padding: 7px 14px;
+  border: 1px solid var(--border-mid);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  font-size: 12.5px; color: var(--text-secondary);
+  transition: border-color 0.15s, background 0.15s, color 0.15s;
+  white-space: nowrap;
+}
+.affil-label:hover { border-color: var(--border-strong); }
+.affil-dot {
+  width: 8px; height: 8px; border-radius: 50%;
+  background: var(--affil-color, #888);
+  flex-shrink: 0;
+}
+.affil-option:checked + .affil-label {
+  border-color: var(--affil-color, var(--gold));
+  background: var(--affil-bg, transparent);
+  color: var(--text-primary);
+}
+
+/* ─── 확인 버튼 ─── */
+.confirm-wrap {
+  width: 100%; max-width: 920px;
+  display: flex; justify-content: flex-end; gap: 10px;
+  animation: fadeUp 0.55s ease 0.38s both;
+}
+.confirm-btn {
+  font-family: 'Cinzel', serif;
+  font-size: 12px; letter-spacing: 0.10em;
+  padding: 11px 28px;
+  border-radius: var(--radius-md);
+  border: none; cursor: pointer;
+  background: var(--text-primary); color: var(--bg-primary);
+  font-weight: 600;
+  transition: opacity 0.15s, transform 0.15s;
+  opacity: 0.35; pointer-events: none;
+}
+.confirm-btn.ready { opacity: 1; pointer-events: all; }
+.confirm-btn.ready:hover { opacity: 0.85; transform: translateY(-1px); }
+
+.launch-spinner { border-top-color: var(--gold); }
+</style>
+<script src="../scenario-loader.js"></script>
+<script src="./common.js"></script>
+<script src="./nav.js"></script>
+</head>
+<body>
+
+<div class="page">
+
+  <a href="scenario_select.html" class="back-btn">
+    <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+      <path d="M8 2L4 6l4 4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>
+    시나리오 목록
+  </a>
+
+  <header class="scenario-header">
+    <span class="scenario-label">대홍수</span>
+    <h1 class="scenario-title">누구의 눈으로 바라볼 것인가</h1>
+    <p class="scenario-period">1648년 — 폴란드-리투아니아 연방 붕괴 직전</p>
+    <div class="header-rule"></div>
+  </header>
+
+  <p class="prompt-text">
+    흐멜니츠키가 들고일어났다. 폴란드 왕실군은 즈보리우에서 격멸당하고,
+    스웨덴이 북쪽에서 눈독을 들이며, 모스크바가 동쪽에서 기회를 엿본다.
+    당신은 이 격변 속에서 어떤 입장에서 역사를 마주할 것인가.
+  </p>
+
+  <!-- 인물 카드 -->
+  <div class="princes" id="princeList" role="list"></div>
+
+  <!-- 커스텀 캐릭터 폼 (커스텀 카드 선택 시 표시) -->
+  <div class="custom-form-panel" id="customFormPanel">
+    <div class="form-title">✦ &nbsp;나만의 인물 설정</div>
+    <div class="form-grid">
+      <div class="form-field">
+        <label class="form-label" for="customName">이름 <span>*</span></label>
+        <input class="form-input" id="customName" type="text"
+               placeholder="인물의 이름을 입력하세요" autocomplete="off"
+               oninput="onCustomInput()">
+      </div>
+      <div class="form-field">
+        <label class="form-label" for="customTitle">직함 / 역할</label>
+        <select class="form-select" id="customTitle" onchange="onCustomInput()">
+          <option value="소귀족 기병대장">소귀족 기병대장 — 지방 기병 단위 지휘</option>
+          <option value="대귀족 마그나트">대귀족 마그나트 — 세임 의원, 대영지 지배</option>
+          <option value="용병 대장">용병 대장 — 독립 군사력, 고용 협상</option>
+          <option value="왕실 외교관">왕실 외교관 — 협상 전문, 정보 수집</option>
+          <option value="교회 주교">교회 주교 — 가톨릭 정치력, 여론 조성</option>
+          <option value="도시 참사회원">도시 참사회원 — 상업 자원, 도시 방어 조율</option>
+        </select>
+      </div>
+      <div class="form-field full-width">
+        <label class="form-label">소속 진영</label>
+        <div class="affiliation-group" id="affiliationGroup">
+          <input type="radio" name="affil" id="affilPolish" value="polish-crown"
+                 class="affil-option" onchange="onCustomInput()">
+          <label class="affil-label" for="affilPolish"
+                 style="--affil-color:#9E2020; --affil-bg:rgba(158,32,32,0.06);">
+            <span class="affil-dot"></span>폴란드 왕실 충성파
+          </label>
+
+          <input type="radio" name="affil" id="affilLithuania" value="grand-duchy-lithuania"
+                 class="affil-option" onchange="onCustomInput()">
+          <label class="affil-label" for="affilLithuania"
+                 style="--affil-color:#4A7A3A; --affil-bg:rgba(74,122,58,0.06);">
+            <span class="affil-dot"></span>리투아니아 독립파
+          </label>
+
+          <input type="radio" name="affil" id="affilIndep" value="independent"
+                 class="affil-option" checked onchange="onCustomInput()">
+          <label class="affil-label" for="affilIndep"
+                 style="--affil-color:#6b6a65; --affil-bg:rgba(107,106,101,0.06);">
+            <span class="affil-dot"></span>독립 귀족 (무소속)
+          </label>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="confirm-wrap">
+    <button class="confirm-btn" id="confirmBtn" onclick="confirmSelection()">
+      시작 →
+    </button>
+  </div>
+
+</div><!-- /page -->
+
+<div class="launch-overlay" id="launchOverlay">
+  <div class="launch-spinner"></div>
+  <div class="launch-text" id="launchText">시나리오를 초기화하는 중…</div>
+</div>
+
+<script>
+const ScenarioLoader = window.ScenarioLoader;
+
+let selectedCharacter = null;
+let isCustomMode      = false;
+
+async function renderCharacters() {
+  const scenario        = await ScenarioLoader.fetchOne('the-deluge');
+  const characterSelect = scenario.character_select ?? [];
+  const charactersMap   = Object.fromEntries((scenario.characters ?? []).map(c => [c.id, c]));
+  const list            = document.getElementById('princeList');
+
+  characterSelect.forEach((c, i) => {
+    const charData = charactersMap[c.character_id] ?? {};
+    const name     = charData.name ?? c.character_id;
+    const epithet  = charData.epithet ?? '';
+
+    const card = document.createElement('div');
+    card.className = 'prince-card' + (c.isCustom ? ' custom-card' : '');
+    card.setAttribute('role', 'listitem');
+    card.setAttribute('tabindex', '0');
+    card.style.cssText = `--prince-color:${c.color}; --prince-color-soft:${c.colorSoft};`;
+    card.style.animationDelay = `${0.15 + i * 0.07}s`;
+    card.dataset.characterId   = c.character_id;
+    card.dataset.characterName = name;
+    card.dataset.isCustom      = c.isCustom ? 'true' : 'false';
+
+    const locationHtml      = (c.location || '').replace('\n', '<br>');
+    const traits            = (c.traits || []).map(t => `<span class="trait">${t}</span>`).join('');
+    const recommendedBadge  = c.recommended ? '<div class="recommended-badge">추천</div>' : '';
+
+    const displayName = c.isCustom
+      ? '<em>이름 미정</em>'
+      : name;
+
+    card.innerHTML = `
+      ${recommendedBadge}
+      <div class="pc-inner">
+        <div class="pc-top">
+          <div class="pc-emblem">${c.icon}</div>
+          <div class="pc-location">${locationHtml}</div>
+        </div>
+        <div class="pc-name">${displayName}</div>
+        <div class="pc-epithet">${epithet || c.birth_label}</div>
+        <div class="pc-divider"></div>
+        <div class="pc-desc">${c.desc}</div>
+        <div class="pc-traits">${traits}</div>
+        <div class="pc-base">
+          <span class="pc-base-label">거점</span>
+          <span class="pc-base-val">${c.base}</span>
+        </div>
+      </div>`;
+
+    card.addEventListener('click', () => selectCharacter(card));
+    card.addEventListener('keydown', e => {
+      if (e.key === 'Enter' || e.key === ' ') selectCharacter(card);
+    });
+
+    list.appendChild(card);
+  });
+}
+
+function selectCharacter(card) {
+  document.querySelectorAll('.prince-card').forEach(c => c.classList.remove('selected'));
+  card.classList.add('selected');
+
+  const id       = card.dataset.characterId;
+  const name     = card.dataset.characterName;
+  const isCustom = card.dataset.isCustom === 'true';
+
+  isCustomMode      = isCustom;
+  selectedCharacter = { id, name, isCustom };
+
+  const panel = document.getElementById('customFormPanel');
+  if (isCustom) {
+    panel.classList.add('visible');
+    setTimeout(() => document.getElementById('customName').focus(), 80);
+  } else {
+    panel.classList.remove('visible');
+  }
+
+  updateConfirmBtn();
+}
+
+function onCustomInput() {
+  updateConfirmBtn();
+}
+
+function updateConfirmBtn() {
+  const btn = document.getElementById('confirmBtn');
+
+  if (!selectedCharacter) {
+    btn.classList.remove('ready');
+    btn.textContent = '시작 →';
+    return;
+  }
+
+  if (isCustomMode) {
+    const nameVal = document.getElementById('customName').value.trim();
+    if (!nameVal) {
+      btn.classList.remove('ready');
+      btn.textContent = '이름을 입력하세요';
+      return;
+    }
+    btn.classList.add('ready');
+    btn.textContent = `${nameVal}(으)로 시작 →`;
+  } else {
+    btn.classList.add('ready');
+    btn.textContent = `${selectedCharacter.name}(으)로 시작 →`;
+  }
+}
+
+window.confirmSelection = function () {
+  if (!selectedCharacter) return;
+  const btn = document.getElementById('confirmBtn');
+  if (!btn.classList.contains('ready')) return;
+
+  let displayName = selectedCharacter.name;
+
+  if (isCustomMode) {
+    const nameVal    = document.getElementById('customName').value.trim();
+    const titleVal   = document.getElementById('customTitle').value;
+    const affilVal   = document.querySelector('input[name="affil"]:checked')?.value ?? 'independent';
+
+    const factionId = affilVal === 'independent' ? null : affilVal;
+
+    displayName = nameVal;
+
+    sessionStorage.setItem('is_customProtagonist', JSON.stringify({
+      name:      nameVal,
+      title:     titleVal,
+      factionId,
+    }));
+  } else {
+    sessionStorage.removeItem('is_customProtagonist');
+  }
+
+  document.getElementById('launchText').textContent =
+    `${displayName}의 이야기를 불러오는 중…`;
+  document.getElementById('launchOverlay').classList.add('active');
+
+  NavState.setCharacter(selectedCharacter.id, displayName, 'the-deluge');
+
+  setTimeout(() => { window.location.href = 'game.html'; }, 1200);
+};
+
+renderCharacters();
+</script>
+</body>
+</html>

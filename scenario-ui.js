@@ -358,53 +358,58 @@ function defaultMapMarkerStyle(loc, state) {
 // ════════════════════════════════════════════════════════════════
 const CONFIGS = {
 
-  // ── 대군세의 시대 ─────────────────────────────────────────────
-  'great-heathen-army': {
-    tagExtras: {},
+  // ── 유스타니우스의 꿈 ─────────────────────────────────────────
+  'justinians-dream': {
+    tagExtras: {
+      '궁정 음모': ['#f5eafb', '#7b3f9e'],
+      '재정복':    ['#eaf2fb', '#1a5f9e'],
+      '황제 명령': ['#fbeaea', '#9e2020'],
+    },
 
     commanderInfo: defaultCommanderInfo,
 
     charDotColor(char, state) {
-      if (char.id === state.protagonist) return '#3A9E5F';
-      return DISP_COLOR[char.disposition] || '#888780';
+      if (char.id === state.protagonist) return '#5E3F8A';
+      const factionId = char.faction_id || (state.factions.has(char.id) ? char.id : null);
+      return state.factions.get(factionId)?.color || DISP_COLOR[char.disposition] || '#888780';
     },
+
     charRelInfo(char, state) {
       if (char.id === state.protagonist) return { cls: 'rel-player', label: '플레이어' };
+      const factionId = char.faction_id || (state.factions.has(char.id) ? char.id : null);
+      const faction   = factionId ? state.factions.get(factionId) : null;
+      const disp = faction ? faction.disposition : (char.disposition ?? '중립');
       return (
-        char.disposition === '우호' ? { cls: 'rel-coop', label: '협력' } :
-        char.disposition === '적대' ? { cls: 'rel-host', label: '적대' } :
-        char.disposition === '중립' ? { cls: 'rel-unk',  label: '중립' } :
-                                      { cls: 'rel-dist',  label: '불명' }
+        disp === '동맹'   ? { cls: 'rel-ally', label: '동맹' } :
+        disp === '우호'   ? { cls: 'rel-coop', label: '협력' } :
+        disp === '중립'   ? { cls: 'rel-unk',  label: '중립' } :
+        disp === '비우호' ? { cls: 'rel-dist', label: '경쟁' } :
+        disp === '적대'   ? { cls: 'rel-host', label: '적대' } :
+                            { cls: 'rel-dist', label: '불명' }
       );
     },
 
-    factionBarColor(faction) { return DISP_COLOR[faction.disposition] || '#888780'; },
+    factionBarColor(faction) { return faction.color || '#888780'; },
     factionBarTag(faction, state) {
-      if (faction.id === state?.protagonist) return '아군';
-      return { 우호: '우호', 적대: '적대', 중립: '중립' }[faction.disposition] || '불명';
+      const char = state?.characters?.get(state?.protagonist);
+      if (char?.faction_id && faction.id === char.faction_id) return '아군';
+      return { 동맹: '동맹', 우호: '우호', 중립: '중립', 비우호: '경쟁', 적대: '적대' }[faction.disposition] || '불명';
     },
 
     mapMarkerStyle: defaultMapMarkerStyle,
 
-    /** 적대 세력의 점거 거점을 동적으로 사건 목록으로 변환 */
     getEvents(state) {
-      const events = [];
-      state.factions.forEach(faction => {
-        if (faction.disposition !== '적대') return;
-        const locs = Array.from(state.locations.values())
-          .filter(l => l.controller === faction.id)
-          .map(l => l.name.split(' ')[0]).join(', ');
-        events.push({
-          name: faction.name, sub: `세력 동향 · ${state.scenarioTitle}`,
-          body: faction.notes || '', dot: '#E24B4A', region: locs || '—',
-          rows: `세력:${faction.name}|상태:적대 — 교전 중`,
-          badge: 'badge-active', badgeText: '진행 중',
-        });
-      });
-      return events;
+      const baseCtx = _buildEventConditionContext(state);
+      const context  = { ...baseCtx, ..._buildEventStateContext(state.events, baseCtx) };
+      return (state.events ?? [])
+        .filter(ev =>
+          _evaluateEventCondition(_eventConditionExpr(ev), context) &&
+          !(ev.end_condition && _evaluateEventCondition(ev.end_condition, context))
+        )
+        .map(ev => ({ ...ev, rows: (ev.effects ?? []).map(e => `${e.key}:${e.desc}`).join('|') }));
     },
 
-    initDispositions(_state) { /* 시나리오 데이터에 이미 설정됨 */ },
+    initDispositions(_state) { /* factions.json 기본값 사용 */ },
     onInit: defaultOnInit,
     onTurnEnd: defaultOnTurnEnd,
   },
@@ -640,11 +645,146 @@ const CONFIGS = {
       });
     },
   },
+
+  // ── 대홍수 ───────────────────────────────────────────────────────
+  'the-deluge': {
+    tagExtras: {
+      '협상': ['#eaf2fb', '#1a5f9e'],
+      '강경': ['#fbeaea', '#9e2020'],
+      '독자': ['#eef6ea', '#2e6b1f'],
+    },
+
+    commanderInfo: defaultCommanderInfo,
+
+    charDotColor(char, state) {
+      if (char.color) return char.color;
+      const factionId = char.faction_id
+        || (state.factions.has(char.id) ? char.id : null);
+      return state.factions.get(factionId)?.color || '#888780';
+    },
+
+    charRelInfo(char, state) {
+      if (char.id === state.protagonist) return { cls: 'rel-player', label: '플레이어' };
+      const factionId = char.faction_id
+        || (state.factions.has(char.id) ? char.id : null);
+      const faction = factionId ? state.factions.get(factionId) : null;
+      const disp = faction ? faction.disposition : (char.disposition ?? '중립');
+      return (
+        disp === '동맹'   ? { cls: 'rel-ally', label: '동맹' } :
+        disp === '우호'   ? { cls: 'rel-coop', label: '협력' } :
+        disp === '중립'   ? { cls: 'rel-unk',  label: '중립' } :
+        disp === '비우호' ? { cls: 'rel-dist', label: '경쟁' } :
+        disp === '적대'   ? { cls: 'rel-host', label: '적대' } :
+                            { cls: 'rel-dist', label: '불명' }
+      );
+    },
+
+    factionBarColor(faction) { return faction.color || '#888780'; },
+
+    factionBarTag(faction, state) {
+      if (faction.id === state?.protagonist) return '아군';
+      const factionId = state?.protagonist
+        && state.characters.get(state.protagonist)?.faction_id;
+      if (factionId && faction.id === factionId) return '아군';
+      return { 동맹: '동맹', 우호: '우호', 중립: '중립', 비우호: '경쟁', 적대: '적대' }[faction.disposition] || '불명';
+    },
+
+    mapMarkerStyle: defaultMapMarkerStyle,
+
+    getEvents(state) {
+      const year     = _parseYear(state.progress?.timestamp);
+      const baseCtx  = {
+        ..._buildEventConditionContext(state, year),
+      };
+      for (const id of (state.eventContext?.faction_vars ?? [])) {
+        const f = state.factions.get(id);
+        baseCtx[`${id}_defeated`] = f?.defeated ?? false;
+        baseCtx[`${id}_score`]    = f?.diplomacy_score ?? 0;
+      }
+      const context = { ...baseCtx, ..._buildEventStateContext(state.events, baseCtx) };
+      return (state.events ?? [])
+        .filter(ev => {
+          if (ev.protagonist_only?.length && state.protagonist &&
+              !ev.protagonist_only.includes(state.protagonist)) return false;
+          return (
+            _evaluateEventCondition(_eventConditionExpr(ev), context) &&
+            !(ev.end_condition && _evaluateEventCondition(ev.end_condition, context))
+          );
+        })
+        .map(ev => {
+          const rows = (ev.effects ?? []).map(e => `${e.key}:${e.desc}`).join('|');
+          return { ...ev, rows };
+        });
+    },
+
+    initDispositions(state) {
+      const p = state.protagonist;
+
+      // 인물의 disposition을 소속 세력 외교 상태와 동기화
+      for (const [id, char] of state.characters) {
+        if (id === p) continue;
+        const factionId = char.faction_id || (state.factions.has(id) ? id : null);
+        const faction   = factionId ? state.factions.get(factionId) : null;
+        if (faction && faction.id !== p) char.disposition = faction.disposition;
+      }
+
+      if (p === 'janusz-radziwill') {
+        // 리투아니아 헤트만: 폴란드 왕실은 우호가 아닌 중립 (자율성 마찰)
+        const polish = state.factions.get('polish-crown');
+        if (polish) {
+          polish.diplomacy_score = 20;
+          polish.disposition     = '중립';
+        }
+        const lith = state.factions.get('grand-duchy-lithuania');
+        if (lith) {
+          lith.diplomacy_score = 75;
+          lith.disposition     = '동맹';
+        }
+      } else if (p === 'custom') {
+        // 커스텀 캐릭터: sessionStorage에서 소속 읽어서 캐릭터 데이터 및 외교 초기화
+        let customData = null;
+        try {
+          const raw = sessionStorage.getItem('is_customProtagonist');
+          if (raw) customData = JSON.parse(raw);
+        } catch (_) {}
+
+        if (customData) {
+          const char = state.characters.get('custom');
+          if (char) {
+            if (customData.name)  char.name  = customData.name;
+            if (customData.title) char.title = customData.title;
+            if (customData.factionId) char.faction_id = customData.factionId;
+            else char.faction_id = null;
+          }
+
+          if (customData.factionId === 'grand-duchy-lithuania') {
+            const lith = state.factions.get('grand-duchy-lithuania');
+            if (lith) { lith.diplomacy_score = 70; lith.disposition = '동맹'; }
+            const polish = state.factions.get('polish-crown');
+            if (polish) { polish.diplomacy_score = 20; polish.disposition = '중립'; }
+          } else if (customData.factionId === 'polish-crown') {
+            // factions.json 기본값 그대로 — 별도 조정 없음
+          } else {
+            // 독립: 연방 세력 모두 약하게 중립으로
+            for (const id of ['polish-crown', 'grand-duchy-lithuania']) {
+              const f = state.factions.get(id);
+              if (f) { f.diplomacy_score = 15; f.disposition = '중립'; }
+            }
+          }
+        }
+      }
+      // jan-kazimierz: factions.json 기본값이 왕 시점 — 별도 조정 없음
+    },
+
+    onInit: defaultOnInit,
+    onTurnEnd: defaultOnTurnEnd,
+  },
+
 };
 
 // ── 공개 API ─────────────────────────────────────────────────────
 window.getScenarioUI      = function (scenarioId) {
-  return CONFIGS[scenarioId] || CONFIGS['great-heathen-army'];
+  return CONFIGS[scenarioId] || CONFIGS['justinians-dream'];
 };
 window.formatTroops       = formatTroops;
 window.formatStrengthScore = formatStrengthScore;

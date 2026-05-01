@@ -1,0 +1,37 @@
+{
+  "belisarius": [
+    {
+      "id": "procopius",
+      "name": "프로코피오스",
+      "title": "비서관",
+      "epithet": "역사가",
+      "faction_id": "byzantine",
+      "disposition": "우호",
+      "weight": 3,
+      "start_eligible": true,
+      "desc": "벨리사리우스의 종군 비서관. 정보 수집과 외교 문서 작성에 뛰어나다."
+    },
+    {
+      "id": "uliaris",
+      "name": "울리아리스",
+      "title": "친위대장",
+      "epithet": "그림자 경호",
+      "faction_id": "byzantine",
+      "disposition": "우호",
+      "weight": 2,
+      "start_eligible": true,
+      "desc": "벨리사리우스의 개인 경호대장. 전장에서 사령관의 안전을 책임지며 소규모 특수 임무에 능하다."
+    },
+    {
+      "id": "pharas",
+      "name": "파라스",
+      "title": "헤룰리 용병대장",
+      "epithet": "북방 전사",
+      "faction_id": "byzantine",
+      "disposition": "중립",
+      "weight": 2,
+      "start_eligible": true,
+      "desc": "헤룰리 부족 출신 용병 지휘관. 충성심은 보수에 달려 있지만 전투력은 검증됐다."
+    }
+  ]
+}

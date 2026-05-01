@@ -1,0 +1,17 @@
+{
+  "id": "justinians-dream",
+  "title": "유스타니우스의 꿈",
+  "section": "history",
+  "eyebrow": "533년 · 동로마 제국",
+  "meta": "벨리사리우스의 재정복 전쟁 — 서방을 되찾아라",
+  "desc": "황제 유스티아누스 1세는 옛 로마 제국의 영광을 되살리겠다는 꿈을 품고 있다. 그 꿈의 칼날이 당신이다. 함대를 이끌고 북아프리카의 반달 왕국을 무너뜨리고, 이탈리아의 동고트족을 몰아내 로마를 수복하라. 하지만 황제의 신임은 언제나 조건부다 — 너무 빛나는 승리는 질투를 낳고, 궁정의 음모는 전장의 창보다 날카롭다.",
+  "tags": ["군사", "외교", "비잔틴", "재정복", "동로마"],
+  "icon": "⚔",
+  "color": "#5E3F8A",
+  "colorSoft": "rgba(94,63,138,0.06)",
+  "iconBg": "rgba(94,63,138,0.09)",
+  "status": "wip",
+  "protagonistMode": "fixed",
+  "protagonist": "belisarius",
+  "troops_per_strength_point": 45
+}

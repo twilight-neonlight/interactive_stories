@@ -1,0 +1,40 @@
+[
+  {
+    "character_id": "jan-kazimierz",
+    "icon": "👑",
+    "location": "폴란드 왕국\n바르샤바",
+    "birth_label": "폴란드-리투아니아 연방 왕",
+    "traits": ["왕실 권위", "귀족 의회", "후사리아 기병"],
+    "base": "바르샤바 — 폴란드 왕국",
+    "color": "#9E2020",
+    "colorSoft": "rgba(158,32,32,0.06)",
+    "playable": true,
+    "recommended": true,
+    "desc": "왕실 후사리아와 외교 자원을 쥔 연방의 왕. 세임의 거부권과 마그나트 귀족들의 독자 행동에 발목을 잡혀 있지만, 합법적 권위는 연방 전체를 한 방향으로 이끌 수 있는 유일한 기반이다."
+  },
+  {
+    "character_id": "janusz-radziwill",
+    "icon": "🦅",
+    "location": "리투아니아 대공국\n빌뉴스",
+    "birth_label": "리투아니아 대헤트만",
+    "traits": ["독자 노선", "북방 방어", "마키아벨리 외교"],
+    "base": "빌뉴스 — 리투아니아 대공국",
+    "color": "#4A7A3A",
+    "colorSoft": "rgba(74,122,58,0.06)",
+    "playable": true,
+    "desc": "리투아니아 최대 귀족 가문의 수장. 왕의 명령보다 리투아니아의 이익이 우선이다. 스웨덴·모스크바와의 협상 카드를 쥐고 독자적 생존을 도모하는 능란한 정치가."
+  },
+  {
+    "character_id": "custom",
+    "icon": "✦",
+    "location": "연방\n어딘가",
+    "birth_label": "당신이 정한다",
+    "traits": ["자유 설정", "새로운 길"],
+    "base": "직접 설정",
+    "color": "#6b6a65",
+    "colorSoft": "rgba(107,106,101,0.06)",
+    "playable": true,
+    "isCustom": true,
+    "desc": "왕의 신하도, 대귀족도 아닌 — 당신만의 이야기. 이름·직함·출신을 직접 설정하고 대홍수 속에서 새로운 길을 개척하라."
+  }
+]

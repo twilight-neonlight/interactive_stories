@@ -1,1 +1,140 @@
-[]
+{
+  "jan-kazimierz": [
+    {
+      "id": "wisniowiecki",
+      "name": "예레미아 비스니오비에츠키",
+      "title": "루스 지방 총독",
+      "epithet": "즈바라시의 수호자",
+      "faction_id": "polish-crown",
+      "disposition": "우호",
+      "weight": 3,
+      "start_eligible": true,
+      "desc": "동부 국경 최대 마그나트 귀족. 강경파의 상징이지만 연방 방어의 핵심 군사 자산이다."
+    },
+    {
+      "id": "czarniecki",
+      "name": "스테판 차르니에츠키",
+      "title": "루스 팔라틴 부사령관",
+      "epithet": "연방의 검",
+      "faction_id": "polish-crown",
+      "disposition": "우호",
+      "weight": 3,
+      "start_eligible": true,
+      "desc": "왕실 군대 최고의 전술가. 즉흥 전술과 불굴의 투지로 연전연패를 뒤집어 온 장군이다."
+    },
+    {
+      "id": "kisiel",
+      "name": "아담 키시엘",
+      "title": "브라츠와프 지방 총독",
+      "epithet": "마지막 협상가",
+      "faction_id": "polish-crown",
+      "disposition": "중립",
+      "weight": 2,
+      "start_eligible": true,
+      "desc": "정교회 귀족으로 코사크와의 협상 창구 역할을 맡아온 외교관. 양측의 신뢰를 받고 있지만 강경파에게 배신자 취급을 받는다."
+    },
+    {
+      "id": "lubomirski",
+      "name": "스타니스와프 루보미르스키",
+      "title": "크라쿠프 성주",
+      "epithet": "세임의 실력자",
+      "faction_id": "polish-crown",
+      "disposition": "중립",
+      "weight": 1,
+      "start_eligible": true,
+      "desc": "권세 높은 마그나트. 세임에서 거부권을 행사할 수 있는 실력자로 왕의 결정에 브레이크를 걸 수 있다."
+    }
+  ],
+  "janusz-radziwill": [
+    {
+      "id": "gosiewksi",
+      "name": "빈첸티 고시에프스키",
+      "title": "리투아니아 야전 헤트만",
+      "epithet": "리투아니아의 칼",
+      "faction_id": "grand-duchy-lithuania",
+      "disposition": "우호",
+      "weight": 3,
+      "start_eligible": true,
+      "desc": "야누시의 부관이자 야전군 지휘관. 모스크바 방면 방어의 핵심 인물이다."
+    },
+    {
+      "id": "boguslaw-radziwill",
+      "name": "보구스와프 라지비우",
+      "title": "오스트로그 공작",
+      "epithet": "야누시의 사촌",
+      "faction_id": "grand-duchy-lithuania",
+      "disposition": "우호",
+      "weight": 2,
+      "start_eligible": true,
+      "desc": "야누시의 사촌이자 스웨덴·브란덴부르크와 인맥을 가진 귀족. 독자 외교 노선을 적극 지지한다."
+    },
+    {
+      "id": "wisniowiecki",
+      "name": "예레미아 비스니오비에츠키",
+      "title": "루스 지방 총독",
+      "epithet": "즈바라시의 수호자",
+      "faction_id": "polish-crown",
+      "disposition": "중립",
+      "weight": 1,
+      "start_eligible": true,
+      "desc": "폴란드 왕실 강경파의 핵심 인물. 리투아니아와 이해관계가 엇갈리지만 코사크에 대한 적대감은 공유한다."
+    },
+    {
+      "id": "kisiel",
+      "name": "아담 키시엘",
+      "title": "브라츠와프 지방 총독",
+      "epithet": "마지막 협상가",
+      "faction_id": "polish-crown",
+      "disposition": "중립",
+      "weight": 1,
+      "start_eligible": true,
+      "desc": "정교회 귀족으로 코사크와의 대화를 추구하는 외교관. 리투아니아의 독자 노선에 유용한 중재자가 될 수 있다."
+    }
+  ],
+  "custom": [
+    {
+      "id": "czarniecki",
+      "name": "스테판 차르니에츠키",
+      "title": "루스 팔라틴 부사령관",
+      "epithet": "연방의 검",
+      "faction_id": "polish-crown",
+      "disposition": "우호",
+      "weight": 2,
+      "start_eligible": true,
+      "desc": "연방 최고의 전술가. 어느 편에 서든 그가 곁에 있으면 전장에서의 선택지가 넓어진다."
+    },
+    {
+      "id": "kisiel",
+      "name": "아담 키시엘",
+      "title": "브라츠와프 지방 총독",
+      "epithet": "마지막 협상가",
+      "faction_id": "polish-crown",
+      "disposition": "중립",
+      "weight": 2,
+      "start_eligible": true,
+      "desc": "코사크와 연방 양측의 신뢰를 받는 외교관. 독자 행동하는 귀족에게 중립 지대를 열어줄 수 있는 인물이다."
+    },
+    {
+      "id": "gosiewksi",
+      "name": "빈첸티 고시에프스키",
+      "title": "리투아니아 야전 헤트만",
+      "epithet": "리투아니아의 칼",
+      "faction_id": "grand-duchy-lithuania",
+      "disposition": "중립",
+      "weight": 2,
+      "start_eligible": true,
+      "desc": "리투아니아 군사 지휘관. 연방 북부 방어에 집중하며 독립적으로 움직인다."
+    },
+    {
+      "id": "wisniowiecki",
+      "name": "예레미아 비스니오비에츠키",
+      "title": "루스 지방 총독",
+      "epithet": "즈바라시의 수호자",
+      "faction_id": "polish-crown",
+      "disposition": "중립",
+      "weight": 1,
+      "start_eligible": true,
+      "desc": "동부 국경 마그나트. 출신 성분에 따라 협력자 혹은 장애물이 될 수 있다."
+    }
+  ]
+}
