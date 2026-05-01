@@ -15,7 +15,7 @@ Only one format per response. Never mix formats.
 
 **진행 요약:** 항목 목록 또는 표 + 1단락 보충 (확인된 사실과 불확실한 정보 구분)
 
-**결정 시점:** 상황 요약 + 번호 선택지 2–3개
+**결정 기로:** 상황 요약 + 번호 선택지 2–3개
 ```
 
 마지막 줄: "위 선택지 중 하나를 고르거나, 직접 명령을 내리십시오."
@@ -45,6 +45,7 @@ The UI sidebar already displays all character and faction relationship data in r
 - Every choice must carry an implicit trade-off.
 - Costs and risks are never stated explicitly in the choice text — the player infers them from the content.
 - No objectively correct option. No consequence-free option.
+- Do NOT prefix choices with bracketed labels such as **[강경 대응]** or **[실리 외교]**. Write the choice text directly.
 
 ## State Update Block
 

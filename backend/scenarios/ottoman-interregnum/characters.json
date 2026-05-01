@@ -42,7 +42,7 @@
   {
     "id": "manuel-ii",
     "name": "마누일 2세 팔라이올로고스",
-    "epithet": "콘스탄티노플의 수호자",
+    "epithet": "쇠락한 제국의 수호자",
     "title": "바실레우스",
     "faction_id": "byzantine",
     "disposition": "중립",
@@ -57,7 +57,7 @@
     "faction_id": null,
     "disposition": "중립",
     "status_tag": "추정됨",
-    "desc": "중앙아시아로 귀환한 정복자. 이미 전장에서 떠났으나 그의 그림자는 아나톨리아 전역을 짓누른다. 티무르가 복원해 준 베이릭들이 어느 편에 설지가 내전의 핵심 변수이며, 그가 재개입할 경우 판도는 순식간에 바뀐다."
+    "desc": "모든 경쟁 세력들을 격파하고 중앙아시아로 귀환한 정복자. 그는 전장에서 떠났으나 그의 그림자는 아나톨리아 전역을 짓누른다. 만에 하나, 그가 재개입할 경우 판도는 순식간에 바뀐다."
   },
   {
     "id": "ibrahim-karaman",
@@ -92,7 +92,7 @@
   {
     "id": "stefan-lazarevic",
     "name": "스테판 라자레비치",
-    "epithet": "세르비아의 전사 공",
+    "epithet": "세르비아의 전사 공작",
     "title": "세르비아 전제공",
     "faction_id": "serbia",
     "disposition": "중립",

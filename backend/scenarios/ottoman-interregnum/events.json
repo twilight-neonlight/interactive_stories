@@ -5,8 +5,7 @@
     "end_condition": "active_princes == 0",
     "body": "앙카라 전투 패배와 바야지트 1세 사망으로 술탄위가 공석이다. 루멜리아와 아나톨리아를 아우르던 영토는 왕자들과 복권된 구 베일리크들로 분열되었다. 어느 왕자도 단독으로 전체를 통제하지 못하는 불안정한 균형.",
     "effects": [
-      { "key": "병력 회복", "desc": "내전 지속 중 전군 병력 회복 속도 대폭 저하 (×0.2)", "type": "recovery_rate", "value": 0.2, "target": "protagonist" },
-      { "key": "외교 비용", "desc": "분열 상황으로 모든 세력과의 협상 비용 상승" }
+      { "key": "병력 회복", "desc": "내전 지속 중 전군 병력 회복 속도 대폭 저하 (×0.2)", "type": "recovery_rate", "value": 0.2, "target": "protagonist" }
     ],
     "dot": "#C5932A", "region": "제국 전역", "badge": "badge-active", "badgeText": "진행 중"
   },
@@ -17,7 +16,6 @@
     "body": "티무르가 오스만에 흡수됐던 소규모 공국(베이릭)들을 복원시키고 철수했다. 이들은 독립을 주장하며 영역을 회복 중인데, 만약 어느 왕자가 무리하게 재합병을 추진할 경우 티무르가 다시 이 지역에 개입할 명분이 생길 수 있다.",
     "effects": [
       { "key": "티무르 경고", "desc": "복권 베이릭 중 하나라도 흡수 시 즉각 경고 이벤트 발동" },
-      { "key": "외교 우선", "desc": "전쟁보다 외교적 복속이 티무르 재침 위험을 낮춤" },
       { "key": "베이릭 자립", "desc": "1405년 시한 만료 시 생존 베이릭의 전력 50% 즉시 증가", "type": "on_end_boost", "value": 0.5, "targets": ["germiyanids", "tekke", "jandarids", "karamanids"], "trigger": "year >= 1405" }
     ],
     "dot": "#EF9F27", "region": "아나톨리아 중·서부", "badge": "badge-ongoing", "badgeText": "진행 중"
@@ -26,11 +24,10 @@
     "id": "timur_warning",
     "name": "티무르의 경고서", "sub": "1402~1404년 · 사마르칸트→아나톨리아",
     "trigger_condition": "germiyanids_defeated and year < 1405 or tekke_defeated and year < 1405 or jandarids_defeated and year < 1405",
-    "end_condition": "timur_expedition_defeated or year >= 1405",
-    "body": "티무르가 복권시킨 베이릭 중 하나가 무너졌다는 소식이 사마르칸트에 전해졌다. 그의 결정을 노골적으로 무시한 행위로, 사절을 통해 강경 경고가 전달됐다. 복권된 공국들을 건드리지 말라는 것이 티무르의 분명한 뜻이다. 외교적으로 봉합하지 못한 채 시간을 보내면 재침의 빌미로 삼을 것이다.",
+    "end_condition": "year >= 1405",
+    "body": "티무르가 복권시킨 베이릭 중 하나가 무너졌다는 소식이 사마르칸트에 전해졌다. 그를 노골적으로 무시한 행위로, 사절을 통해 무너뜨린 공국을 복원하라는 강경 경고가 전달됐다. 복권된 공국들을 건드리지 말라는 것이 티무르의 분명한 뜻이다. 이대로 시간을 보내면 재침의 빌미로 삼을 것이다.",
     "effects": [
-      { "key": "추가 외교 비용", "desc": "전방위 외교 협상 비용 +50%", "type": "diplomacy_cost_multiplier", "value": 1.5 },
-      { "key": "재침 위험", "desc": "추가 베이릭 합병 또는 6개월 내 외교 실패 시 티무르 재침공 명분 확정" }
+      { "key": "재침 위험", "desc": "6개월 이내 굴복하고 베이릭 복구를 하지 않으면 티무르군이 다시 이 지역에 개입한다" }
     ],
     "dot": "#EF9F27", "region": "사마르칸트·아나톨리아", "badge": "badge-ongoing", "badgeText": "외교 위기"
   },
@@ -38,7 +35,7 @@
     "id": "karaman_ambition",
     "name": "카라만의 아나톨리아 패권 시도", "sub": "1402년~ · 아나톨리아 중남부",
     "end_condition": "karamanids_defeated or civil_war_ended and karamanids_score >= 34 or karaman_dominance_active",
-    "body": "오스만 공위 분쟁을 틈타 중앙 아나톨리아에서 영향력을 확대하는 중이다. 내전이 길어질수록 위험성이 커진다. 어느 왕자가 통일하더라도 가장 먼저 맞닥뜨릴 외부 위협.",
+    "body": "오스만 공위 분쟁을 틈타 중앙 아나톨리아에서 영향력을 확대하는 중이다. 내전이 길어질수록 위험성이 커진다. 가장 먼저 맞닥뜨릴 외부 위협.",
     "effects": [
       { "key": "카라만 성장", "desc": "내전 방치 중 연간 세력 확대 (+15)", "type": "faction_growth", "frequency": "annual", "value": 15, "target": "karamanids" }
     ],
@@ -49,10 +46,10 @@
     "name": "카라만의 아나톨리아 지배 공고화", "sub": "1413년 이후 · 아나톨리아 중남부",
     "trigger_condition": "year >= 1413 and karamanids_defeated == false",
     "end_condition": "karamanids_defeated or karamanids_score >= 34",
-    "body": "10년 넘게 오스만 내전의 어부지리를 누린 카라만이 사실상 아나톨리아 패권을 확립했다. 중부 고원의 주요 교역로와 요충지를 장악하고 있으며, 이제는 공위 분쟁의 승자를 상대로도 대등하게 협상을 요구할 수 있는 위치에 올라섰다. 내전 종식 후 첫 번째 외부 전쟁이 될 가능성이 높다.",
+    "body": "10년 넘게 오스만 내전의 어부지리를 누린 카라만이 사실상 아나톨리아 패권을 확립했다. 중부 고원의 주요 교역로와 요충지를 장악하고 있으며, 이제는 공위 분쟁의 승자를 상대로도 대등하게 협상을 요구할 수 있는 위치에 올라섰다.",
     "effects": [
       { "key": "카라만 급성장", "desc": "패권 공고화로 연간 대규모 세력 확대 (+25)", "type": "faction_growth", "frequency": "annual", "value": 25, "target": "karamanids" },
-      { "key": "협상 요구", "desc": "대등 협상 요구로 외교적 복속 불가 — 전쟁만이 해결책" }
+      { "key": "확장 행보", "desc": "아나톨리아 권역의 잔존하는 모든 contrest 도시들을 인수" }
     ],
     "dot": "#E24B4A", "region": "아나톨리아 중남부", "badge": "badge-ongoing", "badgeText": "위협 고조"
   },

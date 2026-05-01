@@ -34,20 +34,33 @@ if not exist backend\.env (
 )
 
 :: Create venv and install packages
-if not exist .venv (
-    echo [1/2] Installing packages... (first run only)
-    python -m venv .venv
-    .venv\Scripts\pip install -r backend\requirements.txt -q --no-warn-script-location
-    if errorlevel 1 (
-        echo [ERROR] Package installation failed.
-        pause
-        exit /b 1
-    )
-    echo [2/2] Done.
-    echo.
+if exist ".venv\Scripts\python.exe" goto venv_ready
+
+echo [1/2] Installing packages... (first run only)
+python -m venv .venv
+if errorlevel 1 (
+    echo [ERROR] Virtual environment setup failed.
+    pause
+    exit /b 1
 )
+.venv\Scripts\pip install -r backend\requirements.txt -q --no-warn-script-location
+if errorlevel 1 (
+    echo [ERROR] Package installation failed.
+    pause
+    exit /b 1
+)
+echo [2/2] Done.
+echo.
+
+:venv_ready
+
+:: GitHub auto-update is temporarily disabled for local debugging.
+set AUTO_UPDATE=0
+echo [UPDATE] Auto-update check disabled.
+echo.
 
 :: Check for latest version on GitHub
+if "%AUTO_UPDATE%"=="1" (
 git rev-parse --is-inside-work-tree >nul 2>&1
 if not errorlevel 1 (
     echo [UPDATE] Checking for latest version...
@@ -74,6 +87,7 @@ if not errorlevel 1 (
     )
     echo.
 )
+)
 
 :: Open browser after 2s delay
 start "" cmd /c "timeout /t 2 /nobreak >nul && start http://localhost:8000/frontend/main_menu.html"
@@ -84,3 +98,9 @@ echo  Stop:   Ctrl+C
 echo.
 cd backend
 "%~dp0.venv\Scripts\uvicorn" main:app --port 8000
+if errorlevel 1 (
+    echo.
+    echo [ERROR] Server failed to start.
+    pause
+    exit /b 1
+)

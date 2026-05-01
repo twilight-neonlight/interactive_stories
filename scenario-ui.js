@@ -304,10 +304,12 @@ function defaultCommanderInfo(state) {
         if (strength === '불명') {
           const score = f.strength_score != null
             ? f.strength_score - (f.battle_damage ?? 0) : null;
-          // 플레이어 본인 병력은 범위 없이 중앙값으로 표시
-          strength = (score != null && tpp != null)
-            ? formatTroops(Math.round(score * tpp))
-            : (STRENGTH_LABEL[f.strength] || '불명');
+          // 플레이어 본인 병력은 추정 범위가 아니라 확인된 야전군을 우선 표시
+          strength = f.field_army != null
+            ? formatTroops(f.field_army)
+            : (score != null && tpp != null)
+              ? formatTroops(Math.round(score * tpp))
+              : (STRENGTH_LABEL[f.strength] || '불명');
         }
       }
     }

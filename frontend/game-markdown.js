@@ -49,17 +49,19 @@ function markdownToHtml(md) {
 }
 
 // ── 응답 텍스트 파싱 헬퍼
+const CHOICE_SECTION_RE = /(^|\n)\s*(?:#{1,6}\s*)?\*{0,2}\s*결정\s*(시점|기로)\s*:?\s*\*{0,2}\s*:?/;
+
 function extractNarrative(text) {
   let body = text.replace(/^##[^\n]*\n/, '').trim();
   body = body.replace(/^\*\*시각:\*\*[^\n]*\n?/m, '').trim();
-  const cutIdx = body.search(/\*{0,2}결정 시점\*{0,2}/);
-  if (cutIdx !== -1) body = body.slice(0, cutIdx).trim();
+  const match = body.match(CHOICE_SECTION_RE);
+  if (match) body = body.slice(0, match.index + match[1].length).trim();
   return body;
 }
 
 function extractChoices(text) {
-  const cutIdx = text.search(/\*{0,2}결정\s*(시점|기로)\*{0,2}/);
-  const section = cutIdx !== -1 ? text.slice(cutIdx) : text;
+  const match = text.match(CHOICE_SECTION_RE);
+  const section = match ? text.slice(match.index + match[0].length) : text;
   return section
     .split('\n')
     .filter(l => /^(-|\d+[.)]) .{4,}/.test(l.trim()))

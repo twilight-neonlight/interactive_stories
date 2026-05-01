@@ -74,7 +74,8 @@ function renderFactionBars(state) {
     if (f.notes) parts.push(f.notes);
     if (tpp) {
       if (f.id === state.protagonist) {
-        parts.push(`병력: ${window.formatTroops(Math.round(score * tpp))}`);
+        const ownTroops = f.field_army != null ? f.field_army : Math.round(score * tpp);
+        parts.push(`병력: ${window.formatTroops(ownTroops)}`);
       } else {
         const intel = f.intel_level ?? 0;
         const est   = window.formatStrengthScore(score, tpp, intel, f.id);
