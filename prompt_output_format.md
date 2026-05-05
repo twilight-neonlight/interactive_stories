@@ -1,4 +1,4 @@
-# E. Output Format
+# Output Format
 
 Only one format per response. Never mix formats.
 
@@ -67,7 +67,9 @@ The UI sidebar already displays all character and faction relationship data in r
   "character_title_changes": [{"id": "기존인물id", "title": "새 직위명"}],
   "faction_intel_changes": [{"id": "기존세력id", "delta": 숫자}],
   "new_locations": [{"id": "영문소문자_언더바", "name": "지명", "controller": "지배세력id", "terrain": "지형 특성", "notes": "1-2문장 설명"}],
-  "location_changes": [{"id": "기존거점id", "controller": "새로운지배세력id"}]
+  "location_changes": [{"id": "기존거점id", "controller": "새로운지배세력id"}],
+  "player_coalition": ["세력명1", "세력명2"],
+  "enemy_coalition":  ["세력명1", "세력명2"]
 }
 ```
 
@@ -100,7 +102,8 @@ The UI sidebar already displays all character and faction relationship data in r
 - `faction_intel_changes`: 플레이어의 해당 세력에 대한 첩보 수준 변화. `delta`: +1(침투 부분 성공·성공), +2(대성공), -1(대실패). 0–4 범위로 자동 클램프. 시간 감쇠(6개월마다 -1)는 시스템이 자동 처리하므로 여기서 지정하지 않는다.
   - 첩보 수준별 병력 추정 오차 폭: 0=±30%, 1=±25%, 2=±20%, 3=±15%, 4=±10%. 오차 범위는 실제값을 비대칭 위치에 포함하므로 단순 중앙값으로 역산 불가.
 - `new_locations`: 이번 씬에서 새롭게 등장하는 거점. 이미 등록된 거점은 생략.
-- `location_changes`: 이번 씬에서 지배 세력이 바뀐 거점. id는 기존 locations의 id를 사용.
+- `location_changes`: 이번 씬에서 지배 세력이 바뀐 거점. `id`는 기존 locations의 id를 사용. `controller`는 반드시 현재 등록된 **factions의 id** 중 하나여야 하며, 인물 id·세력명·임의 문자열을 사용하면 안 된다.
+- `player_coalition` / `enemy_coalition`: **전투 개시 씬에서만** 사용. 이번 전장에 **물리적으로 존재하는** 연합 세력의 표시명 목록. 외교적으로 동맹이더라도 해당 씬에서 직접 언급·등장하지 않은 세력은 포함하지 않는다. 전투 UI 헤더에 "A / B / C vs X / Y" 형태로 표시된다.
 
 ## Meta-Language Prohibition
 

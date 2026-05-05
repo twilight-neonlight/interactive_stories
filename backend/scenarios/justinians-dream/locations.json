@@ -2,81 +2,71 @@
   {
     "id": "constantinople",
     "name": "콘스탄티노폴리스",
-    "label": "콘스탄티노폴리스",
     "region": "트라키아",
-    "controlling_faction": "byzantine",
+    "controller": "byzantine",
     "notes": "동로마 제국의 수도이자 유스티아누스 황제의 궁정. 제국의 행정·군사·종교가 교차하는 중심지로, 원정의 모든 명령과 병참 지원이 이곳에서 출발한다."
   },
   {
     "id": "syracuse",
     "name": "시라쿠사",
-    "label": "시라쿠사",
     "region": "시칠리아",
-    "controlling_faction": "byzantine",
+    "controller": "byzantine",
     "notes": "아프리카 원정군이 집결한 비잔틴 함대 기지. 지중해 중앙을 장악하는 전략적 요충지로, 서방 어느 방면으로든 출항할 수 있는 위치다."
   },
   {
     "id": "carthage",
     "name": "카르타고",
-    "label": "카르타고",
     "region": "북아프리카",
-    "controlling_faction": "vandal-kingdom",
+    "controller": "vandal-kingdom",
     "notes": "반달 왕국의 수도이자 지중해 서부 교역의 중심. 겔리메르가 쿠데타 이후 왕권을 공고히 하며 방어 태세를 정비하고 있다. 항구를 통해 유입되는 교역 수입이 반달 왕국 재정의 근간이다."
   },
   {
     "id": "ad-decimum",
     "name": "아드 데키뭄",
-    "label": "아드 데키뭄",
     "region": "북아프리카",
-    "controlling_faction": "vandal-kingdom",
+    "controller": "vandal-kingdom",
     "notes": "카르타고 남쪽 약 10마일 지점의 교통 요지. 카르타고로 이어지는 주요 육로가 통과하며, 반달군의 방어 거점 중 하나다."
   },
   {
     "id": "hippo-regius",
     "name": "히포 레기우스",
-    "label": "히포 레기우스",
     "region": "북아프리카 서부",
-    "controlling_faction": "vandal-kingdom",
+    "controller": "vandal-kingdom",
     "notes": "아우구스티누스가 주교로 봉직했던 도시. 북아프리카 서부의 주요 항구로 반달 왕국의 내륙 거점이다. 로마 시대부터 이어진 상업 도시로 항만 시설이 잘 갖춰져 있다."
   },
   {
     "id": "ravenna",
     "name": "라벤나",
-    "label": "라벤나",
     "region": "이탈리아 북부",
-    "controlling_faction": "ostrogothic-kingdom",
+    "controller": "ostrogothic-kingdom",
     "notes": "동고트 왕국의 수도. 사방이 저지대 습지로 둘러싸여 접근이 어렵고 항구를 통해 외부 물자를 안정적으로 공급받는다. 테오도리쿠스 대왕 시절부터 고트족의 행정 중심지다."
   },
   {
     "id": "rome",
     "name": "로마",
-    "label": "로마",
     "region": "이탈리아 중부",
-    "controlling_faction": "ostrogothic-kingdom",
+    "controller": "ostrogothic-kingdom",
     "notes": "옛 서로마 제국의 수도. 현재 동고트 왕국 치하에 있으며 고트 주둔군이 배치돼 있다. 교황청과 원로원이 남아 있어 종교·상징적 권위는 여전히 크지만, 도시 규모와 인구는 전성기에 비해 크게 줄었다."
   },
   {
     "id": "naples",
     "name": "네아폴리스",
-    "label": "네아폴리스",
     "region": "이탈리아 남부",
-    "controlling_faction": "ostrogothic-kingdom",
+    "controller": "ostrogothic-kingdom",
     "notes": "이탈리아 남부의 주요 항구 도시. 동고트 왕국 치하에 있으며 강력한 성벽으로 방어되고 있다. 오랜 그리스 식민지 전통을 이어받아 주민 상당수가 그리스어를 사용한다."
   },
   {
     "id": "antioch",
     "name": "안티오크",
-    "label": "안티오크",
     "region": "시리아",
-    "controlling_faction": "byzantine",
+    "controller": "byzantine",
     "notes": "시리아 최대 도시이자 동방 국경의 행정 중심. 콘스탄티노폴리스에 이어 제국 내 두 번째 규모의 도시로 동방 군단의 병참 기지다. 사산조 페르시아와의 접경 지역에서 가장 가까운 대도시다."
   },
   {
     "id": "dara",
     "name": "다라",
-    "label": "다라",
     "region": "메소포타미아 국경",
-    "controlling_faction": "byzantine",
+    "controller": "byzantine",
     "notes": "유스티아누스 황제가 페르시아 국경 방어를 위해 건설한 요새 도시. 530년 벨리사리우스가 이곳에서 사산조 대군을 격파해 명성을 얻었다. 동쪽 국경을 마주한 최전방 군사 거점이다."
   }
 ]

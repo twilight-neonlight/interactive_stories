@@ -52,7 +52,7 @@
   {
     "id": "jandarids", "name": "잔다르 왕조", "type": "emirate",
     "strength_score": 160, "field_army": 9480, "disposition": "중립", "color": "#6B8E23",
-    "notes": "시노프를 거점으로 흑해 남안을 장악한 이스펜디야르 왕조. 오스만과 트레비존드 사이에서 독립을 유지하며 실리 외교를 추구한다."
+    "notes": "시노프를 거점으로 흑해 남안을 장악한 베이국. 오스만과 트레비존드 사이에서 독립을 유지하며 실리 외교를 추구한다."
   },
   {
     "id": "trebizond", "name": "트레비존드 제국", "type": "empire",

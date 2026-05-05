@@ -128,6 +128,7 @@
   <div class="menu-buttons">
     <button class="menu-btn menu-btn-primary" onclick="goNewGame()">새 게임</button>
     <button class="menu-btn menu-btn-secondary" id="loadBtn" onclick="openSaveList()" disabled>불러오기</button>
+    <button class="menu-btn menu-btn-secondary" onclick="goQuickBattle()">빠른 역사적 전투</button>
   </div>
 </div>
 
@@ -168,6 +169,10 @@ init();
 function goNewGame() {
   NavState.clearGame();
   window.location.href = 'scenario_select.html';
+}
+
+function goQuickBattle() {
+  window.location.href = 'quick-battle.html';
 }
 
 // ── 불러오기 모달 ─────────────────────────────────

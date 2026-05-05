@@ -77,6 +77,8 @@ def load_scenarios() -> list[dict]:
             scenario[key] = json.loads(path.read_text(encoding="utf-8")) if path.exists() else []
         for loc in scenario["locations"]:
             loc["garrison"] = _resolve_garrison(loc)
+            if "controlling_faction" in loc and "controller" not in loc:
+                loc["controller"] = loc.pop("controlling_faction")
         char_select_path = scenario_dir / "character-select.json"
         scenario["character_select"] = json.loads(char_select_path.read_text(encoding="utf-8")) if char_select_path.exists() else []
         npc_pool_path = scenario_dir / "npc-pool.json"

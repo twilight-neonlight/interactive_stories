@@ -13,8 +13,7 @@
   {
     "id": "justinian",
     "name": "유스티아누스 1세",
-    "epithet": "대제",
-    "title": "동로마 황제",
+    "epithet": "제국을 재건하려는 황제",
     "faction_id": "byzantine",
     "disposition": "우호",
     "status_tag": "확인됨",
@@ -24,7 +23,6 @@
     "id": "theodora",
     "name": "테오도라",
     "epithet": "황후",
-    "title": "동로마 황후",
     "faction_id": "byzantine",
     "disposition": "중립",
     "status_tag": "확인됨",
@@ -34,7 +32,6 @@
     "id": "antonina",
     "name": "안토니나",
     "epithet": "벨리사리우스의 처",
-    "title": "원정군 총사령관 부인",
     "faction_id": "byzantine",
     "disposition": "우호",
     "status_tag": "확인됨",
@@ -43,8 +40,7 @@
   {
     "id": "john-armenian",
     "name": "아르메니아의 요한",
-    "epithet": "선봉의 기수",
-    "title": "연합 기병대 지휘관",
+    "epithet": "벨리사리우스의 부관",
     "faction_id": "byzantine",
     "disposition": "우호",
     "status_tag": "확인됨",
@@ -53,18 +49,16 @@
   {
     "id": "gelimer",
     "name": "겔리메르",
-    "epithet": "반달의 마지막 왕",
-    "title": "반달 왕국 왕",
+    "epithet": "찬탈자",
     "faction_id": "vandal-kingdom",
     "disposition": "적대",
     "status_tag": "확인됨",
-    "desc": "쿠데타로 힐데리크를 폐위하고 왕좌를 차지했다. 유스티아누스의 선전포고 명분을 스스로 제공한 셈이다. 개인적으로는 용감하지만 전략적 판단이 흐려질 때가 있다."
+    "desc": "쿠데타로 힐데리크를 폐위하고 왕좌를 차지해 유스티아누스의 선전포고 명분을 스스로 제공했다. 개인적으로는 용감하지만 그것이 무모함으로 이어질 때가 있다."
   },
   {
     "id": "narses",
     "name": "나르세스",
-    "epithet": "황제의 내시",
-    "title": "황실 내시장",
+    "epithet": "황실 내시장",
     "faction_id": "byzantine",
     "disposition": "중립",
     "status_tag": "확인됨",

@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>빠른 역사적 전투 — Interactive Stories</title>
+<link rel="stylesheet" href="./styles.css">
+<script src="../scenario-loader.js"></script>
+<script src="./api.js"></script>
+<script src="./nav.js"></script>
+<style>
+  .qb-wrap {
+    min-height: 100vh;
+    display: flex; flex-direction: column;
+    align-items: center;
+    padding: 48px 24px 40px;
+  }
+  .qb-header { text-align: center; margin-bottom: 48px; }
+  .qb-header-label {
+    font-family: 'Cinzel', serif; font-size: 10px; font-weight: 600;
+    letter-spacing: 0.25em; text-transform: uppercase;
+    color: var(--text-tertiary); margin-bottom: 10px;
+  }
+  .qb-title {
+    font-family: 'Cinzel', serif; font-size: clamp(22px, 4vw, 36px);
+    font-weight: 700; letter-spacing: 0.04em; color: var(--text-primary);
+    margin-bottom: 8px;
+  }
+  .qb-sub {
+    font-family: 'IM Fell English', serif; font-style: italic;
+    font-size: 14px; color: var(--text-secondary);
+  }
+  .qb-back {
+    align-self: flex-start; margin-bottom: 32px;
+    background: none; border: 1px solid var(--border-mid);
+    border-radius: 6px; padding: 6px 14px;
+    font-family: sans-serif; font-size: 12px;
+    color: var(--text-tertiary); cursor: pointer;
+    transition: color 0.12s, border-color 0.12s;
+    text-decoration: none; display: inline-block;
+  }
+  .qb-back:hover { color: var(--text-primary); border-color: var(--text-primary); }
+
+  .battle-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 16px;
+    width: 100%; max-width: 1040px;
+  }
+
+  .battle-card {
+    background: var(--bg-primary);
+    border: 1px solid var(--border-light);
+    border-radius: var(--radius-lg);
+    padding: 20px;
+    display: flex; flex-direction: column; gap: 12px;
+    transition: border-color 0.15s, box-shadow 0.15s;
+    cursor: default;
+  }
+  .battle-card:hover {
+    border-color: var(--border-strong);
+    box-shadow: 0 4px 16px rgba(0,0,0,0.08);
+  }
+
+  .battle-year {
+    font-family: 'Cinzel', serif; font-size: 11px; font-weight: 600;
+    letter-spacing: 0.15em; color: var(--text-tertiary);
+    text-transform: uppercase;
+  }
+  .battle-title {
+    font-family: 'Noto Serif KR', 'Georgia', serif;
+    font-size: 18px; font-weight: 700;
+    color: var(--text-primary); line-height: 1.3;
+  }
+  .battle-matchup {
+    display: flex; align-items: center; gap: 8px;
+    font-family: sans-serif; font-size: 12px;
+  }
+  .battle-faction {
+    padding: 3px 9px; border-radius: 10px;
+    font-weight: 600; font-size: 11px;
+    border: 1px solid;
+  }
+  .battle-vs { color: var(--text-tertiary); font-size: 11px; }
+  .battle-desc {
+    font-family: sans-serif; font-size: 12px;
+    color: var(--text-secondary); line-height: 1.6;
+    flex: 1;
+  }
+  .battle-start-btn {
+    width: 100%; padding: 11px;
+    font-family: 'Cinzel', serif; font-size: 12px;
+    font-weight: 600; letter-spacing: 0.10em; text-transform: uppercase;
+    background: var(--text-primary); color: var(--bg-primary);
+    border: none; border-radius: var(--radius-md);
+    cursor: pointer; transition: opacity 0.12s;
+  }
+  .battle-start-btn:hover:not(:disabled) { opacity: 0.82; }
+  .battle-start-btn:disabled {
+    opacity: 0.4; cursor: not-allowed;
+  }
+  .battle-start-btn.loading {
+    opacity: 0.6; cursor: wait;
+  }
+
+  .qb-error {
+    margin-top: 20px; text-align: center;
+    font-family: sans-serif; font-size: 13px;
+    color: #E24B4A;
+  }
+</style>
+</head>
+<body>
+
+<div class="qb-wrap">
+  <a class="qb-back" href="main_menu.html">← 메인 메뉴</a>
+
+  <header class="qb-header">
+    <div class="qb-header-label">Interactive Stories</div>
+    <h1 class="qb-title">빠른 역사적 전투</h1>
+    <p class="qb-sub">역사의 분기점 — 결과를 바꿀 수 있는가</p>
+  </header>
+
+  <div class="battle-grid" id="battle-grid">
+    <div style="text-align:center;color:var(--text-tertiary);font-family:sans-serif;font-size:13px;grid-column:1/-1;padding:40px 0;">
+      불러오는 중…
+    </div>
+  </div>
+  <div class="qb-error" id="qb-error" style="display:none;"></div>
+</div>
+
+<script>
+(function checkAuth() {
+  if (!NavState.getToken()) window.location.replace('auth.html');
+})();
+
+const BASE = window.API_BASE || 'http://localhost:8000';
+let _loading = false;
+
+async function loadBattles() {
+  const grid = document.getElementById('battle-grid');
+  try {
+    const r = await fetch(`${BASE}/api/quick-battles`, {
+      headers: { 'Authorization': `Bearer ${NavState.getToken()}` }
+    });
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    const battles = await r.json();
+    renderGrid(battles);
+  } catch (e) {
+    grid.innerHTML = `<div style="grid-column:1/-1;text-align:center;color:var(--text-tertiary);font-family:sans-serif;font-size:13px;padding:40px 0;">
+      서버에 연결할 수 없습니다.<br><span style="font-size:11px;">${e.message}</span>
+    </div>`;
+  }
+}
+
+function renderGrid(battles) {
+  const grid = document.getElementById('battle-grid');
+  grid.innerHTML = battles.map(b => `
+    <div class="battle-card">
+      <div class="battle-year">${b.year} AD</div>
+      <div class="battle-title">${b.title}</div>
+      <div class="battle-matchup">
+        <span class="battle-faction" style="color:${b.player_color};border-color:${b.player_color};background:${b.player_color}18">${b.player_name}</span>
+        <span class="battle-vs">vs</span>
+        <span class="battle-faction" style="color:${b.enemy_color};border-color:${b.enemy_color};background:${b.enemy_color}18">${b.enemy_name}</span>
+      </div>
+      <div class="battle-desc">${b.desc}</div>
+      <button class="battle-start-btn" onclick="startBattle('${b.id}', this)">전투 시작</button>
+    </div>
+  `).join('');
+}
+
+async function startBattle(battleId, btn) {
+  if (_loading) return;
+  _loading = true;
+
+  const errEl = document.getElementById('qb-error');
+  errEl.style.display = 'none';
+
+  btn.disabled = true;
+  btn.classList.add('loading');
+  btn.textContent = '장면 생성 중…';
+
+  // 다른 버튼도 비활성
+  document.querySelectorAll('.battle-start-btn').forEach(b => { if (b !== btn) b.disabled = true; });
+
+  try {
+    const r = await fetch(`${BASE}/api/quick-battle/${battleId}/start`, {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${NavState.getToken()}` }
+    });
+    if (!r.ok) {
+      const msg = await r.text();
+      throw new Error(msg || `HTTP ${r.status}`);
+    }
+    const data = await r.json();
+
+    // 세션 스토리지에 전투 데이터 저장
+    sessionStorage.setItem('quickBattle', JSON.stringify({
+      stateJson:      data.state_json,
+      content:        data.content,
+      resolution:     data.resolution,
+      troopsPerPoint: data.troops_per_point,
+    }));
+
+    window.location.href = 'game.html';
+  } catch (e) {
+    errEl.textContent = `전투 시작 실패: ${e.message}`;
+    errEl.style.display = 'block';
+    btn.disabled = false;
+    btn.classList.remove('loading');
+    btn.textContent = '전투 시작';
+    document.querySelectorAll('.battle-start-btn').forEach(b => { b.disabled = false; });
+    _loading = false;
+  }
+}
+
+loadBattles();
+</script>
+</body>
+</html>

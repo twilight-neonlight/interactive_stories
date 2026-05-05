@@ -1,7 +1,7 @@
 [
   {
     "id": "zaporozhian-host",
-    "name": "자포로지아 코사크군 (흐멜니츠키 진영)",
+    "name": "자포로지아 코사크",
     "type": "rebel",
     "strength_score": 420,
     "disposition": "적대",
@@ -19,10 +19,10 @@
   },
   {
     "id": "polish-crown",
-    "name": "폴란드 왕국 (왕실 직할군)",
+    "name": "폴란드 왕국",
     "type": "kingdom",
     "strength_score": 300,
-    "disposition": "우호",
+    "disposition": "동맹",
     "color": "#9E2020",
     "notes": "얀 2세 카지미에시 치하의 폴란드 왕실군. 귀족 의회(세임)의 제약으로 동원 속도가 느리고 재정이 만성 부족. 후사리아 중기병은 최강이나 보병·포병이 열세. 마그나트 귀족들의 독자 행동이 걸림돌이다."
   },
@@ -31,7 +31,7 @@
     "name": "리투아니아 대공국",
     "type": "kingdom",
     "strength_score": 210,
-    "disposition": "우호",
+    "disposition": "동맹",
     "color": "#4A7A3A",
     "notes": "연방의 공동 구성국. 야누시 라지비우 공이 군을 지휘하나 독자 노선을 걷는 경향이 있다. 북방 국경 방어가 우선 과제이며, 스웨덴과 모스크바 양쪽 모두를 경계한다."
   },

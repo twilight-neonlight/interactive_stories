@@ -284,12 +284,10 @@ function defaultCommanderInfo(state) {
       name         = char.name;
       title        = char.birth_label || char.title || char.epithet || '불명';
       base         = char.base ? char.base.split(' — ')[0] : '불명';
-      const tpp = state.troopsPerPoint ?? null;
       if (char.troops_count != null) {
         strength = formatTroops(char.troops_count);
-      } else {
-        strength = char.troops || STRENGTH_LABEL[char.strength] || '불명';
       }
+      // char.troops는 초기 정적 레이블 — 아래 faction 실시간 데이터가 우선
       ownFactionId = char.faction_id || char.faction || null;
     }
     // 오스만 방식: protagonist id = faction id
@@ -309,10 +307,17 @@ function defaultCommanderInfo(state) {
             ? formatTroops(f.field_army)
             : (score != null && tpp != null)
               ? formatTroops(Math.round(score * tpp))
-              : (STRENGTH_LABEL[f.strength] || '불명');
+              : (char?.troops || STRENGTH_LABEL[f.strength] || '불명');
         }
       }
     }
+  }
+
+  // faction 없는 경우 char.troops 정적 레이블 최종 폴백
+  if (strength === '불명') {
+    const _c = state.protagonist ? state.characters.get(state.protagonist) : null;
+    if (_c?.troops) strength = _c.troops;
+    else if (_c?.strength) strength = STRENGTH_LABEL[_c.strength] || '불명';
   }
 
   // protagonist 정보가 없을 때 우호 세력에서 보완

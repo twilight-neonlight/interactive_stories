@@ -2,7 +2,7 @@
   {
     "id": "jan-kazimierz",
     "name": "얀 2세 카지미에시 바사",
-    "epithet": "폴란드의 왕",
+    "epithet": "폴란드 왕",
     "title": "폴란드-리투아니아 연방 왕",
     "faction_id": "polish-crown",
     "disposition": "우호",
@@ -13,7 +13,7 @@
   {
     "id": "janusz-radziwill",
     "name": "야누시 라지비우",
-    "epithet": "리투아니아의 대헤트만",
+    "epithet": "리투아니아 대헤트만",
     "title": "리투아니아 대헤트만",
     "faction_id": "grand-duchy-lithuania",
     "disposition": "우호",
@@ -36,7 +36,6 @@
     "id": "khmelnytsky",
     "name": "보흐단 흐멜니츠키",
     "epithet": "자포로지아의 헤트만",
-    "title": "자포로지아 코사크군 헤트만",
     "faction_id": "zaporozhian-host",
     "disposition": "적대",
     "status_tag": "확인됨",
@@ -46,7 +45,6 @@
     "id": "islam-giray",
     "name": "이슬람 기레이 3세",
     "epithet": "크림 칸",
-    "title": "크림 칸",
     "faction_id": "crimean-khanate",
     "disposition": "적대",
     "status_tag": "확인됨",
@@ -55,8 +53,7 @@
   {
     "id": "alexis-i",
     "name": "알렉세이 1세 미하일로비치",
-    "epithet": "조용한 차르",
-    "title": "모스크바 차르",
+    "epithet": "모스크바 차르",
     "faction_id": "muscovy",
     "disposition": "중립",
     "status_tag": "추정됨",

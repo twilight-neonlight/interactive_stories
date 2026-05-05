@@ -2,121 +2,106 @@
   {
     "id": "warsaw",
     "name": "바르샤바",
-    "label": "바르샤바",
     "region": "마조프셰",
-    "controlling_faction": "polish-crown",
+    "controller": "polish-crown",
     "notes": "연방의 수도이자 세임(귀족 의회) 소재지. 왕실의 정치적 중심이지만 군사 요충지는 아니다."
   },
   {
     "id": "krakow",
     "name": "크라쿠프",
-    "label": "크라쿠프",
     "region": "소폴란드",
-    "controlling_faction": "polish-crown",
+    "controller": "polish-crown",
     "notes": "옛 수도. 바벨 성과 왕실 교회가 있어 상징적 중요성이 크다. 서쪽 방어선의 주요 거점이다."
   },
   {
     "id": "vilnius",
     "name": "빌뉴스",
-    "label": "빌뉴스",
     "region": "리투아니아",
-    "controlling_faction": "grand-duchy-lithuania",
+    "controller": "grand-duchy-lithuania",
     "notes": "리투아니아 대공국의 수도. 야누시 라지비우의 근거지이자 연방 북동부 방어의 중심이다."
   },
   {
     "id": "kyiv",
     "name": "키예프",
-    "label": "키예프",
     "region": "우크라이나",
-    "controlling_faction": "zaporozhian-host",
+    "controller": "zaporozhian-host",
     "notes": "동방 정교회의 성지이자 코사크 봉기의 정신적 중심. 1648년 이후 흐멜니츠키 세력권 아래 있다."
   },
   {
     "id": "chigirin",
     "name": "치히린",
-    "label": "치히린",
     "region": "우크라이나",
-    "controlling_faction": "zaporozhian-host",
+    "controller": "zaporozhian-host",
     "notes": "흐멜니츠키의 본거지이자 자포로지아 코사크의 행정 중심 도시."
   },
   {
     "id": "lviv",
     "name": "르비우",
-    "label": "르비우",
     "region": "갈리치아",
-    "controlling_faction": "polish-crown",
+    "controller": "polish-crown",
     "notes": "동부 연방의 최대 도시. 1648년 코사크 포위를 방어 성금으로 막아냈다. 교역과 가톨릭 문화의 중심."
   },
   {
     "id": "zbarazh",
     "name": "즈바라시",
-    "label": "즈바라시",
     "region": "포돌리아",
-    "controlling_faction": "polish-crown",
+    "controller": "polish-crown",
     "notes": "포돌리아 동부의 비스니오비에츠키 가문 소유 요새. 코사크 세력권과 직접 맞닿는 폴란드 동부 국경의 최전선 거점이다."
   },
   {
     "id": "zaporizhzhia",
     "name": "자포리자",
-    "label": "자포리자",
     "region": "드니프로강 하류",
-    "controlling_faction": "zaporozhian-host",
+    "controller": "zaporozhian-host",
     "notes": "자포로지아 코사크의 본진(시치). 연방의 통제권 밖에 있으며 코사크 전사들의 집결지."
   },
   {
     "id": "moscow",
     "name": "모스크바",
-    "label": "모스크바",
     "region": "모스크바 공국",
-    "controlling_faction": "muscovy",
+    "controller": "muscovy",
     "notes": "차르국의 수도. 알렉세이 1세의 궁정에서 코사크 사절단의 요청을 두고 논의가 진행 중이다."
   },
   {
     "id": "pskov",
     "name": "프스코프",
-    "label": "프스코프",
     "region": "노브고로드 변경",
-    "controlling_faction": "muscovy",
+    "controller": "muscovy",
     "notes": "리투아니아·스웨덴 양쪽 국경에 인접한 모스크바의 서방 전진 거점. 고대 노브고로드 무역권의 일부로 발트해 교역로와 연결된다."
   },
   {
     "id": "riga",
     "name": "리가",
-    "label": "리가",
     "region": "리보니아",
-    "controlling_faction": "sweden",
+    "controller": "sweden",
     "notes": "스웨덴령 리보니아의 수도이자 발트해 최대 항구. 리투아니아 국경과 직접 맞닿으며 스웨덴의 동방 발트 패권을 뒷받침하는 핵심 거점이다."
   },
   {
     "id": "reval",
     "name": "레발",
-    "label": "레발",
     "region": "에스토니아",
-    "controlling_faction": "sweden",
+    "controller": "sweden",
     "notes": "스웨덴령 에스토니아의 항구 요새. 발트해 북안의 해상 지배권을 뒷받침하는 스웨덴의 제2 발트 거점."
   },
   {
     "id": "stockholm",
     "name": "스톡홀름",
-    "label": "스톡홀름",
     "region": "스웨덴 본토",
-    "controlling_faction": "sweden",
+    "controller": "sweden",
     "notes": "스웨덴 왕국의 수도. 크리스티나 여왕의 궁정에서 발트해 패권 확대와 폴란드와의 영토 분쟁을 두고 정책이 조율되고 있다."
   },
   {
     "id": "bakhchisaray",
     "name": "바흐치사라이",
-    "label": "바흐치사라이",
     "region": "크림반도",
-    "controlling_faction": "crimean-khanate",
+    "controller": "crimean-khanate",
     "notes": "크림 칸국의 수도이자 이슬람 기레이 칸의 궁정. 코사크 동맹 조건을 조율하고 타타르 기병대 파견 규모를 결정하는 곳."
   },
   {
     "id": "perekop",
     "name": "페레코프",
-    "label": "페레코프",
     "region": "크림반도",
-    "controlling_faction": "crimean-khanate",
+    "controller": "crimean-khanate",
     "notes": "크림반도 입구를 막는 지협의 요새. 타타르 기병이 스텝으로 출격하거나 후퇴할 때 반드시 통과하는 단일 육로 병목."
   }
 ]

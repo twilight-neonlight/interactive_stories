@@ -22,7 +22,7 @@
   {
     "id": "musa",
     "name": "무사 첼레비",
-    "epithet": "포로에서 돌아온 자",
+    "epithet": "방랑하는 왕자",
     "title": "왕자",
     "faction_id": "musa",
     "disposition": "중립",
@@ -43,7 +43,6 @@
     "id": "manuel-ii",
     "name": "마누일 2세 팔라이올로고스",
     "epithet": "쇠락한 제국의 수호자",
-    "title": "바실레우스",
     "faction_id": "byzantine",
     "disposition": "중립",
     "status_tag": "확인됨",
@@ -53,7 +52,6 @@
     "id": "timur",
     "name": "티무르 랑크",
     "epithet": "세계 정복자",
-    "title": "아미르",
     "faction_id": null,
     "disposition": "중립",
     "status_tag": "추정됨",
@@ -62,8 +60,7 @@
   {
     "id": "ibrahim-karaman",
     "name": "이브라힘 베이",
-    "epithet": "아나톨리아의 사자",
-    "title": "카라만 베이",
+    "epithet": "카라만 베이",
     "faction_id": "karamanids",
     "disposition": "적대",
     "status_tag": "확인됨",
@@ -72,8 +69,7 @@
   {
     "id": "isfendiyar",
     "name": "이스펜디야르 베이",
-    "epithet": "흑해 연안의 군주",
-    "title": "잔다르 베이",
+    "epithet": "잔다르 베이",
     "faction_id": "jandarids",
     "disposition": "중립",
     "status_tag": "확인됨",
@@ -82,8 +78,7 @@
   {
     "id": "mircea",
     "name": "미르체아 대공",
-    "epithet": "다뉴브의 방패",
-    "title": "왈라키아 공",
+    "epithet": "왈라키아 공",
     "faction_id": "wallachia",
     "disposition": "중립",
     "status_tag": "확인됨",
@@ -92,21 +87,11 @@
   {
     "id": "stefan-lazarevic",
     "name": "스테판 라자레비치",
-    "epithet": "세르비아의 전사 공작",
-    "title": "세르비아 전제공",
+    "epithet": "세르비아 전제공",
     "faction_id": "serbia",
     "disposition": "중립",
     "status_tag": "확인됨",
     "desc": "바야지트를 섬긴 세르비아의 충실한 봉신. 앙카라 전투에서도 오스만 편에서 싸웠다. 어느 왕자를 지지하느냐가 발칸 세력 균형의 핵심 변수이며, 지지 카드를 아껴 협상 레버리지로 활용한다."
-  },
-  {
-    "id": "bedreddin",
-    "name": "셰이흐 베드레딘",
-    "epithet": "혁명의 신학자",
-    "title": "셰이흐 (수피 학자)",
-    "faction_id": "musa",
-    "disposition": "중립",
-    "status_tag": "불명",
-    "desc": "이슬람 신학과 수피즘을 결합한 급진 사상가. 무사 첼레비의 카디아스케리(군사 판사)로 발탁되어 가지 세력에 종교적 정당성을 부여했다. 기독교도·유대인과의 평등을 설파하는 이단적 교리가 귀족층 사이에 경계심을 낳고 있다."
   }
+
 ]

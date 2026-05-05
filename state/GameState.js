@@ -105,6 +105,9 @@ class GameState {
     /** @type {Array} 동시 진행 세계 사건 (events.json) */
     this.events  = scenario.events   ?? [];
 
+    /** @type {Object|null} 다중 턴 전투 진행 상태 (전투 중일 때만 non-null) */
+    this.combatState = null;
+
     // 시나리오 초기값을 깊은 복사해서 Map으로 변환
     for (const char of scenario.characters ?? []) {
       this.characters.set(char.id, {
@@ -306,14 +309,31 @@ class GameState {
 
   /**
    * 전투 패배 페널티를 누적합니다. 패자에게만 적용.
+   * field_army / troops_count도 troopsPerPoint 비율로 함께 감소합니다.
    * @param {string} id
    * @param {number} damage - 양수. 실효 강도를 임시로 낮춥니다.
    */
   addFactionBattleDamage(id, damage) {
     const faction = this.factions.get(id);
     if (!faction) return;
-    faction.battle_damage = (faction.battle_damage ?? 0) + Math.abs(damage);
+    const absDmg = Math.abs(damage);
+    faction.battle_damage = (faction.battle_damage ?? 0) + absDmg;
     faction.strength = GameState._effectiveStrength(faction);
+    if (this.troopsPerPoint && absDmg > 0) {
+      const troopLoss = Math.round(absDmg * this.troopsPerPoint);
+      if (faction.field_army != null) {
+        faction.field_army = Math.max(0, faction.field_army - troopLoss);
+      }
+      if (this.protagonist) {
+        const char = this.characters.get(this.protagonist);
+        if (char?.troops_count != null) {
+          const pFid = char.faction_id || this.protagonist;
+          if (pFid === id) {
+            char.troops_count = Math.max(0, char.troops_count - troopLoss);
+          }
+        }
+      }
+    }
   }
 
   /**
@@ -329,14 +349,32 @@ class GameState {
 
   /**
    * 시간 경과에 따라 battle_damage를 경감합니다.
+   * field_army / troops_count도 troopsPerPoint 비율로 함께 회복됩니다.
    * @param {string} id
    * @param {number} amount - 양수. 회복량.
    */
   recoverFactionBattleDamage(id, amount) {
     const faction = this.factions.get(id);
     if (!faction) return;
-    faction.battle_damage = Math.max(0, (faction.battle_damage ?? 0) - Math.abs(amount));
+    const absAmt    = Math.abs(amount);
+    const recovered = Math.min(absAmt, faction.battle_damage ?? 0);
+    faction.battle_damage = Math.max(0, (faction.battle_damage ?? 0) - absAmt);
     faction.strength = GameState._effectiveStrength(faction);
+    if (this.troopsPerPoint && recovered > 0) {
+      const troopGain = Math.round(recovered * this.troopsPerPoint);
+      if (faction.field_army != null) {
+        faction.field_army += troopGain;
+      }
+      if (this.protagonist) {
+        const char = this.characters.get(this.protagonist);
+        if (char?.troops_count != null) {
+          const pFid = char.faction_id || this.protagonist;
+          if (pFid === id) {
+            char.troops_count += troopGain;
+          }
+        }
+      }
+    }
   }
 
   /** 실효 강도 레이블: strength_score - battle_damage */
@@ -395,6 +433,7 @@ class GameState {
       factions:      Object.fromEntries(this.factions),
       locations:     Object.fromEntries(this.locations),
       events:        this.events.slice(),
+      combatState:   this.combatState,
     };
   }
 
@@ -420,6 +459,7 @@ class GameState {
     state.factions        = new Map(Object.entries(data.factions));
     state.locations       = new Map(Object.entries(data.locations));
     state.events          = Array.isArray(data.events) ? data.events.slice() : [];
+    state.combatState     = data.combatState ?? null;
     // UI 전용 데이터는 직렬화 대상 아님 — game.html에서 scenario fetch 후 재주입
     state.opening        = {};
     state.npcPool        = {};

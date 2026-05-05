@@ -301,6 +301,23 @@ def build_scenario_context(state: dict) -> str:
         + (f" / {ts}" if ts else "")
     )
 
+    combat_state = state.get("combatState")
+    if combat_state and combat_state.get("active"):
+        player_fid  = combat_state.get("player_faction_id", "")
+        enemy_fid   = combat_state.get("enemy_faction_id", "")
+        player_name = factions.get(player_fid, {}).get("name", player_fid) if factions else player_fid
+        enemy_name  = factions.get(enemy_fid,  {}).get("name", enemy_fid)  if factions else enemy_fid
+        p_mom       = combat_state.get("player_morale", "?")
+        e_mom       = combat_state.get("enemy_morale",  "?")
+        phase       = combat_state.get("phase_number", 1)
+        max_phases  = combat_state.get("max_phases", 5)
+        lines.append(
+            f"\n## 전투 진행 중\n"
+            f"{player_name} vs {enemy_name}"
+            f" | 페이즈 {phase}/{max_phases}"
+            f" | 아군 사기 {p_mom} / 적군 사기 {e_mom} (0이 되면 붕괴)"
+        )
+
     return "\n".join(lines)
 
 

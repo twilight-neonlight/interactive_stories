@@ -3,7 +3,6 @@
     {
       "id": "wisniowiecki",
       "name": "예레미아 비스니오비에츠키",
-      "title": "루스 지방 총독",
       "epithet": "즈바라시의 수호자",
       "faction_id": "polish-crown",
       "disposition": "우호",
@@ -14,7 +13,6 @@
     {
       "id": "czarniecki",
       "name": "스테판 차르니에츠키",
-      "title": "루스 팔라틴 부사령관",
       "epithet": "연방의 검",
       "faction_id": "polish-crown",
       "disposition": "우호",
@@ -25,7 +23,6 @@
     {
       "id": "kisiel",
       "name": "아담 키시엘",
-      "title": "브라츠와프 지방 총독",
       "epithet": "마지막 협상가",
       "faction_id": "polish-crown",
       "disposition": "중립",
@@ -36,7 +33,6 @@
     {
       "id": "lubomirski",
       "name": "스타니스와프 루보미르스키",
-      "title": "크라쿠프 성주",
       "epithet": "세임의 실력자",
       "faction_id": "polish-crown",
       "disposition": "중립",
@@ -49,7 +45,6 @@
     {
       "id": "gosiewksi",
       "name": "빈첸티 고시에프스키",
-      "title": "리투아니아 야전 헤트만",
       "epithet": "리투아니아의 칼",
       "faction_id": "grand-duchy-lithuania",
       "disposition": "우호",
@@ -60,7 +55,6 @@
     {
       "id": "boguslaw-radziwill",
       "name": "보구스와프 라지비우",
-      "title": "오스트로그 공작",
       "epithet": "야누시의 사촌",
       "faction_id": "grand-duchy-lithuania",
       "disposition": "우호",
@@ -71,7 +65,6 @@
     {
       "id": "wisniowiecki",
       "name": "예레미아 비스니오비에츠키",
-      "title": "루스 지방 총독",
       "epithet": "즈바라시의 수호자",
       "faction_id": "polish-crown",
       "disposition": "중립",
@@ -82,7 +75,6 @@
     {
       "id": "kisiel",
       "name": "아담 키시엘",
-      "title": "브라츠와프 지방 총독",
       "epithet": "마지막 협상가",
       "faction_id": "polish-crown",
       "disposition": "중립",
@@ -95,7 +87,6 @@
     {
       "id": "czarniecki",
       "name": "스테판 차르니에츠키",
-      "title": "루스 팔라틴 부사령관",
       "epithet": "연방의 검",
       "faction_id": "polish-crown",
       "disposition": "우호",
@@ -106,7 +97,6 @@
     {
       "id": "kisiel",
       "name": "아담 키시엘",
-      "title": "브라츠와프 지방 총독",
       "epithet": "마지막 협상가",
       "faction_id": "polish-crown",
       "disposition": "중립",
@@ -117,7 +107,6 @@
     {
       "id": "gosiewksi",
       "name": "빈첸티 고시에프스키",
-      "title": "리투아니아 야전 헤트만",
       "epithet": "리투아니아의 칼",
       "faction_id": "grand-duchy-lithuania",
       "disposition": "중립",
@@ -128,7 +117,6 @@
     {
       "id": "wisniowiecki",
       "name": "예레미아 비스니오비에츠키",
-      "title": "루스 지방 총독",
       "epithet": "즈바라시의 수호자",
       "faction_id": "polish-crown",
       "disposition": "중립",

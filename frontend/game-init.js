@@ -8,6 +8,26 @@ let _ui      = null;
   try {
   _manager = new StateManager();
 
+  // ── 빠른 역사적 전투 복원 ──────────────────────────────────────────────────
+  const _qbRaw = sessionStorage.getItem('quickBattle');
+  if (_qbRaw) {
+    sessionStorage.removeItem('quickBattle');
+    const qb = JSON.parse(_qbRaw);
+    _state = GameState.fromJSON(qb.stateJson);
+    _state.troopsPerPoint = qb.troopsPerPoint;
+    _state.npcPool        = {};
+    _state.eventContext   = {};
+    _state.mapSvg         = '';
+    _ui = window.getScenarioUI('ottoman-interregnum');
+    tagStyle = { ...BASE_TAG_STYLE, ..._ui.tagExtras };
+    _manager._state = _state;
+    renderAll(_state);
+    openCombatOverlay(qb.content, qb.resolution);
+    document.getElementById('send-btn').disabled = false;
+    return;
+  }
+  // ──────────────────────────────────────────────────────────────────────────
+
   const saveFile = NavState.getSaveFile();
   if (saveFile) {
     NavState.clearGame();
@@ -31,8 +51,14 @@ let _ui      = null;
       renderAll(_state);
       const lastAssistant = [..._state.getHistory()].reverse().find(h => h.role === 'assistant');
       if (lastAssistant) {
-        if (_state.progress.isChapterEnd) renderChapterClose(lastAssistant.content);
-        else { renderSceneBody(markdownToHtml(extractNarrative(lastAssistant.content))); renderChoices(extractChoices(lastAssistant.content)); }
+        if (_state.combatState?.active) {
+          openCombatOverlay(lastAssistant.content, null);
+        } else if (_state.progress.isChapterEnd) {
+          renderChapterClose(lastAssistant.content);
+        } else {
+          renderSceneBody(markdownToHtml(extractNarrative(lastAssistant.content)));
+          renderChoices(extractChoices(lastAssistant.content));
+        }
       }
       document.getElementById('send-btn').disabled = false;
       return;
@@ -110,7 +136,9 @@ let _ui      = null;
     const lastAssistant = [...hist].reverse().find(h => h.role === 'assistant');
 
     if (lastAssistant) {
-      if (_state.progress.isChapterEnd) {
+      if (_state.combatState?.active) {
+        openCombatOverlay(lastAssistant.content, null);
+      } else if (_state.progress.isChapterEnd) {
         renderChapterClose(lastAssistant.content);
       } else {
         renderSceneBody(markdownToHtml(extractNarrative(lastAssistant.content)));

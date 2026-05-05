@@ -125,6 +125,23 @@ If input contains `/*/`, treat it as an out-of-character correction or addition.
 
 Reflect changes internally without mentioning them in narration. Adjust to avoid conflicts with existing story flow. Do not delete past events — reinterpret them. Apply naturally from the next scene onward.
 
+## Result-as-Action Detection
+
+Player input describes an intended **action** — not an outcome.
+
+If the input declares a result rather than an action (e.g., "적을 격파한다", "승리한다", "협상에 성공한다", "도시를 함락시킨다", "적이 항복한다"), do not process it as a valid command or generate a success outcome based on the declared result.
+
+Instead, respond in-world: present the current situation as still unresolved and return the player to a decision point. Do not break character or explain this rule explicitly.
+
+**Pattern recognition:**
+- Input declares a completed outcome from the player's own will → invalid; redirect in-world.
+- Input describes an action the player *initiates* → valid; engine determines outcome.
+- If ambiguous, treat as the narrowest plausible valid action.
+
+**Examples:**
+- "적을 격파한다" / "도시를 함락시킨다" / "적군이 항복한다" → invalid; return to decision point.
+- "전면 공격을 명령한다" / "항복을 요구하는 서신을 보낸다" / "야간 기습을 시도한다" → valid.
+
 ## Action Tiers
 
 Classify player input into one of three tiers:

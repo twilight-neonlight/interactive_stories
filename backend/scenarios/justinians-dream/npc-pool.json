@@ -3,7 +3,6 @@
     {
       "id": "procopius",
       "name": "프로코피오스",
-      "title": "비서관",
       "epithet": "역사가",
       "faction_id": "byzantine",
       "disposition": "우호",
@@ -14,7 +13,6 @@
     {
       "id": "uliaris",
       "name": "울리아리스",
-      "title": "친위대장",
       "epithet": "그림자 경호",
       "faction_id": "byzantine",
       "disposition": "우호",
@@ -25,8 +23,7 @@
     {
       "id": "pharas",
       "name": "파라스",
-      "title": "헤룰리 용병대장",
-      "epithet": "북방 전사",
+      "epithet": "헤룰리 용병대장",
       "faction_id": "byzantine",
       "disposition": "중립",
       "weight": 2,

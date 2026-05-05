@@ -63,6 +63,12 @@ function renderFactionBars(state) {
   if (!container || !_ui) return;
   const tpp = state.troopsPerPoint ?? null;
   const INTEL_LABEL = ['없음', '하', '중', '상', '정밀'];
+
+  // protagonist 캐릭터의 faction_id로 플레이어 세력 판별 (오스만 방식 fallback 포함)
+  const _pChar = state.characters.get(state.protagonist);
+  const playerFactionId = _pChar?.faction_id
+    || (state.factions.has(state.protagonist) ? state.protagonist : null);
+
   container.innerHTML = Array.from(state.factions.values()).filter(f => !f.defeated).map(f => {
     const score = Math.max(0, (f.strength_score ?? 350) - (f.battle_damage ?? 0));
     const width = `${Math.min(100, Math.round(score / 7))}%`;
@@ -73,7 +79,7 @@ function renderFactionBars(state) {
     const parts = [];
     if (f.notes) parts.push(f.notes);
     if (tpp) {
-      if (f.id === state.protagonist) {
+      if (f.id === playerFactionId) {
         const ownTroops = f.field_army != null ? f.field_army : Math.round(score * tpp);
         parts.push(`병력: ${window.formatTroops(ownTroops)}`);
       } else {
