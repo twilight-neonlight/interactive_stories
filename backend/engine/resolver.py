@@ -251,13 +251,14 @@ def resolution_prompt(res: dict) -> str:
 # 다중 페이즈 전투 시스템 — 적 행동 예고 방식
 # ─────────────────────────────────────────────────────────────────────────────
 
-# 사상자 규모 레이블 → (최소, 최대) 전력 비율
-DAMAGE_LABEL_RATIO: dict[str, tuple[float, float]] = {
-    "없음": (0.000, 0.000),
-    "경미": (0.005, 0.018),
-    "보통": (0.018, 0.040),
-    "중대": (0.040, 0.075),
-    "심각": (0.075, 0.120),
+# 사상자 규모 레이블 → (최소, 최대) 절댓값 battle_damage 포인트 (0–700 스케일 기준)
+# 비율이 아닌 고정 범위 — 전력 크기와 무관하게 1페이즈당 손실을 예측 가능하게 유지
+DAMAGE_LABEL_RATIO: dict[str, tuple[int, int]] = {
+    "없음": (0,  0),
+    "경미": (1,  3),
+    "보통": (3,  7),
+    "중대": (7, 14),
+    "심각": (14, 25),
 }
 
 # phase_outcome → (player_damage_label, enemy_damage_label)
@@ -340,12 +341,12 @@ _MAX_PHASES = 10
 _MIN_PHASES_BEFORE_VICTOR = 2
 
 
-def calc_phase_damage(label: str, strength: int) -> int:
-    """레이블과 세력 전력을 받아 난수 기반 피해 포인트를 반환합니다."""
+def calc_phase_damage(label: str, strength: int = 0) -> int:
+    """레이블을 받아 고정 범위 난수로 battle_damage 포인트를 반환합니다. strength는 미사용."""
     lo, hi = DAMAGE_LABEL_RATIO.get(label, DAMAGE_LABEL_RATIO["경미"])
-    if hi == 0.0:
+    if hi == 0:
         return 0
-    return max(1, round(strength * random.uniform(lo, hi)))
+    return random.randint(lo, hi)
 
 
 def _get_player_faction_id(state: dict) -> str | None:
@@ -699,7 +700,9 @@ def combat_ongoing_prompt(resolved_phase: int, old_cs: dict, resolution: dict) -
         "**[절대 금지 — 위반 불가]** 플레이어가 후퇴 명령을 입력하기 전까지, "
         "결과가 불리하더라도 아군은 전투를 계속한다. "
         "서술 내에서 아군의 퇴각·철수·후퇴를 실행하거나 기정사실로 묘사하지 말 것.\n\n"
-        "장면 말미에 다음 전술적 선택지를 제시하시오. "
+        "장면 말미에 다음 전술적 선택지 3~4가지를 제시하시오. "
+        "선택지는 반드시 **현재 진행 중인 전투 안에서 취할 수 있는 전술 행동**이어야 한다. "
+        "후퇴·철수·전장 이탈·'군대를 돌린다'·전투 종료 후 행동은 절대 포함하지 말 것. "
         "`enemy_next_action`은 STATE_UPDATE에만 기록하고 본문에는 노출하지 마시오.\n\n"
         "STATE_UPDATE 필수 출력:\n"
         "- `phase_outcome`: 이번 장면의 행동 대결 결과 (플레이어 관점). 반드시 아래 6가지 중 하나:\n"

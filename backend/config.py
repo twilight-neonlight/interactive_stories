@@ -35,4 +35,5 @@ GOOGLE_CLIENT_ID = os.environ.get("GOOGLE_CLIENT_ID", "")
 MODEL       = "gemini-3-flash-preview"
 MAX_TOKENS  = 9172
 TEMPERATURE = 0.8
-GEMINI_URL  = "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions"
+GEMINI_URL = "https://factchat-cloud.mindlogic.ai/v1/gateway/chat/completions"
+# GEMINI_URL  = "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions"
