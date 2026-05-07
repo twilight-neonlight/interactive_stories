@@ -375,7 +375,7 @@ function renderResolution(res) {
   el.style.borderColor = style.color;
   el.title = res.roll != null
     ? res.tier_en === 'combat_luck'
-      ? `1d100 ${res.roll} → ${res.luck_label || res.tier} (${(res.luck_shift ?? res.net) >= 0 ? '+' : ''}${res.luck_shift ?? res.net})`
+      ? `4d6 ${res.roll} → ${res.luck_label || res.tier} (${(res.luck_shift ?? res.net) >= 0 ? '+' : ''}${res.luck_shift ?? res.net})`
       : `주사위 ${res.roll} → 보정 후 ${res.net}${modStr}`
     : modStr ? modStr.slice(2) : '';
   el.textContent = res.tier_en === 'combat_luck'

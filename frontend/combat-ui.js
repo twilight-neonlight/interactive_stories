@@ -3,12 +3,10 @@
 let _combatEndContent    = null;
 let _combatEndResolution = null;
 
-function _combatSideStats(cs, fid, strengthKey) {
-  const base = Number(cs?.[strengthKey] ?? 0);
-  const pending = Number((cs?.pending_battle_damage || {})[fid] || 0);
-  const remaining = Math.max(0, base - pending);
-  const pct = base > 0 ? Math.max(0, Math.round(remaining / base * 100)) : 100;
-  return { base, pending, remaining, pct };
+function _combatMoraleStats(cs, moraleKey) {
+  const max = 100;
+  const current = Math.max(0, Math.min(max, Number(cs?.[moraleKey] ?? max)));
+  return { current, max, pct: current };
 }
 
 function _renderCombatDebugPanel(container, resolution, debugData) {
@@ -33,8 +31,8 @@ function openCombatOverlay(content, resolution, debugData = null) {
   const eCoalition = cs.enemy_coalition  || [];
   const pLabel = pCoalition.length ? pCoalition.join(' / ') : pName;
   const eLabel = eCoalition.length ? eCoalition.join(' / ') : eName;
-  const pStats = _combatSideStats(cs, cs.player_faction_id, 'player_strength');
-  const eStats = _combatSideStats(cs, cs.enemy_faction_id, 'enemy_strength');
+  const pMorale = _combatMoraleStats(cs, 'player_morale');
+  const eMorale = _combatMoraleStats(cs, 'enemy_morale');
   const phaseText = cs.max_phases
     ? `준비 완료 / 최대 ${cs.max_phases}페이즈`
     : `준비 완료 / 페이즈 ${cs.phase_number || 1}`;
@@ -64,18 +62,18 @@ function openCombatOverlay(content, resolution, debugData = null) {
         </div>
         <div class="combat-morale">
           <div class="morale-row">
-            <span class="morale-label" style="color:${pColor}">아군 전력</span>
+            <span class="morale-label" style="color:${pColor}">아군 사기</span>
             <div class="morale-bar-wrap">
-              <div class="morale-bar" id="c-player-bar" style="width:${pStats.pct}%;background:${pColor}"></div>
+              <div class="morale-bar" id="c-player-bar" style="width:${pMorale.pct}%;background:${pColor}"></div>
             </div>
-            <span class="morale-val" id="c-player-val">${pStats.remaining}/${pStats.base}</span>
+            <span class="morale-val" id="c-player-val">${pMorale.current}/${pMorale.max}</span>
           </div>
           <div class="morale-row">
-            <span class="morale-label" style="color:${eColor}">적군 전력</span>
+            <span class="morale-label" style="color:${eColor}">적군 사기</span>
             <div class="morale-bar-wrap">
-              <div class="morale-bar" id="c-enemy-bar" style="width:${eStats.pct}%;background:${eColor}"></div>
+              <div class="morale-bar" id="c-enemy-bar" style="width:${eMorale.pct}%;background:${eColor}"></div>
             </div>
-            <span class="morale-val" id="c-enemy-val">${eStats.remaining}/${eStats.base}</span>
+            <span class="morale-val" id="c-enemy-val">${eMorale.current}/${eMorale.max}</span>
           </div>
         </div>
       </div>
@@ -159,7 +157,7 @@ function _renderCombatScene(content, resolution) {
         : '';
       badge.title = resolution.roll != null
         ? resolution.tier_en === 'combat_luck'
-          ? `1d100 ${resolution.roll} → ${resolution.luck_label || resolution.tier} (${luckShift >= 0 ? '+' : ''}${luckShift})`
+          ? `4d6 ${resolution.roll} → ${resolution.luck_label || resolution.tier} (${luckShift >= 0 ? '+' : ''}${luckShift})`
           : `주사위 ${resolution.roll} → 보정 후 ${resolution.net}${modStr}`
         : modStr ? modStr.slice(2) : '';
     } else {
@@ -188,18 +186,18 @@ function selectCombatChoice(btn) {
 
 // ── 사기 바 + 페이즈 정보 갱신
 function _renderCombatMomentum(cs) {
-  const pStats = _combatSideStats(cs, cs.player_faction_id, 'player_strength');
-  const eStats = _combatSideStats(cs, cs.enemy_faction_id, 'enemy_strength');
+  const pMorale = _combatMoraleStats(cs, 'player_morale');
+  const eMorale = _combatMoraleStats(cs, 'enemy_morale');
 
   const pBar = document.getElementById('c-player-bar');
   const eBar = document.getElementById('c-enemy-bar');
-  if (pBar) pBar.style.width = `${pStats.pct}%`;
-  if (eBar) eBar.style.width = `${eStats.pct}%`;
+  if (pBar) pBar.style.width = `${pMorale.pct}%`;
+  if (eBar) eBar.style.width = `${eMorale.pct}%`;
 
   const pVal = document.getElementById('c-player-val');
   const eVal = document.getElementById('c-enemy-val');
-  if (pVal) pVal.textContent = `${pStats.remaining}/${pStats.base}`;
-  if (eVal) eVal.textContent = `${eStats.remaining}/${eStats.base}`;
+  if (pVal) pVal.textContent = `${pMorale.current}/${pMorale.max}`;
+  if (eVal) eVal.textContent = `${eMorale.current}/${eMorale.max}`;
 
   const phaseInfo = document.getElementById('c-phase-info');
   if (phaseInfo) {

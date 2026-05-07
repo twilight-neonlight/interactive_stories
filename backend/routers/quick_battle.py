@@ -9,8 +9,7 @@ from config        import SYSTEM_PROMPT
 from gemini_client import call_gemini
 from engine.turn   import extract_state_update
 from engine.resolver import (
-    calc_phase_damage, combat_damage_labels, combat_prep_prompt,
-    _resolve_combat_luck,
+    combat_prep_prompt, _resolve_combat_luck,
 )
 
 router = APIRouter()
@@ -334,7 +333,10 @@ async def start_quick_battle(battle_id: str):
         "enemy_faction_id":      e["id"],
         "player_strength":       total_p_str,
         "enemy_strength":        total_e_str,
+        "player_morale":         100,
+        "enemy_morale":          100,
         "enemy_next_action":     None,
+        "pending_phase_outcome": None,
         "pending_battle_damage": {p["id"]: 0, e["id"]: 0},
         "phase_results":         [],
     }
@@ -408,12 +410,8 @@ async def start_quick_battle(battle_id: str):
     content, extra = extract_state_update(content)
     if isinstance(extra.get("enemy_next_action"), str):
         combat_state["enemy_next_action"] = extra["enemy_next_action"]
-
-    e_label, p_label = combat_damage_labels(extra.get("combat_damage"), resolution["tier_en"])
-    pending = dict(combat_state.get("pending_battle_damage", {}))
-    pending[p["id"]] = pending.get(p["id"], 0) + calc_phase_damage(p_label, total_p_str)
-    pending[e["id"]] = pending.get(e["id"], 0) + calc_phase_damage(e_label, total_e_str)
-    combat_state["pending_battle_damage"] = pending
+    if extra.get("phase_outcome"):
+        combat_state["pending_phase_outcome"] = extra["phase_outcome"]
 
     return {
         "title":           battle["title"],
