@@ -22,7 +22,7 @@ let _ui      = null;
     tagStyle = { ...BASE_TAG_STYLE, ..._ui.tagExtras };
     _manager._state = _state;
     renderAll(_state);
-    openCombatOverlay(qb.content, qb.resolution);
+    openCombatOverlay(qb.content, qb.resolution, qb.debug);
     document.getElementById('send-btn').disabled = false;
     return;
   }

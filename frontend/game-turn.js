@@ -120,6 +120,9 @@ function applyStateUpdates(su) {
   if (su.combat_state !== undefined) {
     _state.combatState = su.combat_state;
   }
+  if (typeof su.weather === 'string') {
+    _state.weather = su.weather;
+  }
 }
 
 // ── 턴 전진
@@ -132,7 +135,7 @@ async function submitTurn() {
   showLoading();
 
   try {
-    const { content, state_updates: su, resolution } = await GameAPI.submitTurn(cmd, _state.toJSON(), _state.getHistory());
+    const { content, state_updates: su, resolution, _debug } = await GameAPI.submitTurn(cmd, _state.toJSON(), _state.getHistory());
     renderResolution(resolution);
 
     _state.pushHistory('user', cmd);
@@ -148,7 +151,7 @@ async function submitTurn() {
 
     // 전투 돌입 감지 → 전투 오버레이 열기
     if (_state.combatState?.active) {
-      openCombatOverlay(content, resolution);
+      openCombatOverlay(content, resolution, _debug);
       return;
     }
 
@@ -166,6 +169,8 @@ async function submitTurn() {
       renderSceneBody(markdownToHtml(extractNarrative(content)));
       renderChoices(extractChoices(content));
     }
+
+    renderDebugPanel(document.getElementById('scene-body'), resolution, _debug);
 
   } catch (err) {
     renderSceneBody(

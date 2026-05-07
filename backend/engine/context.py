@@ -207,9 +207,10 @@ def build_scenario_context(state: dict) -> str:
             + troops_str
         )
 
-    if factions:
+    active_factions = {fid: f for fid, f in factions.items() if not f.get("defeated")}
+    if active_factions:
         lines.append("\n등장 세력:")
-        for f in factions.values():
+        for f in active_factions.values():
             note       = f.get("notes", "")
             note_short = note[:80] + "…" if len(note) > 80 else note
             dipl       = f.get("diplomacy_score")
@@ -290,6 +291,14 @@ def build_scenario_context(state: dict) -> str:
                 + (f"\n    {body_short}" if body_short else "")
             )
 
+    weather = state.get("weather")
+    if weather and weather != "clear":
+        _WEATHER_LABELS = {
+            "rain": "강우", "heavy_rain": "폭우", "snow": "강설",
+            "blizzard": "눈보라", "heat": "폭염", "fog": "짙은 안개", "storm": "폭풍",
+        }
+        lines.append(f"\n현재 기상: {_WEATHER_LABELS.get(weather, weather)}")
+
     progress = state.get("progress", {})
     chapter  = progress.get("chapter", 1)
     scene    = progress.get("scene", 1)
@@ -307,16 +316,32 @@ def build_scenario_context(state: dict) -> str:
         enemy_fid   = combat_state.get("enemy_faction_id", "")
         player_name = factions.get(player_fid, {}).get("name", player_fid) if factions else player_fid
         enemy_name  = factions.get(enemy_fid,  {}).get("name", enemy_fid)  if factions else enemy_fid
-        p_mom       = combat_state.get("player_morale", "?")
-        e_mom       = combat_state.get("enemy_morale",  "?")
         phase       = combat_state.get("phase_number", 1)
-        max_phases  = combat_state.get("max_phases", 5)
-        lines.append(
-            f"\n## 전투 진행 중\n"
-            f"{player_name} vs {enemy_name}"
-            f" | 페이즈 {phase}/{max_phases}"
-            f" | 아군 사기 {p_mom} / 적군 사기 {e_mom} (0이 되면 붕괴)"
-        )
+        p_strength  = combat_state.get("player_strength", "?")
+        e_strength  = combat_state.get("enemy_strength", "?")
+        enemy_next  = combat_state.get("enemy_next_action") or "아직 예고되지 않음"
+        is_siege    = combat_state.get("is_siege", False)
+        garrison    = combat_state.get("siege_garrison", 0)
+
+        if is_siege:
+            siege_lid   = combat_state.get("siege_location_id", "")
+            locs        = state.get("locations", {})
+            loc_name    = locs.get(siege_lid, {}).get("name", siege_lid) if locs else siege_lid
+            lines.append(
+                f"\n## 공성전 진행 중\n"
+                f"{player_name} → {loc_name} 공성"
+                f" | 다음 페이즈 {phase}"
+                f" | 아군 전력 {p_strength} / 수비대 {garrison:,}명 (실효 전력 {e_strength})"
+                f"\n수비대 예고 행동: {enemy_next}"
+            )
+        else:
+            lines.append(
+                f"\n## 전투 진행 중\n"
+                f"{player_name} vs {enemy_name}"
+                f" | 다음 페이즈 {phase}"
+                f" | 아군 전력 {p_strength} / 적군 전력 {e_strength}"
+                f"\n적군 예고 행동: {enemy_next}"
+            )
 
     return "\n".join(lines)
 

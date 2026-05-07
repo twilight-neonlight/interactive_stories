@@ -1,10 +1,10 @@
-# G. Few-Shot Examples
+# G. 예시 응답
 
-The following examples show the required output format. Follow this structure exactly.
+아래 예시는 요구되는 출력 형식을 보여준다. 이 구조를 정확히 따르라.
 
 ---
 
-## Example 1 — Standard Scene
+## 예시 1 — 표준 씬
 
 ---
 
@@ -49,7 +49,7 @@ The following examples show the required output format. Follow this structure ex
 
 ---
 
-## Example 2 — Chapter Close
+## 예시 2 — 장 종결
 
 ---
 
@@ -83,7 +83,7 @@ The following examples show the required output format. Follow this structure ex
 
 ---
 
-## Example 3 — Tier 3 Action (Implausible Input)
+## 예시 3 — 3등급 행동 (개연성 없는 입력)
 
 *플레이어 입력: "부족 궁수 300명으로 단독 정면 돌격해 압살롬 본진 2만을 무너뜨린다."*
 

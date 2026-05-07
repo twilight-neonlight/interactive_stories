@@ -123,12 +123,6 @@ class GameState {
       if (f.diplomacy_score == null) {
         f.diplomacy_score = GameState._dispositionToScore(f.disposition);
       }
-      // 강도 점수 초기화: JSON에 없으면 strength 레이블에서 환산
-      if (f.strength_score == null) {
-        f.strength_score = GameState._strengthToScore(f.strength);
-      }
-      // strength 레이블은 항상 score로부터 역산 (JSON 값 무시)
-      f.strength = GameState._scoreToStrength(f.strength_score);
       // 전투 피해 누적값 초기화
       if (f.battle_damage == null) f.battle_damage = 0;
       this.factions.set(f.id, f);
@@ -255,10 +249,6 @@ class GameState {
     if (f.diplomacy_score == null) {
       f.diplomacy_score = GameState._dispositionToScore(f.disposition);
     }
-    if (f.strength_score == null) {
-      f.strength_score = GameState._strengthToScore(f.strength);
-    }
-    f.strength = GameState._scoreToStrength(f.strength_score);
     if (f.battle_damage == null) f.battle_damage = 0;
     this.factions.set(faction.id, { ...f, is_dynamic: true });
   }
@@ -304,7 +294,6 @@ class GameState {
     const faction = this.factions.get(id);
     if (!faction) return;
     faction.strength_score = Math.max(0, Math.min(700, (faction.strength_score ?? 350) + delta));
-    faction.strength = GameState._effectiveStrength(faction);
   }
 
   /**
@@ -318,7 +307,6 @@ class GameState {
     if (!faction) return;
     const absDmg = Math.abs(damage);
     faction.battle_damage = (faction.battle_damage ?? 0) + absDmg;
-    faction.strength = GameState._effectiveStrength(faction);
     if (this.troopsPerPoint && absDmg > 0) {
       const troopLoss = Math.round(absDmg * this.troopsPerPoint);
       if (faction.field_army != null) {
@@ -359,7 +347,6 @@ class GameState {
     const absAmt    = Math.abs(amount);
     const recovered = Math.min(absAmt, faction.battle_damage ?? 0);
     faction.battle_damage = Math.max(0, (faction.battle_damage ?? 0) - absAmt);
-    faction.strength = GameState._effectiveStrength(faction);
     if (this.troopsPerPoint && recovered > 0) {
       const troopGain = Math.round(recovered * this.troopsPerPoint);
       if (faction.field_army != null) {
@@ -375,32 +362,6 @@ class GameState {
         }
       }
     }
-  }
-
-  /** 실효 강도 레이블: strength_score - battle_damage */
-  static _effectiveStrength(faction) {
-    const effective = Math.max(0, (faction.strength_score ?? 350) - (faction.battle_damage ?? 0));
-    return GameState._scoreToStrength(effective);
-  }
-
-  /** @param {number} score 0–700 */
-  static _scoreToStrength(score) {
-    if (score >= 600) return 'extreme';
-    if (score >= 500) return 'very high';
-    if (score >= 400) return 'high';
-    if (score >= 300) return 'medium';
-    if (score >= 200) return 'low';
-    if (score >= 100) return 'very low';
-    return 'impotent';
-  }
-
-  /** @param {string} strength 레이블 */
-  static _strengthToScore(strength) {
-    const map = {
-      'extreme': 650, 'very high': 550, 'high': 450,
-      'medium': 350, 'low': 250, 'very low': 150, 'impotent': 50,
-    };
-    return map[strength] ?? 350;
   }
 
   // ── 거점 ──────────────────────────────────

@@ -62,11 +62,11 @@ const GameAPI = {
     return r.json();
   },
 
-  async submitTurn(command, stateJson, history) {
+  async submitTurn(command, stateJson, history, retreat = false) {
     const r = await fetch(`${this._base()}/api/turn`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ command, state: stateJson, history }),
+      body: JSON.stringify({ command, state: stateJson, history, retreat }),
     });
     if (!r.ok) {
       const err = await r.json().catch(() => ({ detail: `HTTP ${r.status}` }));

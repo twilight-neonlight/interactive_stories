@@ -10,11 +10,6 @@
 (function () {
 
 // ── 공통 상수 ──────────────────────────────────────────────────────
-const STRENGTH_LABEL = {
-  extreme: '압도적', 'very high': '대규모', high: '강대',
-  medium: '중규모', low: '소규모', 'very low': '소수', impotent: '무력',
-};
-
 const DISP_COLOR = { '우호': '#378ADD', '적대': '#E24B4A', '중립': '#888780' };
 
 // ── 공통 헬퍼 ──────────────────────────────────────────────────────
@@ -307,7 +302,7 @@ function defaultCommanderInfo(state) {
             ? formatTroops(f.field_army)
             : (score != null && tpp != null)
               ? formatTroops(Math.round(score * tpp))
-              : (char?.troops || STRENGTH_LABEL[f.strength] || '불명');
+              : (char?.troops || '불명');
         }
       }
     }
@@ -317,7 +312,6 @@ function defaultCommanderInfo(state) {
   if (strength === '불명') {
     const _c = state.protagonist ? state.characters.get(state.protagonist) : null;
     if (_c?.troops) strength = _c.troops;
-    else if (_c?.strength) strength = STRENGTH_LABEL[_c.strength] || '불명';
   }
 
   // protagonist 정보가 없을 때 우호 세력에서 보완
@@ -331,7 +325,7 @@ function defaultCommanderInfo(state) {
       const score = friendly[0].strength_score != null
         ? friendly[0].strength_score - (friendly[0].battle_damage ?? 0) : null;
       strength = formatStrengthScore(score, tpp, friendly[0].intel_level ?? 0, friendly[0].id)
-                 || STRENGTH_LABEL[friendly[0].strength] || '불명';
+                 || '불명';
     }
   }
 

@@ -1,3 +1,69 @@
+// ── 디버그 모드 (?debug URL 파라미터로 활성화)
+const _debugMode = new URLSearchParams(window.location.search).has('debug');
+
+function renderDebugPanel(container, resolution, debugData) {
+  if (!_debugMode || !container) return;
+
+  container.querySelector('.debug-panel')?.remove();
+
+  const res   = resolution  || {};
+  const extra = debugData?.state_update || {};
+  const qm    = debugData?.quality_mod;
+
+  let resLines;
+  if (res.tier_en === 'combat_luck') {
+    resLines = [
+      `type      : combat_luck`,
+      `roll      : ${res.roll}`,
+      `luck_shift: ${res.luck_shift ?? res.net}`,
+      `label     : ${res.luck_label || res.tier || '—'}`,
+      `행동 유형 : ${res.action_type || '—'}`,
+    ];
+  } else if (res.tier_en) {
+    const modStr = res.modifiers?.length
+      ? res.modifiers.map(([l, v]) => `${l} ${v > 0 ? '+' : ''}${v}`).join(', ')
+      : '없음';
+    resLines = [
+      `tier      : ${res.tier_en}`,
+      `roll / net: ${res.roll} → ${res.net}`,
+      `수정자    : ${modStr}`,
+      `품질 보정 : ${qm != null ? qm : '—'}`,
+      `행동 유형 : ${res.action_type || '—'}`,
+    ];
+  } else {
+    resLines = ['판정 없음'];
+  }
+
+  const enemyAction = extra.enemy_next_action;
+  const filtered = Object.fromEntries(
+    Object.entries(extra).filter(([k, v]) => {
+      if (k === 'enemy_next_action') return false; // 별도 섹션으로 표시
+      return Array.isArray(v) ? v.length > 0 : v != null && v !== '';
+    })
+  );
+
+  const enemyActionHtml = enemyAction
+    ? `<div style="color:#8a6a20;margin-bottom:2px;margin-top:10px;">적 예고 행동 (비공개)</div>
+       <pre style="margin:0 0 10px;color:#c87a3a;white-space:pre-wrap;background:#1a1200;padding:6px;border-radius:4px;">${enemyAction}</pre>`
+    : '';
+
+  const el = document.createElement('details');
+  el.className = 'debug-panel';
+  el.open = true;
+  el.style.cssText = 'margin-top:16px;border-top:1px solid #2a2a2a;padding-top:8px;';
+  el.innerHTML = `
+    <summary style="cursor:pointer;font-size:11px;font-family:monospace;color:#555;user-select:none;list-style:none;">🛠 DEBUG</summary>
+    <div style="margin-top:6px;font-family:monospace;font-size:11px;line-height:1.7;">
+      <div style="color:#8a6a20;margin-bottom:2px;">판정</div>
+      <pre style="margin:0 0 10px;color:#888;white-space:pre-wrap;">${resLines.join('\n')}</pre>
+      ${enemyActionHtml}
+      <div style="color:#8a6a20;margin-bottom:2px;">STATE_UPDATE</div>
+      <pre style="margin:0;color:#888;white-space:pre-wrap;">${JSON.stringify(filtered, null, 2)}</pre>
+    </div>`;
+  container.appendChild(el);
+}
+window.renderDebugPanel = renderDebugPanel;
+
 // ── 씬 헤더 렌더링
 function renderSceneHeader(progress, scenarioTitle = '') {
   const chapterBadge = document.getElementById('chapter-badge');
@@ -292,6 +358,7 @@ const RESOLUTION_STYLE = {
   partial:          { label: '부분 성공', color: '#EF9F27' },
   failure:          { label: '실패',   color: '#E24B4A' },
   critical_failure: { label: '대실패', color: '#8B2020' },
+  combat_luck:      { label: '우연 변수', color: '#7F77DD' },
 };
 
 function renderResolution(res) {
@@ -306,8 +373,14 @@ function renderResolution(res) {
   el.style.display = 'inline-flex';
   el.style.color   = style.color;
   el.style.borderColor = style.color;
-  el.title = `주사위 ${res.roll} → 보정 후 ${res.net}${modStr}`;
-  el.textContent = style.label;
+  el.title = res.roll != null
+    ? res.tier_en === 'combat_luck'
+      ? `1d100 ${res.roll} → ${res.luck_label || res.tier} (${(res.luck_shift ?? res.net) >= 0 ? '+' : ''}${res.luck_shift ?? res.net})`
+      : `주사위 ${res.roll} → 보정 후 ${res.net}${modStr}`
+    : modStr ? modStr.slice(2) : '';
+  el.textContent = res.tier_en === 'combat_luck'
+    ? `${style.label} ${(res.luck_shift ?? res.net) >= 0 ? '+' : ''}${res.luck_shift ?? res.net}`
+    : style.label;
 }
 
 // ── 씬 본문·선택지 렌더러

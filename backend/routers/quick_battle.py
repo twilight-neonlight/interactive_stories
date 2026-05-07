@@ -9,7 +9,8 @@ from config        import SYSTEM_PROMPT
 from gemini_client import call_gemini
 from engine.turn   import extract_state_update
 from engine.resolver import (
-    _calc_threshold, _calc_max_phases, combat_prep_prompt,
+    calc_phase_damage, combat_damage_labels, combat_prep_prompt,
+    _resolve_combat_luck,
 )
 
 router = APIRouter()
@@ -322,25 +323,18 @@ async def start_quick_battle(battle_id: str):
     allies       = battle.get("ally", [])
     enemy_allies = battle.get("enemy_ally", [])
 
-    # ── 연합 전력 합산 후 초기 사기 계산
+    # ── 연합 전력 합산
     total_p_str = p["strength_score"] + sum(a["strength_score"] for a in allies)
     total_e_str = e["strength_score"] + sum(a["strength_score"] for a in enemy_allies)
-
-    p_mom = _calc_threshold(total_p_str, total_e_str, 0, 0)
-    e_mom = _calc_threshold(total_e_str, total_p_str, 0, 0)
-    max_phases = _calc_max_phases(total_p_str + total_e_str)
 
     combat_state = {
         "active":                True,
         "phase_number":          1,
-        "max_phases":            max_phases,
         "player_faction_id":     p["id"],
         "enemy_faction_id":      e["id"],
-        "player_morale":       p_mom,
-        "player_morale_max":   p_mom,
-        "enemy_morale":        e_mom,
-        "enemy_morale_max":    e_mom,
-        "prep_tier_en":          "partial",
+        "player_strength":       total_p_str,
+        "enemy_strength":        total_e_str,
+        "enemy_next_action":     None,
         "pending_battle_damage": {p["id"]: 0, e["id"]: 0},
         "phase_results":         [],
     }
@@ -388,11 +382,7 @@ async def start_quick_battle(battle_id: str):
         "combatState": combat_state,
     }
 
-    resolution = {
-        "tier": "부분 성공", "tier_en": "partial",
-        "roll": None, "net": None,
-        "action_type": "military", "modifiers": [],
-    }
+    resolution = _resolve_combat_luck("military")
 
     # ── LLM 호출: 전투 개시 장면 생성
     ally_lines       = "".join(f"아군 동맹 — {a['name']}: {a['notes']}\n" for a in allies)
@@ -407,10 +397,7 @@ async def start_quick_battle(battle_id: str):
         f"배경: {battle['context']}\n"
     )
     cs_prompt = combat_prep_prompt(combat_state, resolution).replace(
-        "전투 준비 결과: **부분 성공**\n",
-        f"역사적 배경 전투 (준비 단계 생략)\n",
-    ).replace(
-        "이 결과에 따라 전투 개시 장면을 서술하시오.",
+        "현재 공개 전황만을 바탕으로 전투 개시 장면을 서술하시오.",
         "위 역사적 상황에 맞는 전투 개시 장면을 서술하시오.",
     )
 
@@ -418,7 +405,15 @@ async def start_quick_battle(battle_id: str):
         {"role": "system", "content": SYSTEM_PROMPT + hist_block + cs_prompt},
         {"role": "user",   "content": f"[역사적 전투 개시: {battle['title']}] {battle['opening_hint']}"},
     ])
-    content, _ = extract_state_update(content)
+    content, extra = extract_state_update(content)
+    if isinstance(extra.get("enemy_next_action"), str):
+        combat_state["enemy_next_action"] = extra["enemy_next_action"]
+
+    e_label, p_label = combat_damage_labels(extra.get("combat_damage"), resolution["tier_en"])
+    pending = dict(combat_state.get("pending_battle_damage", {}))
+    pending[p["id"]] = pending.get(p["id"], 0) + calc_phase_damage(p_label, total_p_str)
+    pending[e["id"]] = pending.get(e["id"], 0) + calc_phase_damage(e_label, total_e_str)
+    combat_state["pending_battle_damage"] = pending
 
     return {
         "title":           battle["title"],
@@ -426,5 +421,6 @@ async def start_quick_battle(battle_id: str):
         "content":         content,
         "state_json":      state_json,
         "resolution":      resolution,
+        "_debug":          {"state_update": extra, "quality_mod": None},
         "troops_per_point": battle["troops_per_point"],
     }

@@ -2,10 +2,11 @@
 engine/quality.py — 행동 전략 품질 평가
 
 LLM을 사용해 플레이어의 선택이 현재 전략적 맥락에서 얼마나 우수한지
-체스 기보 표기법(!!/!/=/??/??)으로 평가하고 판정 수정치로 변환합니다.
+체스 기보 표기법(!!/!/=/?/??)으로 평가하고 판정 수정치로 변환합니다.
 
 행동 유형별로 평가 기준을 달리합니다:
   군사 — 병력 우위, 아군 지원 여부, 타이밍·기습 가능성 (지형은 resolver에서 별도 처리)
+  공성 — 수비대 규모, 거점 지형·방어력, 공성 전술 선택의 적절성
   외교 — 관계도, 협상 레버리지, 상대의 동기
   첩보 — 정보망 수준, 목표의 취약점, 작전 은밀성
 """
@@ -14,11 +15,11 @@ import json
 from gemini_client import call_gemini
 
 _QUALITY_VALUES: dict[str, int] = {
-    "!!": +20,
-    "!":  +10,
-    "=":    0,
-    "?":  -10,
-    "??": -20,
+    "!!": +4,
+    "!":  +2,
+    "=":   0,
+    "?":  -2,
+    "??": -4,
 }
 
 _BASE_INSTRUCTIONS = """\
@@ -51,10 +52,18 @@ _SYSTEM_INTRIGUE = f"""\
 현재 관계도(관계가 좋을수록 내통 공작이 쉬움), 실행 타이밍의 적절성.
 {_BASE_INSTRUCTIONS}"""
 
+_SYSTEM_SIEGE = f"""\
+공성 전략 평가자. 플레이어의 공성 전술이 현재 상황에서 얼마나 적절한지 판단한다.
+평가 기준: 수비대 규모 대비 공성군 병력, 거점의 지형·방어 시설 수준,
+선택한 공성 전술의 효율성(포위 봉쇄·정면 돌격·공성 기계·야간 기습 등),
+장기 공성 시 아군 보급 및 증원 위험. 지형 이점은 별도 처리되므로 고려하지 않는다.
+{_BASE_INSTRUCTIONS}"""
+
 _SYSTEM_BY_TYPE = {
-    "military": _SYSTEM_MILITARY,
-    "surprise": _SYSTEM_MILITARY,
-    "defense":  _SYSTEM_MILITARY,
+    "military":   _SYSTEM_MILITARY,
+    "surprise":   _SYSTEM_MILITARY,
+    "defense":    _SYSTEM_MILITARY,
+    "siege":      _SYSTEM_SIEGE,
     "diplomatic": _SYSTEM_DIPLOMATIC,
     "intrigue":   _SYSTEM_INTRIGUE,
 }
@@ -163,6 +172,40 @@ def _build_intrigue_context(state: dict, player_faction_id: str | None) -> list[
     return lines
 
 
+_SIEGE_KW = {"공성", "포위", "공략"}
+
+
+def _build_siege_context(state: dict, player_faction_id: str | None) -> list[str]:
+    factions  = state.get("factions", {})
+    locations = state.get("locations", {})
+    lines = []
+
+    if player_faction_id and player_faction_id in factions:
+        pf         = factions[player_faction_id]
+        field_army = pf.get("field_army")
+        if field_army is not None:
+            lines.append(f"\n[공성군] {pf.get('name', player_faction_id)} 야전군 {field_army:,}명")
+        else:
+            dmg = pf.get("battle_damage", 0)
+            eff = pf.get("strength_score", 0) - dmg
+            lines.append(f"\n[공성군] {pf.get('name', player_faction_id)} 실효 전력 {eff}")
+
+    if locations:
+        lines.append("\n[공성 가능 거점]")
+        for loc in locations.values():
+            garrison = loc.get("garrison", 0)
+            if garrison:
+                ctrl = loc.get("controller", "")
+                ctrl_name = factions.get(ctrl, {}).get("name", ctrl) if ctrl else ""
+                lines.append(
+                    f"  {loc.get('name', '?')} — 수비대 {garrison:,}명"
+                    + (f", 지배: {ctrl_name}" if ctrl_name else "")
+                    + (f", 지형: {loc.get('terrain', '')[:40]}" if loc.get("terrain") else "")
+                )
+
+    return lines
+
+
 def _build_eval_context(state: dict, action_type: str) -> str:
     factions       = state.get("factions", {})
     chars          = state.get("characters", {})
@@ -177,7 +220,9 @@ def _build_eval_context(state: dict, action_type: str) -> str:
     if progress.get("chapter"):
         lines.append(f"현재: {progress['chapter']}장 {progress.get('scene', 1)}씬")
 
-    if action_type in {"military", "surprise", "defense"}:
+    if action_type == "siege":
+        lines += _build_siege_context(state, player_faction_id)
+    elif action_type in {"military", "surprise", "defense"}:
         lines += _build_military_context(state, player_faction_id)
     elif action_type == "diplomatic":
         lines += _build_diplomatic_context(state, player_faction_id)
@@ -194,6 +239,10 @@ async def evaluate_action_quality(command: str, state: dict,
     평이한 선택(=)이면 None, 그 외엔 (레이블, 수정치)를 반환합니다.
     평가 실패 시에도 None을 반환해 판정에 영향을 주지 않습니다.
     """
+    # 공성 키워드가 있으면 siege 평가로 전환
+    if action_type in {"military", "surprise"} and any(kw in command for kw in _SIEGE_KW):
+        action_type = "siege"
+
     system  = _SYSTEM_BY_TYPE.get(action_type, _SYSTEM_MILITARY)
     context = _build_eval_context(state, action_type)
     user_msg = f"{context}\n\n[플레이어 행동]\n{command}"

@@ -3,8 +3,22 @@
 let _combatEndContent    = null;
 let _combatEndResolution = null;
 
+function _combatSideStats(cs, fid, strengthKey) {
+  const base = Number(cs?.[strengthKey] ?? 0);
+  const pending = Number((cs?.pending_battle_damage || {})[fid] || 0);
+  const remaining = Math.max(0, base - pending);
+  const pct = base > 0 ? Math.max(0, Math.round(remaining / base * 100)) : 100;
+  return { base, pending, remaining, pct };
+}
+
+function _renderCombatDebugPanel(container, resolution, debugData) {
+  if (typeof renderDebugPanel === 'function') {
+    renderDebugPanel(container, resolution, debugData);
+  }
+}
+
 // ── 오버레이 열기 (전투 준비 단계 완료 시)
-function openCombatOverlay(content, resolution) {
+function openCombatOverlay(content, resolution, debugData = null) {
   const cs = _state.combatState;
   if (!cs) return;
 
@@ -19,11 +33,24 @@ function openCombatOverlay(content, resolution) {
   const eCoalition = cs.enemy_coalition  || [];
   const pLabel = pCoalition.length ? pCoalition.join(' / ') : pName;
   const eLabel = eCoalition.length ? eCoalition.join(' / ') : eName;
+  const pStats = _combatSideStats(cs, cs.player_faction_id, 'player_strength');
+  const eStats = _combatSideStats(cs, cs.enemy_faction_id, 'enemy_strength');
+  const phaseText = cs.max_phases
+    ? `준비 완료 / 최대 ${cs.max_phases}페이즈`
+    : `준비 완료 / 페이즈 ${cs.phase_number || 1}`;
+
+  const locName  = cs.battle_location_name || null;
+  const isSiege  = !!cs.is_siege;
+  const battleTypeLabel = isSiege ? '공성전' : '전투';
+  const locationTitle = locName
+    ? `<div class="combat-location-title">${locName} ${battleTypeLabel}</div>`
+    : '';
 
   const overlay = document.getElementById('combat-overlay');
   overlay.innerHTML = `
     <div class="combat-shell">
       <div>
+        ${locationTitle}
         <div class="combat-title-row">
           <span class="combat-icon">⚔</span>
           <span class="combat-title-text">전투</span>
@@ -32,23 +59,23 @@ function openCombatOverlay(content, resolution) {
             <span class="combat-vs">vs</span>
             <span class="combat-fname" style="color:${eColor}">${eLabel}</span>
           </div>
-          <span class="combat-phase-info" id="c-phase-info">준비 완료 / 최대 ${cs.max_phases}페이즈</span>
+          <span class="combat-phase-info" id="c-phase-info">${phaseText}</span>
           <button class="combat-retreat-btn" id="c-retreat-btn" onclick="combatRetreat()">후퇴</button>
         </div>
         <div class="combat-morale">
           <div class="morale-row">
-            <span class="morale-label" style="color:${pColor}">아군</span>
+            <span class="morale-label" style="color:${pColor}">아군 전력</span>
             <div class="morale-bar-wrap">
-              <div class="morale-bar" id="c-player-bar" style="width:100%;background:${pColor}"></div>
+              <div class="morale-bar" id="c-player-bar" style="width:${pStats.pct}%;background:${pColor}"></div>
             </div>
-            <span class="morale-val" id="c-player-val">${cs.player_morale}</span>
+            <span class="morale-val" id="c-player-val">${pStats.remaining}/${pStats.base}</span>
           </div>
           <div class="morale-row">
-            <span class="morale-label" style="color:${eColor}">적군</span>
+            <span class="morale-label" style="color:${eColor}">적군 전력</span>
             <div class="morale-bar-wrap">
-              <div class="morale-bar" id="c-enemy-bar" style="width:100%;background:${eColor}"></div>
+              <div class="morale-bar" id="c-enemy-bar" style="width:${eStats.pct}%;background:${eColor}"></div>
             </div>
-            <span class="morale-val" id="c-enemy-val">${cs.enemy_morale}</span>
+            <span class="morale-val" id="c-enemy-val">${eStats.remaining}/${eStats.base}</span>
           </div>
         </div>
       </div>
@@ -82,6 +109,7 @@ function openCombatOverlay(content, resolution) {
   _combatEndResolution = null;
 
   _renderCombatScene(content, resolution);
+  _renderCombatDebugPanel(document.getElementById('c-scene'), resolution, debugData);
 
   document.getElementById('c-cmd')?.addEventListener('keydown', e => {
     if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); submitCombatTurn(); }
@@ -122,11 +150,18 @@ function _renderCombatScene(content, resolution) {
     if (resolution && RESOLUTION_STYLE[resolution.tier_en]) {
       const s = RESOLUTION_STYLE[resolution.tier_en];
       badge.style.cssText = `display:inline-block;color:${s.color};border-color:${s.color};`;
-      badge.textContent   = s.label;
+      const luckShift = resolution.luck_shift ?? resolution.net;
+      badge.textContent = resolution.tier_en === 'combat_luck'
+        ? `${s.label} ${luckShift >= 0 ? '+' : ''}${luckShift}`
+        : s.label;
       const modStr = resolution.modifiers?.length
-        ? ' [' + resolution.modifiers.map(m => (m.value > 0 ? '+' : '') + m.value + ' ' + m.label).join(', ') + ']'
+        ? ' [' + resolution.modifiers.map(([l, v]) => `${l} ${v > 0 ? '+' : ''}${v}`).join(', ') + ']'
         : '';
-      badge.title = `주사위 ${resolution.roll} → 보정 후 ${resolution.net}${modStr}`;
+      badge.title = resolution.roll != null
+        ? resolution.tier_en === 'combat_luck'
+          ? `1d100 ${resolution.roll} → ${resolution.luck_label || resolution.tier} (${luckShift >= 0 ? '+' : ''}${luckShift})`
+          : `주사위 ${resolution.roll} → 보정 후 ${resolution.net}${modStr}`
+        : modStr ? modStr.slice(2) : '';
     } else {
       badge.style.display = 'none';
     }
@@ -153,28 +188,28 @@ function selectCombatChoice(btn) {
 
 // ── 사기 바 + 페이즈 정보 갱신
 function _renderCombatMomentum(cs) {
-  const pMax = cs.player_morale_max || 100;
-  const eMax = cs.enemy_morale_max  || 100;
-  const pPct = Math.max(0, Math.round(cs.player_morale / pMax * 100));
-  const ePct = Math.max(0, Math.round(cs.enemy_morale  / eMax * 100));
+  const pStats = _combatSideStats(cs, cs.player_faction_id, 'player_strength');
+  const eStats = _combatSideStats(cs, cs.enemy_faction_id, 'enemy_strength');
 
   const pBar = document.getElementById('c-player-bar');
   const eBar = document.getElementById('c-enemy-bar');
-  if (pBar) pBar.style.width = `${pPct}%`;
-  if (eBar) eBar.style.width = `${ePct}%`;
+  if (pBar) pBar.style.width = `${pStats.pct}%`;
+  if (eBar) eBar.style.width = `${eStats.pct}%`;
 
   const pVal = document.getElementById('c-player-val');
   const eVal = document.getElementById('c-enemy-val');
-  if (pVal) pVal.textContent = Math.max(0, cs.player_morale);
-  if (eVal) eVal.textContent = Math.max(0, cs.enemy_morale);
+  if (pVal) pVal.textContent = `${pStats.remaining}/${pStats.base}`;
+  if (eVal) eVal.textContent = `${eStats.remaining}/${eStats.base}`;
 
   const phaseInfo = document.getElementById('c-phase-info');
   if (phaseInfo) {
     if (cs.ended) {
       phaseInfo.textContent = '전투 종결';
     } else {
-      const phase = Math.max(1, (cs.phase_number || 1) - 1);
-      phaseInfo.textContent = `${phase} / ${cs.max_phases} 페이즈`;
+      const phase = cs.phase_number || 1;
+      phaseInfo.textContent = cs.max_phases
+        ? `${phase} / ${cs.max_phases} 페이즈`
+        : `페이즈 ${phase}`;
     }
   }
 }
@@ -186,6 +221,7 @@ const _LOG_COLOR = {
   partial:          '#EF9F27',
   failure:          '#E24B4A',
   critical_failure: '#8B2020',
+  combat_luck:      '#7F77DD',
 };
 const _LOG_LABEL = {
   critical_success: '대성공',
@@ -193,6 +229,7 @@ const _LOG_LABEL = {
   partial:          '부분',
   failure:          '실패',
   critical_failure: '대실패',
+  combat_luck:      '우연',
 };
 
 function _renderCombatLog(cs) {
@@ -202,7 +239,9 @@ function _renderCombatLog(cs) {
   if (!results.length) return;
   log.innerHTML = results.map(r => {
     const color = _LOG_COLOR[r.tier_en] || '#999';
-    const label = _LOG_LABEL[r.tier_en] || r.tier_en;
+    const label = r.tier_en === 'combat_luck'
+      ? `${_LOG_LABEL[r.tier_en]} ${(r.luck_shift ?? 0) >= 0 ? '+' : ''}${r.luck_shift ?? 0}`
+      : _LOG_LABEL[r.tier_en] || r.tier_en;
     return `<div class="c-log-item" style="border-left-color:${color}">
       <span class="c-log-phase">P${r.phase}</span>
       <span style="color:${color};font-weight:600">${label}</span>
@@ -283,7 +322,7 @@ async function submitCombatTurn() {
   if (sendBtn) sendBtn.disabled = true;
 
   try {
-    const { content, state_updates: su, resolution } =
+    const { content, state_updates: su, resolution, _debug } =
       await GameAPI.submitTurn(cmd, _state.toJSON(), _state.getHistory());
 
     _state.pushHistory('user', cmd);
@@ -309,6 +348,8 @@ async function submitCombatTurn() {
       _renderCombatScene(content, resolution);
     }
 
+    _renderCombatDebugPanel(document.getElementById('c-scene'), resolution, _debug);
+
   } catch (err) {
     const scene = document.getElementById('c-scene');
     if (scene) scene.innerHTML =
@@ -328,10 +369,10 @@ async function combatRetreat() {
   if (scene) scene.innerHTML = '<div class="scene-loading">후퇴 중…</div>';
 
   try {
-    const { content, state_updates: su, resolution } =
-      await GameAPI.submitTurn('후퇴한다', _state.toJSON(), _state.getHistory());
+    const { content, state_updates: su, resolution, _debug } =
+      await GameAPI.submitTurn('후퇴', _state.toJSON(), _state.getHistory(), true);
 
-    _state.pushHistory('user', '후퇴한다');
+    _state.pushHistory('user', '후퇴');
     _state.pushHistory('assistant', content);
 
     applyStateUpdates(su);
@@ -344,6 +385,7 @@ async function combatRetreat() {
 
     _combatEndContent    = content;
     _combatEndResolution = resolution;
+    _renderCombatDebugPanel(document.getElementById('c-scene'), resolution, _debug);
     _renderCombatEnd(
       cs || { retreat: true, winner: 'enemy', final_tier: '실패', pending_battle_damage: {} },
       content, resolution
