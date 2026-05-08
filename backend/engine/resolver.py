@@ -4,14 +4,15 @@ engine/resolver.py — 행동 판정 엔진
 LLM 호출 전에 주사위 + 수정치로 결과 등급을 결정합니다.
 결정된 등급은 시스템 프롬프트에 주입되어 LLM의 서술 방향을 조정합니다.
 
-수정치 구성:
-  군사 — 지형(고정) + LLM 품질 평가
-  외교 — LLM 품질 평가만
-  첩보 — LLM 품질 평가만
+일반 행동 판정 수정치 구성:
+  군사 — 지형(고정) + 날씨 + LLM 품질 평가(최대 ±2)
+  외교 — LLM 품질 평가(최대 ±2)
+  첩보 — LLM 품질 평가(최대 ±2)
 
-전투 시스템 — 적 행동 예고 방식:
-  각 페이즈: 적 예고 행동 vs 플레이어 선택 대결. LLM이 행동 대결 결과를 서술.
-  주사위는 운 수정치로만 작동하며 LLM의 행동 대결 판단이 우선한다.
+전투 시스템 — 2d6 대결 방식:
+  각 페이즈: 아군 2d6 vs 적군 2d6. 차이(−10~+10)에 지형·날씨·성벽(tier 기반)·품질 수정치를 더해
+  7단계 phase_outcome을 엔진이 직접 결정한다 (LLM은 phase_outcome을 출력하지 않음).
+  결정된 phase_outcome은 pending_phase_outcome으로 저장되고, 다음 턴 시작 시 사기와 피해에 적용된다.
   전투 종결은 LLM의 combat_victor 신호 또는 플레이어 후퇴로만 결정된다.
 """
 
@@ -36,17 +37,17 @@ _ACTION_LABELS = {
     "general":    "일반",
 }
 
-# 날씨 유형 → (공격측 수정치, 방어측 수정치, 레이블)  — 4d6 기준
+# 날씨 유형 → (공격측 수정치, 방어측 수정치, 레이블)
 # 방어측(is_defense=True) 기준: 양수=유리, 음수=불리
 _WEATHER_TABLE: dict[str, tuple[int, int, str]] = {
     "clear":      ( 0,  0, ""),
-    "rain":       (-2, 0, "강우"),
-    "heavy_rain": (-3, +1, "폭우"),
-    "snow":       (-3, +1, "강설"),
-    "blizzard":   (-4, +2, "눈보라"),
-    "heat":       (-2, -2, "폭염"),
-    "fog":        (-4, +1, "짙은 안개"),
-    "storm":      (-4, -1, "폭풍"),
+    "rain":       (-1,  0, "강우"),
+    "heavy_rain": (-2,  0, "폭우"),
+    "snow":       (-2,  0, "강설"),
+    "blizzard":   (-3, +1, "눈보라"),
+    "heat":       (-1, -1, "폭염"),
+    "fog":        (-3,  0, "짙은 안개"),
+    "storm":      (-3,  0, "폭풍"),
 }
 
 
@@ -61,19 +62,27 @@ def _weather_modifier(state: dict, is_defense: bool) -> list[tuple[str, int]]:
     return []
 
 
-# 지형 유형 → (방어 수정치, 공격 수정치, 레이블)  — 4d6 기준
+# 지형 유형 → (방어 수정치, 공격 수정치, 레이블)
+# 요새는 tier 기반 성벽 수정치로 처리하므로 지형 테이블에서 제외
 _TERRAIN_TABLE: dict[str, tuple[int, int, str]] = {
-    "fortress": (+3, -3, "요새"),
     "highland": (+2, -2, "고지"),
     "wetland":  (+1, -1, "습지·하천"),
     "river":    (+2, -2, "강변 방어선"),
     "plain":    ( 0,  0, "평원"),
 }
 
+# 거점 tier → 성벽 수정치 (방어측 보너스 / 공격측 패널티)
+_TIER_WALL_BONUS: dict[str, int] = {
+    "town":          0,
+    "small_city":    1,
+    "regional_city": 2,
+    "major_city":    3,
+    "metropolis":    4,
+}
+
 
 def _classify_terrain(terrain_text: str) -> str:
     t = terrain_text
-    if any(k in t for k in ["요새","성벽","성채","성곽","방벽","성"]): return "fortress"
     if any(k in t for k in ["협곡","절벽","산록","언덕","구릉","산"]): return "highland"
     if any(k in t for k in ["습지","늪","합류","합류부"]):              return "wetland"
     if any(k in t for k in ["강변","강안","강북","강남","강 합류"]):    return "river"
@@ -120,12 +129,10 @@ def _terrain_modifier(command: str, state: dict, is_defense: bool) -> list[tuple
             terrain_v = def_v if is_defense else atk_v
             if terrain_v and label:
                 mods.append((f"{label} {'방어' if is_defense else '공략'}", terrain_v))
-            garrison = loc.get("garrison", 0)
-            if garrison:
-                g_v = min(4, garrison // 500)
-                if g_v:
-                    mods.append(("수비대 지원" if is_defense else "수비대 저항",
-                                 g_v if is_defense else -g_v))
+            wall_v = _TIER_WALL_BONUS.get(loc.get("tier", ""), 0)
+            if wall_v:
+                mods.append(("성벽" if is_defense else "성벽 저항",
+                             wall_v if is_defense else -wall_v))
             return mods
     return []
 
@@ -164,7 +171,7 @@ def _graded_resolution(action_type: str, roll: int, modifiers: list[tuple[str, i
             "net": net, "action_type": action_type, "modifiers": modifiers}
 
 
-def _resolve_military_action(command: str, state: dict, action_type: str,
+def _resolve_military_action(action_type: str,
                               quality_modifier: tuple[str, int] | None = None) -> dict:
     roll      = sum(random.randint(1, 6) for _ in range(4))
     modifiers: list[tuple[str, int]] = []
@@ -172,14 +179,65 @@ def _resolve_military_action(command: str, state: dict, action_type: str,
     if quality_modifier:
         modifiers.append(quality_modifier)
 
-    is_defense = action_type == "defense"
-    modifiers.extend(_terrain_modifier(command, state, is_defense))
-    modifiers.extend(_weather_modifier(state, is_defense))
-
     res = _graded_resolution(action_type, roll, modifiers)
     res["luck_label"] = res["tier"]
     res["luck_shift"] = res["net"] - roll
     return res
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# 전투 페이즈 주사위 — 1d12 + 지형 + 날씨 + 전술 품질 → phase_outcome
+# ─────────────────────────────────────────────────────────────────────────────
+
+_PHASE_OUTCOME_KO: dict[str, str] = {
+    "critical_success": "결정적 우세",
+    "major_success":    "전술 우세",
+    "minor_success":    "소폭 우세",
+    "stalemate":        "교착",
+    "minor_fail":       "소폭 열세",
+    "major_fail":       "전술 열세",
+    "critical_fail":    "결정적 열세",
+}
+
+
+def _net_to_phase_outcome(net: int) -> str:
+    # 기준: 아군2d6 - 적군2d6 대결 차이(-10~+10) + 수정치
+    if net >= 9:  return "critical_success"
+    if net >= 6:  return "major_success"
+    if net >= 3:  return "minor_success"
+    if net >= -2: return "stalemate"       # -2 ~ +2
+    if net >= -5: return "minor_fail"      # -3 ~ -5
+    if net >= -8: return "major_fail"      # -6 ~ -8
+    return "critical_fail"                 # ≤ -9
+
+
+def _resolve_phase_dice(command: str, state: dict, action_type: str,
+                        quality_modifier: tuple[str, int] | None = None) -> dict:
+    """전투 페이즈 주사위. (아군 2d6 − 적군 2d6) + 지형 + 날씨 + 전술 품질 → phase_outcome."""
+    a = sum(random.randint(1, 6) for _ in range(2))  # 아군 2d6
+    b = sum(random.randint(1, 6) for _ in range(2))  # 적군 2d6
+    roll = a - b                                      # 대결 차이: -10 ~ +10
+    modifiers: list[tuple[str, int]] = []
+
+    is_defense = action_type == "defense"
+    modifiers.extend(_terrain_modifier(command, state, is_defense))
+    modifiers.extend(_weather_modifier(state, is_defense))
+    if quality_modifier:
+        modifiers.append(quality_modifier)
+
+    net           = roll + sum(v for _, v in modifiers)
+    phase_outcome = _net_to_phase_outcome(net)
+
+    return {
+        "tier":          _PHASE_OUTCOME_KO.get(phase_outcome, "?"),
+        "tier_en":       "phase_dice",
+        "roll":          roll,
+        "roll_detail":   {"ally": a, "enemy": b},
+        "net":           net,
+        "phase_outcome": phase_outcome,
+        "action_type":   action_type,
+        "modifiers":     modifiers,
+    }
 
 
 def _resolve_diplomatic_action(quality_modifier: tuple[str, int] | None = None) -> dict:
@@ -215,7 +273,7 @@ def resolve_action(command: str, state: dict,
         return _narrative_resolution(action_type)
 
     if action_type in {"military", "surprise", "defense"}:
-        return _resolve_military_action(command, state, action_type, quality_modifier)
+        return _resolve_military_action(action_type, quality_modifier)
     if action_type == "diplomatic":
         return _resolve_diplomatic_action(quality_modifier)
     if action_type == "intrigue":
@@ -254,21 +312,22 @@ def resolution_prompt(res: dict) -> str:
 # 사상자 규모 레이블 → (최소, 최대) 절댓값 battle_damage 포인트 (0–700 스케일 기준)
 # 비율이 아닌 고정 범위 — 전력 크기와 무관하게 1페이즈당 손실을 예측 가능하게 유지
 DAMAGE_LABEL_RATIO: dict[str, tuple[int, int]] = {
-    "없음": (0,  0),
     "경미": (1,  3),
     "보통": (3,  7),
     "중대": (7, 14),
     "심각": (14, 25),
+    "궤멸": (25, 40),
 }
 
 # phase_outcome → (player_damage_label, enemy_damage_label)
 _PHASE_OUTCOME_DAMAGE: dict[str, tuple[str, str]] = {
-    "critical_success": ("없음", "심각"),
-    "major_success":    ("경미", "중대"),
-    "minor_success":    ("경미", "보통"),
-    "minor_fail":       ("보통", "경미"),
-    "major_fail":       ("중대", "경미"),
-    "critical_fail":    ("심각", "없음"),
+    "critical_success": ("경미", "궤멸"),
+    "major_success":    ("보통", "심각"),
+    "minor_success":    ("보통", "중대"),
+    "stalemate":        ("경미", "경미"),
+    "minor_fail":       ("중대", "보통"),
+    "major_fail":       ("심각", "보통"),
+    "critical_fail":    ("궤멸", "경미"),
 }
 
 
@@ -283,6 +342,9 @@ def _apply_phase_morale(outcome: str,
         enemy_morale  -= random.randint(10, 20)
     elif outcome == "minor_success":
         enemy_morale  -= random.randint(3, 8)
+    elif outcome == "stalemate":
+        player_morale -= random.randint(1, 3)
+        enemy_morale  -= random.randint(1, 3)
     elif outcome == "minor_fail":
         player_morale -= random.randint(3, 8)
     elif outcome == "major_fail":
@@ -294,39 +356,6 @@ def _apply_phase_morale(outcome: str,
     return max(0, min(100, player_morale)), max(0, min(100, enemy_morale))
 
 
-_COMBAT_LUCK_LABELS: dict[int, str] = {
-    -2: "불리한 변수",
-    -1: "작은 불리",
-     0: "변수 없음",
-     1: "작은 유리",
-     2: "유리한 변수",
-}
-
-
-def _resolve_combat_luck(action_type: str) -> dict:
-    """전투 전용 우연 변수. 전술 판단을 뒤집지 않고 박빙 상황만 살짝 흔듭니다."""
-    roll = sum(random.randint(1, 6) for _ in range(4))
-    if roll == 24:
-        shift = 2
-    elif roll >= 21:
-        shift = 1
-    elif roll <= 4:
-        shift = -2
-    elif roll <= 6:
-        shift = -1
-    else:
-        shift = 0
-
-    return {
-        "tier":        _COMBAT_LUCK_LABELS[shift],
-        "tier_en":     "combat_luck",
-        "roll":        roll,
-        "net":         shift,
-        "luck_shift":  shift,
-        "luck_label":  _COMBAT_LUCK_LABELS[shift],
-        "action_type": action_type,
-        "modifiers":   [],
-    }
 
 
 def combat_damage_labels(phase_outcome: str) -> tuple[str, str]:
@@ -335,18 +364,18 @@ def combat_damage_labels(phase_outcome: str) -> tuple[str, str]:
 
 
 # 최대 페이즈 수 (안전 한계 — 초과 시 누적 피해 기준으로 승패 결정)
-_MAX_PHASES = 10
+_MAX_PHASES = 25
 
 # 이 페이즈 수 이상 교전해야 combat_victor 신호를 수용
-_MIN_PHASES_BEFORE_VICTOR = 2
+_MIN_PHASES_BEFORE_VICTOR = 3
 
 
-def calc_phase_damage(label: str, strength: int = 0) -> int:
-    """레이블을 받아 고정 범위 난수로 battle_damage 포인트를 반환합니다. strength는 미사용."""
+def calc_phase_damage(label: str, ratio: float = 1.0) -> int:
+    """레이블 × 병력비(소수점 1자리)로 battle_damage 포인트를 반환합니다."""
     lo, hi = DAMAGE_LABEL_RATIO.get(label, DAMAGE_LABEL_RATIO["경미"])
     if hi == 0:
         return 0
-    return random.randint(lo, hi)
+    return max(0, round(random.randint(lo, hi) * round(ratio, 1)))
 
 
 def _get_player_faction_id(state: dict) -> str | None:
@@ -425,7 +454,8 @@ def init_combat_phase(command: str, state: dict,
       None → 키워드 기반 폴백으로 판단.
     """
     action_type = classify_action_type(command)
-    resolution  = _resolve_combat_luck(action_type)
+    if action_type not in ("military", "surprise", "defense"):
+        action_type = "military"
 
     player_fid = _get_player_faction_id(state)
     player_str = _get_faction_strength(player_fid, state) if player_fid else 100
@@ -483,6 +513,9 @@ def init_combat_phase(command: str, state: dict,
     if player_fid: pending[player_fid] = 0
     if enemy_fid:  pending[enemy_fid]  = 0
 
+    # 개시 페이즈 주사위 (적 예고 행동 없으므로 quality modifier 없이 지형·날씨만 반영)
+    resolution = _resolve_phase_dice(command, state, action_type)
+
     combat_state = {
         "active":                True,
         "phase_number":          1,
@@ -493,7 +526,7 @@ def init_combat_phase(command: str, state: dict,
         "player_morale":         100,
         "enemy_morale":          100,
         "enemy_next_action":     None,
-        "pending_phase_outcome": None,
+        "pending_phase_outcome": resolution["phase_outcome"],
         "pending_battle_damage": pending,
         "phase_results":         [],
         "is_siege":              is_siege,
@@ -506,18 +539,23 @@ def init_combat_phase(command: str, state: dict,
 
 def advance_combat_phase(command: str, state: dict,
                          quality_modifier=None) -> tuple[dict, dict]:
-    """전투 페이즈 한 턴: 이전 phase_outcome 적용 → 사기 붕괴 확인 → 운 판정."""
+    """전투 페이즈 한 턴: 이전 phase_outcome 적용 → 사기 붕괴 확인 → 이번 페이즈 주사위."""
     cs          = state.get("combatState", {})
     action_type = classify_action_type(command)
     if action_type not in ("military", "surprise", "defense"):
         action_type = "military"
-    resolution  = _resolve_combat_luck(action_type)
+
+    resolution = _resolve_phase_dice(command, state, action_type, quality_modifier)
 
     phase_number    = cs.get("phase_number", 1)
     player_morale   = cs.get("player_morale", 100)
     enemy_morale    = cs.get("enemy_morale", 100)
     pending         = dict(cs.get("pending_battle_damage", {}))
     pending_outcome = cs.get("pending_phase_outcome")
+    p_fid = cs.get("player_faction_id")
+    e_fid = cs.get("enemy_faction_id")
+    p_str = cs.get("player_strength", 100)
+    e_str = cs.get("enemy_strength",  100)
 
     # 이전 턴 phase_outcome 적용 (사기 + 피해 누적)
     if pending_outcome:
@@ -525,20 +563,15 @@ def advance_combat_phase(command: str, state: dict,
             pending_outcome, player_morale, enemy_morale
         )
         p_label, e_label = combat_damage_labels(pending_outcome)
-        p_fid = cs.get("player_faction_id")
-        e_fid = cs.get("enemy_faction_id")
-        p_str = cs.get("player_strength", 100)
-        e_str = cs.get("enemy_strength",  100)
-        if p_fid: pending[p_fid] = pending.get(p_fid, 0) + calc_phase_damage(p_label, p_str)
-        if e_fid: pending[e_fid] = pending.get(e_fid, 0) + calc_phase_damage(e_label, e_str)
+        p_ratio = e_str / max(1, p_str)
+        e_ratio = p_str / max(1, e_str)
+        if p_fid: pending[p_fid] = pending.get(p_fid, 0) + calc_phase_damage(p_label, p_ratio)
+        if e_fid: pending[e_fid] = pending.get(e_fid, 0) + calc_phase_damage(e_label, e_ratio)
 
     morale_collapse = player_morale <= 0 or enemy_morale <= 0
     if morale_collapse:
-        # 붕괴 측에 추격·도주 손실 추가 부과
-        collapsed_fid = (cs.get("player_faction_id") if player_morale <= 0
-                         else cs.get("enemy_faction_id"))
-        collapsed_str = (cs.get("player_strength", 100) if player_morale <= 0
-                         else cs.get("enemy_strength", 100))
+        collapsed_fid = (p_fid if player_morale <= 0 else e_fid)
+        collapsed_str = (p_str if player_morale <= 0 else e_str)
         if collapsed_fid:
             rout_dmg = max(1, round(collapsed_str * random.uniform(0.08, 0.15)))
             pending[collapsed_fid] = pending.get(collapsed_fid, 0) + rout_dmg
@@ -548,8 +581,12 @@ def advance_combat_phase(command: str, state: dict,
     phase_results = list(cs.get("phase_results", []))
     phase_results.append({
         "phase":         phase_number,
-        "luck_shift":    resolution.get("luck_shift", 0),
-        "luck_label":    resolution.get("luck_label", ""),
+        "phase_outcome": resolution["phase_outcome"],
+        "tier":          resolution["tier"],
+        "roll":          resolution["roll"],
+        "roll_detail":   resolution.get("roll_detail", {}),
+        "net":           resolution["net"],
+        "modifiers":     resolution.get("modifiers", []),
         "player_action": command[:80],
         "enemy_action":  cs.get("enemy_next_action") or "",
     })
@@ -572,15 +609,22 @@ def advance_combat_phase(command: str, state: dict,
         elif enemy_morale <= 0:
             winner, ft, fte = "player", "성공", "success"
         else:
-            # 최대 페이즈 도달: 누적 피해 기준 폴백
-            p_fid  = cs.get("player_faction_id")
-            e_fid  = cs.get("enemy_faction_id")
+            # 최대 페이즈 도달: 이번 주사위 결과 즉시 적용 후 누적 피해로 판정
+            cur_outcome = resolution["phase_outcome"]
+            p_ratio = e_str / max(1, p_str)
+            e_ratio = p_str / max(1, e_str)
+            p_label, e_label = combat_damage_labels(cur_outcome)
+            if p_fid: pending[p_fid] = pending.get(p_fid, 0) + calc_phase_damage(p_label, p_ratio)
+            if e_fid: pending[e_fid] = pending.get(e_fid, 0) + calc_phase_damage(e_label, e_ratio)
+            new_cs["pending_battle_damage"] = pending
             p_dmg  = pending.get(p_fid, 0)
             e_dmg  = pending.get(e_fid, 0)
             winner = "player" if e_dmg >= p_dmg else "enemy"
             ft, fte = ("부분 성공", "partial") if winner == "player" else ("실패", "failure")
         new_cs.update({"ended": True, "winner": winner,
                        "final_tier": ft, "final_tier_en": fte})
+    else:
+        new_cs["pending_phase_outcome"] = resolution["phase_outcome"]
 
     return resolution, new_cs
 
@@ -613,12 +657,21 @@ def resolve_retreat(state: dict) -> tuple[dict, dict]:
 
 
 def combat_prep_prompt(cs: dict, resolution: dict) -> str:
-    luck     = resolution.get("luck_label", resolution.get("tier", "?"))
-    shift    = resolution.get("luck_shift", 0)
-    p_str    = cs.get("player_strength", 100)
-    e_str    = cs.get("enemy_strength",  100)
-    is_siege = cs.get("is_siege", False)
-    garrison = cs.get("siege_garrison", 0)
+    roll_detail = resolution.get("roll_detail", {})
+    ally_roll   = roll_detail.get("ally", "?")
+    enemy_roll  = roll_detail.get("enemy", "?")
+    net         = resolution.get("net", 0)
+    tier        = resolution.get("tier", "?")
+    modifiers   = resolution.get("modifiers", [])
+    p_str       = cs.get("player_strength", 100)
+    e_str       = cs.get("enemy_strength",  100)
+    is_siege    = cs.get("is_siege", False)
+    garrison    = cs.get("siege_garrison", 0)
+
+    mod_str = ""
+    if modifiers:
+        parts   = [f"{lbl} {'+' if v > 0 else ''}{v}" for lbl, v in modifiers]
+        mod_str = f" ({', '.join(parts)})"
 
     if is_siege:
         battle_header = "## 공성전 개시 — 전투 상태 설정 (엔진 결정 — 반드시 준수)\n"
@@ -627,24 +680,25 @@ def combat_prep_prompt(cs: dict, resolution: dict) -> str:
             f"수비대 {garrison:,}명 (방어 보너스 포함 실효 전력: {e_str}) — "
             "야전군 미포함, 수비대만 응전\n"
         )
-        enemy_label   = "수비대"
+        enemy_label = "수비대"
     else:
         battle_header = "## 전투 개시 — 전투 상태 설정 (엔진 결정 — 반드시 준수)\n"
         strength_line = f"아군 전력: {p_str} | 적군 전력: {e_str}\n"
-        enemy_label   = "적군"
+        enemy_label = "적군"
 
     return (
         "\n\n---\n"
         + battle_header
         + strength_line + "\n"
-        f"초기 우연 변수: **{luck}** ({shift:+d}) — "
-        "전술 판단을 뒤집는 판정이 아니라, 박빙 상황의 묘사와 피해 규모에만 작게 반영하시오.\n\n"
+        f"주사위: 아군 {ally_roll} vs 적군 {enemy_roll} → 차이 {net:+d}{mod_str} → **{tier}**\n\n"
         "**[절대 금지 — 위반 불가]** 플레이어가 후퇴 명령을 입력하기 전까지, "
         "상황이 불리하더라도 아군은 전투를 계속한다. "
         "서술 내에서 아군의 퇴각·철수·후퇴를 실행하거나 기정사실로 묘사하지 말 것. "
-        "부하가 퇴각을 건의하는 대사는 허용되나, 퇴각 실행 여부는 반드시 플레이어의 다음 입력으로만 결정된다.\n\n"
+        "부하가 퇴각을 건의하는 대사는 허용되나, 퇴각 실행 여부는 반드시 플레이어의 다음 입력으로만 결정된다.\n"
+        "**[절대 금지]** 전투 개시 직후이므로 적군의 사기 붕괴·패주·자멸 묘사는 금지한다. "
+        "피해와 압박은 묘사할 수 있으나, 적이 먼저 무너지거나 도망가는 묘사는 할 수 없다.\n\n"
         "현재 공개 전황만을 바탕으로 전투 개시 장면을 서술하시오. 전투는 아직 진행 중이다.\n"
-        "장면 말미에 플레이어가 취할 수 있는 **전술적 선택지 3~4가지**를 먼저 제시하시오.\n"
+        "장면 말미에 플레이어가 취할 수 있는 **전술적 선택지 3가지**를 먼저 제시하시오.\n"
         "(구체적인 전술 행동 — 후퇴는 선택지에 포함하지 말 것)\n\n"
         "STATE_UPDATE 필수 출력:\n"
         f"- `enemy_next_action`: {enemy_label}이 다음 페이즈에 시도할 방어·전술 행동 — "
@@ -652,28 +706,39 @@ def combat_prep_prompt(cs: dict, resolution: dict) -> str:
         "본문 선택지나 서술에 암시하지 말고 STATE_UPDATE에만 기록하시오.\n"
         "- `combat_victor`: 전투가 이미 사실상 결판났다면 \"player\" 또는 \"enemy\", "
         "그렇지 않으면 반드시 null\n"
-        "- `phase_outcome`: 이번 장면의 결과. "
-        "\"critical_success\" | \"major_success\" | \"minor_success\" | "
-        "\"minor_fail\" | \"major_fail\" | \"critical_fail\""
     )
 
 
 def combat_ongoing_prompt(resolved_phase: int, old_cs: dict, resolution: dict) -> str:
-    luck         = resolution.get("luck_label", resolution.get("tier", "?"))
-    shift        = resolution.get("luck_shift", 0)
-    enemy_action = old_cs.get("enemy_next_action") or "(불명)"
-    p_str        = old_cs.get("player_strength", 100)
-    e_str        = old_cs.get("enemy_strength",  100)
-    p_morale     = old_cs.get("player_morale", 100)
-    e_morale     = old_cs.get("enemy_morale",  100)
-    can_end      = resolved_phase >= _MIN_PHASES_BEFORE_VICTOR
-    is_siege     = old_cs.get("is_siege", False)
-    garrison     = old_cs.get("siege_garrison", 0)
+    roll_detail   = resolution.get("roll_detail", {})
+    ally_roll     = roll_detail.get("ally", "?")
+    enemy_roll    = roll_detail.get("enemy", "?")
+    net           = resolution.get("net", 0)
+    tier          = resolution.get("tier", "?")
+    modifiers     = resolution.get("modifiers", [])
+    enemy_action  = old_cs.get("enemy_next_action") or "(불명)"
+    p_str         = old_cs.get("player_strength", 100)
+    e_str         = old_cs.get("enemy_strength",  100)
+    p_morale      = old_cs.get("player_morale", 100)
+    e_morale      = old_cs.get("enemy_morale",  100)
+    can_end       = resolved_phase >= _MIN_PHASES_BEFORE_VICTOR
+    is_siege      = old_cs.get("is_siege", False)
+    garrison      = old_cs.get("siege_garrison", 0)
+    phase_results = old_cs.get("phase_results", [])
+    had_critical  = (
+        any(r.get("phase_outcome") == "critical_success" for r in phase_results)
+        or resolution.get("phase_outcome") == "critical_success"
+    )
+    enemy_rout_forbidden = e_morale > 30 and not had_critical
+
+    mod_str = ""
+    if modifiers:
+        parts   = [f"{lbl} {'+' if v > 0 else ''}{v}" for lbl, v in modifiers]
+        mod_str = f" ({', '.join(parts)})"
 
     if is_siege:
         battle_header = f"## 공성전 진행 — 페이즈 {resolved_phase} (엔진 결정 — 반드시 준수)\n"
         strength_line = (
-            f"우연 변수: **{luck}** ({shift:+d})\n"
             f"아군 전력: {p_str} | 수비대 실효 전력: {e_str} (원 수비대 {garrison:,}명)\n"
             f"아군 사기: {p_morale} | 수비대 사기: {e_morale}\n"
         )
@@ -681,7 +746,6 @@ def combat_ongoing_prompt(resolved_phase: int, old_cs: dict, resolution: dict) -
     else:
         battle_header = f"## 전투 진행 — 페이즈 {resolved_phase} (엔진 결정 — 반드시 준수)\n"
         strength_line = (
-            f"우연 변수: **{luck}** ({shift:+d})\n"
             f"아군 전력: {p_str} | 적군 전력: {e_str}\n"
             f"아군 사기: {p_morale} | 적군 사기: {e_morale}\n"
         )
@@ -690,24 +754,28 @@ def combat_ongoing_prompt(resolved_phase: int, old_cs: dict, resolution: dict) -
     return (
         "\n\n---\n"
         + battle_header
-        + strength_line + "\n"
+        + strength_line
+        + f"주사위: 아군 {ally_roll} vs 적군 {enemy_roll} → 차이 {net:+d}{mod_str} → **{tier}**\n\n"
         "**이번 페이즈 행동 대결:**\n"
         f"- {enemy_label} 예고 행동: {enemy_action}\n"
         "- 플레이어 행동: (위 user 메시지 참조)\n\n"
-        "두 행동이 실제 전장에서 어떻게 맞물리는지 전술적으로 판정하시오. "
-        "행동 대결이 주된 근거이며, 우연 변수는 박빙 상황의 작은 흔들림·사상자 규모·우발 사건에만 반영하시오. "
-        "우연 변수만으로 명백히 불리한 전술을 승리로 만들거나 명백히 유리한 전술을 붕괴시키지 마시오.\n\n"
+        "주사위 결과(위)를 바탕으로 이번 페이즈가 어떻게 전개됐는지 서술하시오. "
+        "두 행동이 전장에서 어떻게 맞물리는지 전술적으로 묘사하되, 판정 등급을 반드시 반영하시오. "
+        "판정 등급을 임의로 상향하거나 하향하지 마시오.\n\n"
         "**[절대 금지 — 위반 불가]** 플레이어가 후퇴 명령을 입력하기 전까지, "
         "결과가 불리하더라도 아군은 전투를 계속한다. "
-        "서술 내에서 아군의 퇴각·철수·후퇴를 실행하거나 기정사실로 묘사하지 말 것.\n\n"
-        "장면 말미에 다음 전술적 선택지 3~4가지를 제시하시오. "
+        "서술 내에서 아군의 퇴각·철수·후퇴를 실행하거나 기정사실로 묘사하지 말 것.\n"
+        + (
+            f"**[절대 금지]** 현재 적 사기({e_morale})가 30 초과이고 '결정적 우세' 판정이 아직 없었다. "
+            "적군이 스스로 무너지거나 패주·궤멸하는 묘사는 금지한다. "
+            "피해·후퇴 압박은 묘사할 수 있으나, 사기 붕괴·도주 실행은 서술하지 마시오.\n\n"
+            if enemy_rout_forbidden else "\n"
+        )
+        + "장면 말미에 다음 전술적 선택지 3가지를 제시하시오. "
         "선택지는 반드시 **현재 진행 중인 전투 안에서 취할 수 있는 전술 행동**이어야 한다. "
         "후퇴·철수·전장 이탈·'군대를 돌린다'·전투 종료 후 행동은 절대 포함하지 말 것. "
         "`enemy_next_action`은 STATE_UPDATE에만 기록하고 본문에는 노출하지 마시오.\n\n"
         "STATE_UPDATE 필수 출력:\n"
-        "- `phase_outcome`: 이번 장면의 행동 대결 결과 (플레이어 관점). 반드시 아래 6가지 중 하나:\n"
-        "  `critical_success` / `major_success` / `minor_success` / "
-        "`minor_fail` / `major_fail` / `critical_fail`\n"
         f"- `enemy_next_action`: {enemy_label}이 다음 페이즈에 시도할 방어·전술 행동 (1~2문장)\n"
         + (
             "- `combat_victor`: 전투가 사실상 종결됐다면 \"player\" 또는 \"enemy\", "

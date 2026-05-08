@@ -11,7 +11,20 @@ function renderDebugPanel(container, resolution, debugData) {
   const qm    = debugData?.quality_mod;
 
   let resLines;
-  if (res.tier_en === 'combat_luck') {
+  if (res.tier_en === 'phase_dice') {
+    const detail = res.roll_detail || {};
+    const modStr2 = res.modifiers?.length
+      ? res.modifiers.map(([l, v]) => `${l} ${v > 0 ? '+' : ''}${v}`).join(', ')
+      : '없음';
+    resLines = [
+      `type      : phase_dice`,
+      `roll      : 아군 ${detail.ally ?? '?'} vs 적 ${detail.enemy ?? '?'} → ${res.roll >= 0 ? '+' : ''}${res.roll}`,
+      `net       : ${res.net}`,
+      `outcome   : ${res.phase_outcome || res.tier || '—'}`,
+      `수정자    : ${modStr2}`,
+      `품질 보정 : ${qm != null ? qm : '—'}`,
+    ];
+  } else if (res.tier_en === 'combat_luck') {
     resLines = [
       `type      : combat_luck`,
       `roll      : ${res.roll}`,
@@ -165,8 +178,11 @@ function renderFactionBars(state) {
   rebindTooltips();
 }
 
-// ── 플레이어 위치 파싱
+// ── 플레이어 위치 결정 (명시적 STATE_UPDATE 우선, 타임스탬프 파싱 폴백)
 function playerPosition(state) {
+  const locId = state.progress?.playerLocationId;
+  if (locId && state.locations.has(locId)) return { type: 'fixed', id: locId };
+
   const ts = state.progress?.timestamp || '';
   const m  = ts.match(/[,，]\s*(.+)$/) || ts.match(/\d년[^,，]*\s+(.+)$/);
   if (!m) return null;
@@ -370,17 +386,15 @@ function renderResolution(res) {
   const modStr = res.modifiers?.length
     ? ' · ' + res.modifiers.map(([l, v]) => `${l} ${v > 0 ? '+' : ''}${v}`).join(', ')
     : '';
+  // 체스 기보 품질 표기 추출 (!! / ! / ? / ??)
+  const qMatch = res.modifiers?.map(([l]) => l?.match(/\([!?=]{1,2}\)/)?.[0]).find(Boolean);
   el.style.display = 'inline-flex';
   el.style.color   = style.color;
   el.style.borderColor = style.color;
   el.title = res.roll != null
-    ? res.tier_en === 'combat_luck'
-      ? `4d6 ${res.roll} → ${res.luck_label || res.tier} (${(res.luck_shift ?? res.net) >= 0 ? '+' : ''}${res.luck_shift ?? res.net})`
-      : `주사위 ${res.roll} → 보정 후 ${res.net}${modStr}`
-    : modStr ? modStr.slice(2) : '';
-  el.textContent = res.tier_en === 'combat_luck'
-    ? `${style.label} ${(res.luck_shift ?? res.net) >= 0 ? '+' : ''}${res.luck_shift ?? res.net}`
-    : style.label;
+    ? `주사위 ${res.roll} → 보정 후 ${res.net}${modStr}`
+    : modStr ? modStr.slice(3) : '';
+  el.textContent = qMatch ? `${style.label} ${qMatch}` : style.label;
 }
 
 // ── 씬 본문·선택지 렌더러

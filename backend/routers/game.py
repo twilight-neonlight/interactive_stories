@@ -13,7 +13,7 @@ from engine.resolver import (
     resolve_action, resolution_prompt, needs_resolution, classify_action_type,
     init_combat_phase, advance_combat_phase, resolve_retreat,
     combat_prep_prompt, combat_ongoing_prompt, combat_end_prompt,
-    calc_phase_damage, combat_damage_labels, _MIN_PHASES_BEFORE_VICTOR,
+    _MIN_PHASES_BEFORE_VICTOR,
 )
 from engine.classifier import classify_action_llm, CLS_TO_RESOLVER
 from engine.quality    import evaluate_action_quality
@@ -77,7 +77,11 @@ async def process_turn(req: TurnRequest):
             resolution, new_combat_state = resolve_retreat(req.state)
             sys_prompt_tail = combat_end_prompt(new_combat_state, resolution)
         else:
-            resolution, new_combat_state = advance_combat_phase(req.command, req.state)
+            combat_action_type = classify_action_type(req.command)
+            if combat_action_type not in ("military", "surprise", "defense"):
+                combat_action_type = "military"
+            quality_mod = await evaluate_action_quality(req.command, req.state, combat_action_type)
+            resolution, new_combat_state = advance_combat_phase(req.command, req.state, quality_mod)
             if new_combat_state.get("ended"):
                 sys_prompt_tail = combat_end_prompt(new_combat_state, resolution)
             else:
@@ -120,12 +124,21 @@ async def process_turn(req: TurnRequest):
     content, extra = extract_state_update(content)
     state_updates  = turn_engine(content, req.state)
 
+    # STATE_UPDATE 명시값이 있으면 텍스트 파싱(turn_engine) 결과 대체
+    if isinstance(extra.get("scene"),   int) and extra["scene"]   >= 1:
+        state_updates["scene"] = extra["scene"]
+    if isinstance(extra.get("chapter"), int) and extra["chapter"] >= 1:
+        state_updates["chapter"] = extra["chapter"]
+    if isinstance(extra.get("is_chapter_end"), bool):
+        state_updates["is_chapter_end"] = extra["is_chapter_end"]
+
     in_combat = bool(combat_state_in and combat_state_in.get("active"))
     for key in ("new_characters", "dead_characters", "new_factions", "defeated_factions",
                 "faction_strength_changes", "faction_battle_recovery",
-                "faction_diplomacy_changes", "faction_disposition_changes",
+                "faction_diplomacy_changes",
                 "character_troop_changes", "character_disposition_changes", "character_title_changes",
-                "faction_intel_changes", "new_locations", "location_changes"):
+                "faction_intel_changes", "new_locations", "location_changes",
+                "player_location_id"):
         if extra.get(key):
             state_updates[key] = extra[key]
 
@@ -140,6 +153,12 @@ async def process_turn(req: TurnRequest):
         for key in ("player_coalition", "enemy_coalition"):
             if isinstance(extra.get(key), list):
                 new_combat_state[key] = extra[key]
+
+        # 전투 지명·연도: 개시 씬에서만 LLM이 제공
+        if isinstance(extra.get("battle_location"), str):
+            new_combat_state["battle_location_name"] = extra["battle_location"]
+        if isinstance(extra.get("battle_year"), str):
+            new_combat_state["battle_year"] = extra["battle_year"]
 
         # 적 예고 행동: LLM이 이번 장면에서 제시한 다음 페이즈 적 행동 저장
         if isinstance(extra.get("enemy_next_action"), str):
@@ -159,23 +178,6 @@ async def process_turn(req: TurnRequest):
                     "active": False, "ended": True,
                     "winner": "enemy", "final_tier": "실패", "final_tier_en": "failure",
                 })
-
-        # phase_outcome: 전투 종결 시 즉시 피해 적용, 진행 중이면 다음 턴으로 이연
-        if not new_combat_state.get("retreat"):
-            phase_outcome = extra.get("phase_outcome")
-            if phase_outcome:
-                if new_combat_state.get("ended"):
-                    p_label, e_label = combat_damage_labels(phase_outcome)
-                    p_str = new_combat_state.get("player_strength", 100)
-                    e_str = new_combat_state.get("enemy_strength",  100)
-                    p_fid = new_combat_state.get("player_faction_id")
-                    e_fid = new_combat_state.get("enemy_faction_id")
-                    pending = dict(new_combat_state.get("pending_battle_damage", {}))
-                    if p_fid: pending[p_fid] = pending.get(p_fid, 0) + calc_phase_damage(p_label, p_str)
-                    if e_fid: pending[e_fid] = pending.get(e_fid, 0) + calc_phase_damage(e_label, e_str)
-                    new_combat_state["pending_battle_damage"] = pending
-                else:
-                    new_combat_state["pending_phase_outcome"] = phase_outcome
 
         state_updates["combat_state"] = new_combat_state
         if new_combat_state.get("ended"):

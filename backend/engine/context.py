@@ -299,15 +299,21 @@ def build_scenario_context(state: dict) -> str:
         }
         lines.append(f"\n현재 기상: {_WEATHER_LABELS.get(weather, weather)}")
 
-    progress = state.get("progress", {})
-    chapter  = progress.get("chapter", 1)
-    scene    = progress.get("scene", 1)
-    is_end   = progress.get("isChapterEnd", False)
-    ts       = progress.get("timestamp", "")
+    progress      = state.get("progress", {})
+    chapter       = progress.get("chapter", 1)
+    scene         = progress.get("scene", 1)
+    is_end        = progress.get("isChapterEnd", False)
+    ts            = progress.get("timestamp", "")
+    player_loc_id = progress.get("playerLocationId")
+    player_loc_label = ""
+    if player_loc_id:
+        loc_entry = locations.get(player_loc_id, {})
+        player_loc_label = f" | 플레이어 거점: {loc_entry.get('name', player_loc_id)} ({player_loc_id})"
     lines.append(
         f"\n현재 위치: {chapter}장 SCENE {scene}"
         + (" (장 종결 후 대기 중)" if is_end else "")
         + (f" / {ts}" if ts else "")
+        + player_loc_label
     )
 
     combat_state = state.get("combatState")

@@ -447,13 +447,12 @@ hr.divider { border: none; border-top: 1px solid var(--border-light); margin: 10
 }
 
 .combat-location-title {
-  text-align: center;
-  font-size: 13px;
-  font-weight: 700;
-  letter-spacing: 0.04em;
-  color: var(--text-primary);
-  margin-bottom: 8px;
-  font-family: sans-serif;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  color: var(--text-secondary);
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .combat-title-row {
@@ -462,14 +461,31 @@ hr.divider { border: none; border-top: 1px solid var(--border-light); margin: 10
   gap: 10px;
   margin-bottom: 6px;
 }
-.combat-icon       { font-size: 15px; flex-shrink: 0; }
+.combat-close-btn {
+  width: 22px; height: 22px; font-size: 16px; line-height: 22px; text-align: center;
+  background: transparent; color: var(--text-tertiary);
+  border: none; cursor: pointer; flex-shrink: 0; padding: 0;
+  border-radius: var(--radius-sm); transition: color 0.12s, background 0.12s;
+}
+.combat-close-btn:hover    { color: var(--text-secondary); background: var(--bg-secondary); }
+.combat-close-btn:disabled { opacity: 0.4; cursor: not-allowed; }
 .combat-title-text {
   font-size: 11px; text-transform: uppercase; letter-spacing: 0.12em;
   color: var(--text-tertiary); font-family: sans-serif; flex-shrink: 0;
 }
-.combat-matchup { display: flex; align-items: center; gap: 8px; flex: 1; min-width: 0; }
+.combat-matchup     { display: flex; align-items: center; gap: 8px; flex: 1; min-width: 0; }
+.combat-faction-col { display: flex; flex-direction: column; gap: 1px; min-width: 0; overflow: hidden; }
+.combat-faction-role {
+  font-size: 9px; text-transform: uppercase; letter-spacing: 0.10em;
+  color: var(--text-tertiary); font-family: sans-serif;
+}
 .combat-fname   { font-size: 14px; font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .combat-vs      { font-size: 12px; color: var(--text-tertiary); font-family: sans-serif; flex-shrink: 0; }
+.combat-weather-badge {
+  padding: 2px 9px; border: 1px solid; border-radius: var(--radius-md);
+  font-size: 11px; font-weight: 600; font-family: sans-serif;
+  flex-shrink: 0; cursor: default; white-space: nowrap;
+}
 .combat-phase-info {
   font-size: 11px; color: var(--text-tertiary);
   font-family: sans-serif; flex-shrink: 0;

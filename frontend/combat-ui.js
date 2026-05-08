@@ -3,6 +3,17 @@
 let _combatEndContent    = null;
 let _combatEndResolution = null;
 
+const _WEATHER_INFO = {
+  clear:      { label: '맑음',      color: 'var(--text-tertiary)', effect: '효과 없음' },
+  rain:       { label: '강우',      color: '#5DBB8B',              effect: '공격 −1' },
+  heavy_rain: { label: '폭우',      color: '#3a7abf',              effect: '공격 −2' },
+  snow:       { label: '강설',      color: '#8BC5A8',              effect: '공격 −2' },
+  blizzard:   { label: '눈보라',    color: '#7F77DD',              effect: '공격 −3 / 수비 +1' },
+  heat:       { label: '폭염',      color: '#E09060',              effect: '공격 −1 / 수비 −1' },
+  fog:        { label: '짙은 안개', color: '#888888',              effect: '공격 −3' },
+  storm:      { label: '폭풍',      color: '#C5932A',              effect: '공격 −3' },
+};
+
 function _combatMoraleStats(cs, moraleKey) {
   const max = 100;
   const current = Math.max(0, Math.min(max, Number(cs?.[moraleKey] ?? max)));
@@ -38,25 +49,40 @@ function openCombatOverlay(content, resolution, debugData = null) {
     : `준비 완료 / 페이즈 ${cs.phase_number || 1}`;
 
   const locName  = cs.battle_location_name || null;
+  const locYear  = cs.battle_year || '';
   const isSiege  = !!cs.is_siege;
-  const battleTypeLabel = isSiege ? '공성전' : '전투';
-  const locationTitle = locName
-    ? `<div class="combat-location-title">${locName} ${battleTypeLabel}</div>`
+  const isQuickBattle = _state?.scenarioId === 'quick-battle';
+  const locationLabel = isQuickBattle
+    ? [locName, locYear].filter(Boolean).join(', ')
+    : [locName, isSiege ? '공성전' : '전투', locYear].filter(Boolean).join(' ');
+  const locationTitleHtml = locationLabel
+    ? `<span class="combat-location-title">${locationLabel}</span>`
     : '';
+
+  const weather = _state.weather || 'clear';
+  const wi = _WEATHER_INFO[weather] || _WEATHER_INFO.clear;
+  const weatherBadgeHtml = `<span class="combat-weather-badge" style="border-color:${wi.color};color:${wi.color}" title="날씨 효과: ${wi.effect}">${wi.label}</span>`;
 
   const overlay = document.getElementById('combat-overlay');
   overlay.innerHTML = `
     <div class="combat-shell">
       <div>
-        ${locationTitle}
         <div class="combat-title-row">
-          <span class="combat-icon">⚔</span>
+          <button class="combat-close-btn" id="c-close-btn" onclick="combatRetreat()">×</button>
           <span class="combat-title-text">전투</span>
           <div class="combat-matchup">
-            <span class="combat-fname" style="color:${pColor}">${pLabel}</span>
+            <div class="combat-faction-col">
+              <span class="combat-faction-role">공격 측</span>
+              <span class="combat-fname" style="color:${pColor}">${pLabel}</span>
+            </div>
             <span class="combat-vs">vs</span>
-            <span class="combat-fname" style="color:${eColor}">${eLabel}</span>
+            <div class="combat-faction-col">
+              <span class="combat-faction-role">수비 측</span>
+              <span class="combat-fname" style="color:${eColor}">${eLabel}</span>
+            </div>
           </div>
+          ${weatherBadgeHtml}
+          ${locationTitleHtml}
           <span class="combat-phase-info" id="c-phase-info">${phaseText}</span>
           <button class="combat-retreat-btn" id="c-retreat-btn" onclick="combatRetreat()">후퇴</button>
         </div>
@@ -145,20 +171,27 @@ function _renderCombatScene(content, resolution) {
 
   const badge = document.getElementById('c-res-badge');
   if (badge) {
-    if (resolution && RESOLUTION_STYLE[resolution.tier_en]) {
-      const s = RESOLUTION_STYLE[resolution.tier_en];
-      badge.style.cssText = `display:inline-block;color:${s.color};border-color:${s.color};`;
-      const luckShift = resolution.luck_shift ?? resolution.net;
-      badge.textContent = resolution.tier_en === 'combat_luck'
-        ? `${s.label} ${luckShift >= 0 ? '+' : ''}${luckShift}`
-        : s.label;
+    if (resolution?.tier_en === 'phase_dice') {
+      const outcome = resolution.phase_outcome;
+      const color   = _LOG_COLOR[outcome] || '#7F77DD';
+      badge.style.cssText = `display:inline-block;color:${color};border-color:${color};`;
+      const net    = resolution.net ?? 0;
+      const qMatch = resolution.modifiers?.map(([l]) => l?.match(/\([!?=]{1,2}\)/)?.[0]).find(Boolean);
+      badge.textContent = `${resolution.tier}${qMatch ? ' ' + qMatch : ''} (${net >= 0 ? '+' : ''}${net})`;
+      const detail = resolution.roll_detail || {};
       const modStr = resolution.modifiers?.length
         ? ' [' + resolution.modifiers.map(([l, v]) => `${l} ${v > 0 ? '+' : ''}${v}`).join(', ') + ']'
         : '';
+      badge.title = `아군 ${detail.ally ?? '?'} vs 적 ${detail.enemy ?? '?'}${modStr}`;
+    } else if (resolution && RESOLUTION_STYLE[resolution.tier_en]) {
+      const s = RESOLUTION_STYLE[resolution.tier_en];
+      badge.style.cssText = `display:inline-block;color:${s.color};border-color:${s.color};`;
+      const modStr = resolution.modifiers?.length
+        ? ' [' + resolution.modifiers.map(([l, v]) => `${l} ${v > 0 ? '+' : ''}${v}`).join(', ') + ']'
+        : '';
+      badge.textContent = s.label;
       badge.title = resolution.roll != null
-        ? resolution.tier_en === 'combat_luck'
-          ? `4d6 ${resolution.roll} → ${resolution.luck_label || resolution.tier} (${luckShift >= 0 ? '+' : ''}${luckShift})`
-          : `주사위 ${resolution.roll} → 보정 후 ${resolution.net}${modStr}`
+        ? `주사위 ${resolution.roll} → 보정 후 ${resolution.net}${modStr}`
         : modStr ? modStr.slice(2) : '';
     } else {
       badge.style.display = 'none';
@@ -215,18 +248,22 @@ function _renderCombatMomentum(cs) {
 // ── 교전 기록 갱신
 const _LOG_COLOR = {
   critical_success: '#C5932A',
-  success:          '#5DBB8B',
-  partial:          '#EF9F27',
-  failure:          '#E24B4A',
-  critical_failure: '#8B2020',
+  major_success:    '#5DBB8B',
+  minor_success:    '#8BC5A8',
+  stalemate:        '#7F77DD',
+  minor_fail:       '#E09060',
+  major_fail:       '#E24B4A',
+  critical_fail:    '#8B2020',
   combat_luck:      '#7F77DD',
 };
 const _LOG_LABEL = {
-  critical_success: '대성공',
-  success:          '성공',
-  partial:          '부분',
-  failure:          '실패',
-  critical_failure: '대실패',
+  critical_success: '결정적 우세',
+  major_success:    '전술 우세',
+  minor_success:    '소폭 우세',
+  stalemate:        '교착',
+  minor_fail:       '소폭 열세',
+  major_fail:       '전술 열세',
+  critical_fail:    '결정적 열세',
   combat_luck:      '우연',
 };
 
@@ -236,10 +273,8 @@ function _renderCombatLog(cs) {
   const results = cs.phase_results || [];
   if (!results.length) return;
   log.innerHTML = results.map(r => {
-    const color = _LOG_COLOR[r.tier_en] || '#999';
-    const label = r.tier_en === 'combat_luck'
-      ? `${_LOG_LABEL[r.tier_en]} ${(r.luck_shift ?? 0) >= 0 ? '+' : ''}${r.luck_shift ?? 0}`
-      : _LOG_LABEL[r.tier_en] || r.tier_en;
+    const color = _LOG_COLOR[r.phase_outcome] || _LOG_COLOR[r.tier_en] || '#999';
+    const label = _LOG_LABEL[r.phase_outcome] || r.tier || _LOG_LABEL[r.tier_en] || r.tier_en || '?';
     return `<div class="c-log-item" style="border-left-color:${color}">
       <span class="c-log-phase">P${r.phase}</span>
       <span style="color:${color};font-weight:600">${label}</span>
@@ -301,6 +336,8 @@ function _renderCombatEnd(cs, content, resolution) {
 
   const retreatBtn = document.getElementById('c-retreat-btn');
   if (retreatBtn) retreatBtn.style.display = 'none';
+  const closeBtn = document.getElementById('c-close-btn');
+  if (closeBtn) closeBtn.style.display = 'none';
 
   _renderCombatScene(content, resolution);
 }
@@ -362,6 +399,8 @@ async function submitCombatTurn() {
 async function combatRetreat() {
   const retreatBtn = document.getElementById('c-retreat-btn');
   if (retreatBtn) { retreatBtn.disabled = true; retreatBtn.textContent = '후퇴 중…'; }
+  const closeBtn = document.getElementById('c-close-btn');
+  if (closeBtn) closeBtn.disabled = true;
 
   const scene = document.getElementById('c-scene');
   if (scene) scene.innerHTML = '<div class="scene-loading">후퇴 중…</div>';

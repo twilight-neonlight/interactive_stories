@@ -86,15 +86,6 @@ function applyStateUpdates(su) {
       if (fc.id && fc.delta != null) _state.updateFactionDiplomacy(fc.id, fc.delta);
     }
   }
-  if (Array.isArray(su.faction_disposition_changes)) {
-    for (const fc of su.faction_disposition_changes) {
-      const faction = _state.factions.get(fc.id);
-      if (faction && fc.disposition) {
-        faction.disposition     = fc.disposition;
-        faction.diplomacy_score = GameState._dispositionToScore(fc.disposition);
-      }
-    }
-  }
   if (Array.isArray(su.character_disposition_changes)) {
     for (const cc of su.character_disposition_changes) {
       const char = _state.characters.get(cc.id);
@@ -116,6 +107,9 @@ function applyStateUpdates(su) {
     for (const ic of su.faction_intel_changes) {
       if (ic.id && ic.delta != null) _state.updateFactionIntel(ic.id, ic.delta);
     }
+  }
+  if (typeof su.player_location_id === 'string' && _state.locations.has(su.player_location_id)) {
+    _state.progress.playerLocationId = su.player_location_id;
   }
   if (su.combat_state !== undefined) {
     _state.combatState = su.combat_state;

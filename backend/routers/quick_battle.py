@@ -9,7 +9,7 @@ from config        import SYSTEM_PROMPT
 from gemini_client import call_gemini
 from engine.turn   import extract_state_update
 from engine.resolver import (
-    combat_prep_prompt, _resolve_combat_luck,
+    combat_prep_prompt, _resolve_phase_dice,
 )
 
 router = APIRouter()
@@ -339,6 +339,8 @@ async def start_quick_battle(battle_id: str):
         "pending_phase_outcome": None,
         "pending_battle_damage": {p["id"]: 0, e["id"]: 0},
         "phase_results":         [],
+        "battle_location_name":  battle["title"],
+        "battle_year":           f"{battle['year']}년",
     }
     if allies:
         combat_state["player_coalition"] = [p["name"]] + [a["name"] for a in allies]
@@ -384,7 +386,7 @@ async def start_quick_battle(battle_id: str):
         "combatState": combat_state,
     }
 
-    resolution = _resolve_combat_luck("military")
+    resolution = _resolve_phase_dice("", state_json, "military")
 
     # ── LLM 호출: 전투 개시 장면 생성
     ally_lines       = "".join(f"아군 동맹 — {a['name']}: {a['notes']}\n" for a in allies)
@@ -410,8 +412,7 @@ async def start_quick_battle(battle_id: str):
     content, extra = extract_state_update(content)
     if isinstance(extra.get("enemy_next_action"), str):
         combat_state["enemy_next_action"] = extra["enemy_next_action"]
-    if extra.get("phase_outcome"):
-        combat_state["pending_phase_outcome"] = extra["phase_outcome"]
+    combat_state["pending_phase_outcome"] = resolution["phase_outcome"]
 
     return {
         "title":           battle["title"],

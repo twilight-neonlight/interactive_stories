@@ -55,6 +55,9 @@ N장 요약: 최소 8항목 표
 ```
 [STATE_UPDATE]
 {
+  "scene": 씬번호,
+  "chapter": 장번호,
+  "is_chapter_end": false,
   "new_characters": [{"id": "영문소문자_언더바", "name": "이름", "epithet": "별칭(없으면 빈 문자열)", "disposition": "동맹|우호|중립|비우호|적대|불명", "desc": "1-2문장 설명"}],
   "dead_characters": ["id1", "id2"],
   "new_factions": [{"id": "영문소문자_언더바", "name": "세력명", "type": "세력 유형", "disposition": "동맹|우호|중립|비우호|적대|불명", "strength": "extreme|very high|high|medium|low|very low|impotent", "notes": "1-2문장 설명"}],
@@ -69,15 +72,21 @@ N장 요약: 최소 8항목 표
   "faction_intel_changes": [{"id": "기존세력id", "delta": 숫자}],
   "new_locations": [{"id": "영문소문자_언더바", "name": "지명", "controller": "지배세력id", "terrain": "지형 특성", "notes": "1-2문장 설명"}],
   "location_changes": [{"id": "기존거점id", "controller": "새로운지배세력id"}],
+  "player_location_id": null,
+  "battle_location": null,
+  "battle_year": null,
   "player_coalition": ["세력명1", "세력명2"],
   "enemy_coalition":  ["세력명1", "세력명2"],
   "weather": null,
-  "phase_outcome": null,
+  "phase_outcome": null,  // 엔진이 자동 계산 — 출력 불필요 (null 유지)
   "combat_victor": null,
   "enemy_next_action": null
 }
 ```
 
+- `scene`: **필수.** 이번 씬의 씬 번호. 헤더의 `SCENE M`과 일치시킬 것. 장 종결이면 현재 씬 번호 유지.
+- `chapter`: **필수.** 이번 씬의 장 번호. 헤더의 `N장`과 일치시킬 것.
+- `is_chapter_end`: **필수.** 장 종결 씬이면 `true`, 그 외 `false`.
 - `new_characters`: 이번 씬에서 처음 등장하는 비중 있는 인물. 이미 등록된 인물은 생략.
 - `dead_characters`: 이번 씬에서 사망·제거 확정된 인물의 id 목록.
 - `new_factions`: 이번 씬에서 처음 개입하는 세력. 이미 등록된 세력은 생략.
@@ -89,7 +98,7 @@ N장 요약: 최소 8항목 표
 - `faction_strength_changes`: 세력의 **기반 강도** 변화. 정규 병력 증감·영토 획득/상실에 적용. 양측 모두 적용 가능. `delta` 범위 0–700.
   - 영토 1개 획득/상실: ±30~50 / 대규모 병력 충원·괴멸: ±80~120
   - 순수 전투 승패만으로는 적용하지 않는다 — 그것은 `faction_battle_damage`로 처리.
-- `faction_battle_damage`: **전투 페이즈 시스템 밖에서 발생한 전투**에만 사용. `phase_outcome`으로 처리된 전투는 시스템이 피해를 자동 산출하므로 이 필드를 출력하지 말 것. `damage`는 양수.
+- `faction_battle_damage`: **전투 페이즈 시스템 밖에서 발생한 전투**에만 사용. 전투 오버레이(combatState)로 처리된 전투는 엔진이 피해를 자동 산출하므로 이 필드를 출력하지 말 것. `damage`는 양수.
   - 피로스의 승리(대승이지만 손실 과다): 승자에게도 `faction_strength_changes`로 음수 delta 적용.
 - `faction_battle_recovery`: 시간 경과로 battle_damage를 경감. **게임 내 시간 1개월 이상 경과 시** 전투 중이 아닌 세력에 적용.
   - 1개월 경과: 20~30 / 1계절(3개월): 50~80 / 1년 이상: 완전 회복 가능
@@ -102,16 +111,13 @@ N장 요약: 최소 8항목 표
 - `faction_intel_changes`: 플레이어의 해당 세력에 대한 첩보 수준 변화. `delta`: +1(침투 부분 성공·성공), +2(대성공), -1(대실패).
 - `new_locations`: 이번 씬에서 새롭게 등장하는 거점. 이미 등록된 거점은 생략.
 - `location_changes`: 이번 씬에서 지배 세력이 바뀐 거점. `id`는 기존 locations의 id를 사용. `controller`는 반드시 현재 등록된 **factions의 id** 중 하나여야 하며, 인물 id·세력명·임의 문자열을 사용하면 안 된다.
+- `player_location_id`: 이번 씬에서 플레이어의 현재 거점이 바뀌거나 처음 확정된 경우. 반드시 현재 등록된 **locations의 id** 중 하나여야 한다. 변화 없으면 null.
 - `weather`: 날씨가 변한 경우에만 출력. 값: `"clear"` | `"rain"` | `"heavy_rain"` | `"snow"` | `"blizzard"` | `"heat"` | `"fog"` | `"storm"`. 유지되면 생략(null).
-- `phase_outcome`: **전투 진행 중 씬에서만** 사용. 이번 페이즈 행동 대결 결과를 플레이어 관점에서 기록. 반드시 아래 6가지 중 하나:
-  - `critical_success` — 적군 치명적인 피해, 아군 피해 없음
-  - `major_success`    — 적군 큰 피해, 아군 소폭 피해
-  - `minor_success`    — 아군 우세하나 결정적이지 않음
-  - `minor_fail`       — 적군 우세하나 결정적이지 않음
-  - `major_fail`       — 아군 큰 피해, 적군 소폭 피해
-  - `critical_fail`    — 아군 치명적인 피해, 적군 피해 없음
+- `phase_outcome`: **출력하지 말 것 (항상 null).** 페이즈 결과는 엔진(2d6 대결)이 자동으로 결정하며 LLM이 개입하지 않는다.
 - `combat_victor`: **전투 진행 중 씬에서** 전투가 사실상 종결되었다고 판단할 때만 사용. 적군이 붕괴·퇴각하면 `"player"`, 아군이 궤멸·패주하면 `"enemy"`. 진행 중이면 반드시 `null`.
 - `enemy_next_action`: **전투 진행 중 씬에서만** 사용. 적군이 다음 페이즈에 시도할 전술 행동을 1~2문장으로 기술. 전투가 종결된 씬에서는 출력하지 말 것.
+- `battle_location`: **전투 개시 씬에서만** 사용. 전투가 발생하는 지명 (예: `"필리베"`). 이후 씬에서는 null.
+- `battle_year`: **전투 개시 씬에서만** 사용. 전투 연도 (예: `"1403년"`). 이후 씬에서는 null.
 - `player_coalition` / `enemy_coalition`: **전투 개시 씬에서만** 사용. 이번 전장에 **물리적으로 존재하는** 연합 세력의 표시명 목록. 외교적으로 동맹이더라도 해당 씬에서 직접 언급·등장하지 않은 세력은 포함하지 않는다.
 
 ## Meta-Language Prohibition
