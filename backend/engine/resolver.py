@@ -335,24 +335,24 @@ def _apply_phase_morale(outcome: str,
                         player_morale: int, enemy_morale: int) -> tuple[int, int]:
     """페이즈 결과에 따라 양측 사기를 조정합니다."""
     if outcome == "critical_success":
-        player_morale += random.randint(8, 12)
-        enemy_morale  -= random.randint(25, 40)
+        player_morale += random.randint(5, 10)
+        enemy_morale  -= random.randint(35, 70)
     elif outcome == "major_success":
         player_morale += random.randint(3, 5)
-        enemy_morale  -= random.randint(10, 20)
+        enemy_morale  -= random.randint(15, 35)
     elif outcome == "minor_success":
-        enemy_morale  -= random.randint(3, 8)
+        enemy_morale  -= random.randint(7, 15)
     elif outcome == "stalemate":
-        player_morale -= random.randint(1, 3)
-        enemy_morale  -= random.randint(1, 3)
+        player_morale -= random.randint(3, 7)
+        enemy_morale  -= random.randint(3, 7)
     elif outcome == "minor_fail":
-        player_morale -= random.randint(3, 8)
+        player_morale -= random.randint(7, 15)
     elif outcome == "major_fail":
         enemy_morale  += random.randint(3, 5)
-        player_morale -= random.randint(10, 20)
+        player_morale -= random.randint(15, 35)
     elif outcome == "critical_fail":
-        enemy_morale  += random.randint(8, 12)
-        player_morale -= random.randint(25, 40)
+        enemy_morale  += random.randint(5, 10)
+        player_morale -= random.randint(35, 70)
     return max(0, min(100, player_morale)), max(0, min(100, enemy_morale))
 
 
@@ -539,7 +539,7 @@ def init_combat_phase(command: str, state: dict,
 
 def advance_combat_phase(command: str, state: dict,
                          quality_modifier=None) -> tuple[dict, dict]:
-    """전투 페이즈 한 턴: 이전 phase_outcome 적용 → 사기 붕괴 확인 → 이번 페이즈 주사위."""
+    """전투 페이즈 한 턴: 이전 phase_outcome 피해 적용 → 이번 주사위 사기 즉시 반영 → 사기 붕괴 확인."""
     cs          = state.get("combatState", {})
     action_type = classify_action_type(command)
     if action_type not in ("military", "surprise", "defense"):
@@ -557,16 +557,18 @@ def advance_combat_phase(command: str, state: dict,
     p_str = cs.get("player_strength", 100)
     e_str = cs.get("enemy_strength",  100)
 
-    # 이전 턴 phase_outcome 적용 (사기 + 피해 누적)
+    # 이전 턴 phase_outcome → 피해 누적 (deferred)
     if pending_outcome:
-        player_morale, enemy_morale = _apply_phase_morale(
-            pending_outcome, player_morale, enemy_morale
-        )
         p_label, e_label = combat_damage_labels(pending_outcome)
         p_ratio = e_str / max(1, p_str)
         e_ratio = p_str / max(1, e_str)
         if p_fid: pending[p_fid] = pending.get(p_fid, 0) + calc_phase_damage(p_label, p_ratio)
         if e_fid: pending[e_fid] = pending.get(e_fid, 0) + calc_phase_damage(e_label, e_ratio)
+
+    # 이번 턴 phase_outcome → 사기 즉시 적용
+    player_morale, enemy_morale = _apply_phase_morale(
+        resolution["phase_outcome"], player_morale, enemy_morale
+    )
 
     morale_collapse = player_morale <= 0 or enemy_morale <= 0
     if morale_collapse:

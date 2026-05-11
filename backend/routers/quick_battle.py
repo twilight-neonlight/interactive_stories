@@ -34,12 +34,12 @@ QUICK_BATTLES: dict[str, dict] = {
             "발렌스 황제로서 이 위기에 어떻게 대응할 것인가?"
         ),
         "player": {
-            "id": "eastern-rome", "name": "동로마 야전군", "color": "#7F77DD",
+            "id": "eastern-rome", "name": "동로마", "color": "#7F77DD",
             "strength_score": 750, "field_army": 15000,
             "notes": "황제 발렌스 직접 지휘. 정예 레기온이지만 서방 증원 없이 단독 공세.",
         },
         "enemy": {
-            "id": "visigoths", "name": "서고트 연합군", "color": "#C5932A",
+            "id": "visigoths", "name": "서고트 연합", "color": "#C5932A",
             "strength_score": 1000, "field_army": 20000,
             "notes": "프리티게른 지휘. 전차 방어진 뒤에 대규모 기병 매복.",
         },
@@ -62,12 +62,12 @@ QUICK_BATTLES: dict[str, dict] = {
             "기병의 속도와 충격력은 보병 전열에 엄청난 압박을 가한다."
         ),
         "player": {
-            "id": "franks", "name": "프랑크 왕국군", "color": "#5DBB8B",
+            "id": "franks", "name": "프랑크 왕국", "color": "#5DBB8B",
             "strength_score": 833, "field_army": 25000,
             "notes": "카를 마르텔 지휘. 중무장 보병 전열. 지형 우위(언덕). 기병 전력 부재.",
         },
         "enemy": {
-            "id": "umayyad-caliphate", "name": "우마이야 칼리파국군", "color": "#C5932A",
+            "id": "umayyad-caliphate", "name": "우마이야 칼리파국", "color": "#C5932A",
             "strength_score": 1333, "field_army": 40000,
             "notes": "압드 알-라흐만 지휘. 빠른 경기병 중심. 장거리 원정으로 피로 누적.",
         },
@@ -145,7 +145,7 @@ QUICK_BATTLES: dict[str, dict] = {
             },
         ],
         "enemy": {
-            "id": "almohad-caliphate", "name": "알모아드 칼리파국군", "color": "#8B2020",
+            "id": "almohad-caliphate", "name": "알모아드 칼리파국", "color": "#8B2020",
             "strength_score": 667, "field_army": 30000,
             "notes": "무함마드 알-나시르 지휘. 정예 흑인 친위대가 쇠사슬로 연결된 중앙 방어진 구축. 수적 우위.",
         },
@@ -185,7 +185,7 @@ QUICK_BATTLES: dict[str, dict] = {
             },
         ],
         "enemy": {
-            "id": "ottoman-empire", "name": "오스만 제국군", "color": "#C5932A",
+            "id": "ottoman-empire", "name": "오스만 제국", "color": "#C5932A",
             "strength_score": 333, "field_army": 20000,
             "notes": "바야지트 1세 지휘. 예니체리 정예보병과 시파히 기병. 세르비아 보조군 후방 대기.",
         },
@@ -214,7 +214,7 @@ QUICK_BATTLES: dict[str, dict] = {
             "notes": "호레이쇼 게이츠 지휘. 모건의 저격수 부대와 아놀드의 돌격대. 요새화된 방어선.",
         },
         "enemy": {
-            "id": "british-crown", "name": "영국 왕당파군", "color": "#C5932A",
+            "id": "british-crown", "name": "영국 왕당파", "color": "#C5932A",
             "strength_score": 120, "field_army": 6000,
             "notes": "버고인 지휘. 보급 고갈, 독일 용병 포함. 포위 위기에 처한 정규군.",
         },
@@ -237,18 +237,18 @@ QUICK_BATTLES: dict[str, dict] = {
             "생-일레르와 반담의 사단이 돌파 준비를 마쳤다. 황제, 명령을 내릴 시간이다."
         ),
         "player": {
-            "id": "french-empire", "name": "프랑스 제국군", "color": "#7F77DD",
+            "id": "french-empire", "name": "프랑스 제국", "color": "#7F77DD",
             "strength_score": 365, "field_army": 73000,
             "notes": "나폴레옹 보나파르트 지휘. 대육군(그랑다르메). 병사들의 사기 최고조. 기동 집중력 탁월.",
         },
         "enemy": {
-            "id": "austrian-empire", "name": "오스트리아 제국군", "color": "#8B2020",
+            "id": "austrian-empire", "name": "오스트리아 제국", "color": "#8B2020",
             "strength_score": 190, "field_army": 38000,
             "notes": "프란츠 2세 명목 지휘. 좌익 우회 기동을 주도.",
         },
         "enemy_ally": [
             {
-                "id": "russian-empire", "name": "러시아 제국군", "color": "#8B2020",
+                "id": "russian-empire", "name": "러시아 제국", "color": "#8B2020",
                 "strength_score": 235, "field_army": 47000,
                 "notes": "알렉산드르 1세·쿠투조프 지휘. 프라체 고지 방면 좌익 공세 주도.",
             },

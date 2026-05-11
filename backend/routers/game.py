@@ -86,7 +86,7 @@ async def process_turn(req: TurnRequest):
                 sys_prompt_tail = combat_end_prompt(new_combat_state, resolution)
             else:
                 completed_phase = new_combat_state.get("phase_number", 2) - 1
-                sys_prompt_tail = combat_ongoing_prompt(completed_phase, combat_state_in, resolution)
+                sys_prompt_tail = combat_ongoing_prompt(completed_phase, new_combat_state, resolution)
     else:
         # ── 일반 턴 ───────────────────────────────────────────────────────────
         # 키워드 분류 (quality evaluator 힌트용 + needs_resolution 판단)
