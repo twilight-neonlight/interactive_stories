@@ -13,12 +13,27 @@ from engine.resolver import (
     resolve_action, resolution_prompt, needs_resolution, classify_action_type,
     init_combat_phase, advance_combat_phase, resolve_retreat,
     combat_prep_prompt, combat_ongoing_prompt, combat_end_prompt,
-    _MIN_PHASES_BEFORE_VICTOR,
+    calc_stat_modifier, _MIN_PHASES_BEFORE_VICTOR,
 )
 from engine.classifier import classify_action_llm, CLS_TO_RESOLVER
 from engine.quality    import evaluate_action_quality
 from engine.turn       import turn_engine, extract_state_update, extract_timestamp
-from engine.context    import build_scenario_context, build_opening_npc_context, OPENING_INSTRUCTION
+from engine.context    import build_scenario_context, build_opening_context, OPENING_INSTRUCTION
+
+
+_ACTION_STAT_KEY: dict[str, str] = {
+    'military':   '통솔',
+    'defense':    '통솔',
+    'surprise':   '지략',
+    'diplomatic': '외교',
+    'intrigue':   '지략',
+}
+
+
+def _build_modifiers(*mods) -> list[tuple[str, int]] | None:
+    """None 제거 후 수정치 리스트 반환. 빈 경우 None."""
+    result = [m for m in mods if m is not None]
+    return result if result else None
 
 
 async def _async_none():
@@ -43,15 +58,18 @@ class OpeningRequest(BaseModel):
     state: dict
 
 
+def _get_scenario_prompts(state: dict) -> dict:
+    scenario_id   = state.get("scenarioId", "")
+    scenario_data = next((s for s in SCENARIOS if s["id"] == scenario_id), None)
+    return scenario_data.get("scenario_prompts", {}) if scenario_data else {}
+
+
 @router.post("/api/opening")
 async def generate_opening(req: OpeningRequest):
-    scenario_id   = req.state.get("scenarioId", "")
-    scenario_data = next((s for s in SCENARIOS if s["id"] == scenario_id), None)
-    npc_pool      = scenario_data.get("npc_pool", {}) if scenario_data else {}
-
+    scenario_prompts = _get_scenario_prompts(req.state)
     full_system = (SYSTEM_PROMPT
-                   + build_scenario_context(req.state)
-                   + build_opening_npc_context(req.state, npc_pool)
+                   + build_scenario_context(req.state, scenario_prompts=scenario_prompts)
+                   + build_opening_context(req.state)
                    + OPENING_INSTRUCTION)
     content = await call_gemini([
         {"role": "system", "content": full_system},
@@ -81,7 +99,12 @@ async def process_turn(req: TurnRequest):
             if combat_action_type not in ("military", "surprise", "defense"):
                 combat_action_type = "military"
             quality_mod = await evaluate_action_quality(req.command, req.state, combat_action_type)
-            resolution, new_combat_state = advance_combat_phase(req.command, req.state, quality_mod)
+            stat_key    = _ACTION_STAT_KEY.get(combat_action_type, '통솔')
+            enemy_fid   = combat_state_in.get("enemy_faction_id")
+            stat_mod    = calc_stat_modifier(req.state, stat_key, enemy_fid)
+            resolution, new_combat_state = advance_combat_phase(
+                req.command, req.state, _build_modifiers(quality_mod, stat_mod)
+            )
             if new_combat_state.get("ended"):
                 sys_prompt_tail = combat_end_prompt(new_combat_state, resolution)
             else:
@@ -89,10 +112,8 @@ async def process_turn(req: TurnRequest):
                 sys_prompt_tail = combat_ongoing_prompt(completed_phase, new_combat_state, resolution)
     else:
         # ── 일반 턴 ───────────────────────────────────────────────────────────
-        # 키워드 분류 (quality evaluator 힌트용 + needs_resolution 판단)
         kw_type = classify_action_type(req.command)
 
-        # LLM 분류 + quality 평가 병렬 실행
         cls, quality_mod = await asyncio.gather(
             classify_action_llm(req.command, req.state),
             evaluate_action_quality(req.command, req.state, kw_type)
@@ -101,20 +122,28 @@ async def process_turn(req: TurnRequest):
 
         cls_type      = cls.get("type", "general")
         resolver_type = CLS_TO_RESOLVER.get(cls_type, "general")
+        target_fid    = cls.get("target_faction_id")
 
         if cls_type in ("open_field", "ambush", "siege_attack"):
+            stat_key = _ACTION_STAT_KEY.get(resolver_type, '통솔')
+            stat_mod = calc_stat_modifier(req.state, stat_key, target_fid)
             resolution, new_combat_state = init_combat_phase(
-                req.command, req.state, quality_mod, classification=cls
+                req.command, req.state,
+                _build_modifiers(stat_mod), classification=cls
             )
             sys_prompt_tail = combat_prep_prompt(new_combat_state, resolution)
         else:
-            resolution      = resolve_action(
+            stat_key = _ACTION_STAT_KEY.get(resolver_type)
+            stat_mod = calc_stat_modifier(req.state, stat_key, target_fid) if stat_key else None
+            resolution = resolve_action(
                 req.command, req.state,
-                quality_modifier=quality_mod, action_type=resolver_type,
+                extra_modifiers=_build_modifiers(quality_mod, stat_mod),
+                action_type=resolver_type,
             )
             sys_prompt_tail = resolution_prompt(resolution)
 
-    full_system = SYSTEM_PROMPT + build_scenario_context(req.state) + sys_prompt_tail
+    scenario_prompts = _get_scenario_prompts(req.state)
+    full_system = SYSTEM_PROMPT + build_scenario_context(req.state, scenario_prompts=scenario_prompts) + sys_prompt_tail
 
     messages  = [{"role": "system", "content": full_system}]
     messages += [{"role": m.role, "content": m.content} for m in req.history]

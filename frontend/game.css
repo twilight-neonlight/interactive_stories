@@ -99,6 +99,16 @@ body {
 .stat-key { color: var(--text-secondary); font-family: sans-serif; }
 .stat-val  { color: var(--text-primary); font-weight: 600; font-family: sans-serif; }
 
+/* ── 능력치 등급 그리드 */
+.ability-grid {
+  display: grid; grid-template-columns: repeat(5, 1fr);
+  gap: 4px; margin-top: 10px; padding-top: 8px;
+  border-top: 1px solid var(--border-light);
+}
+.ability-cell     { display: flex; flex-direction: column; align-items: center; gap: 3px; }
+.ability-cell-key { font-size: 9px; color: var(--text-tertiary); font-family: sans-serif; letter-spacing: 0.04em; }
+.ability-grade    { font-size: 13px; font-weight: 700; font-family: sans-serif; color: var(--text-secondary); line-height: 1; }
+
 /* ── 스크롤 패널 ── */
 .scroll-panel { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
 .scroll-inner {

@@ -123,42 +123,6 @@ function _buildEventStateContext(events, baseContext) {
 }
 
 /**
- * 가중치 기반 다양성 픽업.
- * 1차 패스: 우호·중립·적대 각 한 명씩 확보 (성향 다양성 보장)
- * 2차 패스: 남은 슬롯을 가중치 랜덤으로 채움
- */
-function weightedPickDiverse(pool, count) {
-  if (!pool.length) return [];
-
-  function weightedPick(candidates) {
-    const total = candidates.reduce((s, n) => s + (n.weight ?? 1), 0);
-    let r = Math.random() * total;
-    for (const n of candidates) { r -= (n.weight ?? 1); if (r <= 0) return n; }
-    return candidates[candidates.length - 1];
-  }
-
-  const result = [];
-  const remaining = [...pool];
-
-  for (const disp of ['우호', '중립', '적대']) {
-    if (result.length >= count) break;
-    const group = remaining.filter(n => n.disposition === disp);
-    if (!group.length) continue;
-    const chosen = weightedPick(group);
-    result.push(chosen);
-    remaining.splice(remaining.indexOf(chosen), 1);
-  }
-
-  while (result.length < count && remaining.length) {
-    const chosen = weightedPick(remaining);
-    result.push(chosen);
-    remaining.splice(remaining.indexOf(chosen), 1);
-  }
-
-  return result;
-}
-
-/**
  * field_army가 없는 세력에 대해 strength_score × troopsPerPoint 로 field_army를 초기화한다.
  * 동적으로 추가된 세력(무스타파, 티무르 원정군 등)이 대상이며, 이미 field_army가 있으면 무시.
  */
@@ -170,46 +134,6 @@ function _recomputeStrengthScores(state) {
       f.field_army = Math.round(f.strength_score * tpp);
     }
   }
-}
-
-/**
- * 게임 시작 시 NPC 풀에서 휘하 인물을 생성한다.
- * - 군주/영주(faction type: kingdom·faction·empire, 또는 title에 왕·군주 등): 3–5명 (성향 다양)
- * - 일반 장군·지휘관: 1–2명
- * - start_eligible: false 항목과 require_location 조건 미충족 항목은 제외
- *   (require_location 항목은 이벤트 중 AI가 npc-pool을 참조해 별도 등장)
- */
-function defaultOnInit(state) {
-  const key  = state.protagonist || 'default';
-  const pool = (state.npcPool ?? {})[key] ?? (state.npcPool ?? {})['default'] ?? [];
-  if (!pool.length) return;
-
-  const char = state.characters.get(state.protagonist);
-  const homeFactionId = char?.faction_id || char?.faction
-    || (state.factions.has(state.protagonist) ? state.protagonist : null);
-  const ownFaction    = state.factions.get(homeFactionId);
-
-  const lordTitles = ['왕', '군주', '영주', '왕자', '칼리프', '술탄', '황제'];
-  const isMonarch  = lordTitles.some(t => char?.title?.includes(t))
-    || ['kingdom', 'faction', 'empire'].includes(ownFaction?.type);
-  const count = isMonarch
-    ? 3 + Math.floor(Math.random() * 3)  // 3–5명
-    : 1 + Math.floor(Math.random() * 2); // 1–2명
-
-  const eligible = pool.filter(npc => {
-    if (npc.start_eligible === false) return false;
-    if (npc.require_location?.length) {
-      return npc.require_location.some(
-        locId => state.locations.get(locId)?.controller === homeFactionId
-      );
-    }
-    return true;
-  });
-
-  for (const pick of weightedPickDiverse(eligible, count)) {
-    state.addCharacter(structuredClone(pick));
-  }
-  _recomputeStrengthScores(state);
 }
 
 /** troops_count 숫자를 읽기 좋은 문자열로 변환 */
@@ -270,15 +194,15 @@ function defaultOnTurnEnd(state) {
  * - 표시 필드: 직위 / 병력 / 거점 / 동맹
  */
 function defaultCommanderInfo(state) {
-  let name = '불명', sub = '—', title = '불명', strength = '불명', base = '불명';
+  let name = '불명', sub = '—', strength = '불명';
   let ownFactionId = null;
+  let charStats = null;
 
   if (state.protagonist) {
     const char = state.characters.get(state.protagonist);
     if (char) {
-      name         = char.name;
-      title        = char.birth_label || char.title || char.epithet || '불명';
-      base         = char.base ? char.base.split(' — ')[0] : '불명';
+      name      = char.name;
+      charStats = char.stats ?? null;
       if (char.troops_count != null) {
         strength = formatTroops(char.troops_count);
       }
@@ -329,11 +253,7 @@ function defaultCommanderInfo(state) {
     }
   }
 
-  return { name, sub, fields: [
-    { key: '직위', val: title },
-    { key: '병력', val: strength },
-    { key: '거점', val: base },
-  ]};
+  return { name, sub, strength, stats: charStats };
 }
 
 function defaultMapMarkerStyle(loc, state) {
@@ -409,7 +329,6 @@ const CONFIGS = {
     },
 
     initDispositions(_state) { /* factions.json 기본값 사용 */ },
-    onInit: defaultOnInit,
     onTurnEnd: defaultOnTurnEnd,
   },
 
@@ -517,8 +436,6 @@ const CONFIGS = {
         }
       }
     },
-
-    onInit: defaultOnInit,
 
     onTurnEnd(state) {
       defaultOnTurnEnd(state);
@@ -775,7 +692,6 @@ const CONFIGS = {
       // jan-kazimierz: factions.json 기본값이 왕 시점 — 별도 조정 없음
     },
 
-    onInit: defaultOnInit,
     onTurnEnd: defaultOnTurnEnd,
   },
 

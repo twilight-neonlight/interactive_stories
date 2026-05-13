@@ -5,9 +5,9 @@ LLM 호출 전에 주사위 + 수정치로 결과 등급을 결정합니다.
 결정된 등급은 시스템 프롬프트에 주입되어 LLM의 서술 방향을 조정합니다.
 
 일반 행동 판정 수정치 구성:
-  군사 — 지형(고정) + 날씨 + LLM 품질 평가(최대 ±2)
-  외교 — LLM 품질 평가(최대 ±2)
-  첩보 — LLM 품질 평가(최대 ±2)
+  군사 — 지형(고정) + 날씨 + LLM 품질 평가(최대 ±2) + 능력치 등급차(최대 ±3)
+  외교 — LLM 품질 평가(최대 ±2) + 능력치 등급차(최대 ±3)
+  첩보 — LLM 품질 평가(최대 ±2) + 능력치 등급차(최대 ±3)
 
 전투 시스템 — 2d6 대결 방식:
   각 페이즈: 아군 2d6 vs 적군 2d6. 차이(−10~+10)에 지형·날씨·성벽(tier 기반)·품질 수정치를 더해
@@ -36,6 +36,48 @@ _ACTION_LABELS = {
     "passive":    "서술",
     "general":    "일반",
 }
+
+# ── 능력치 등급 수치화 (E- = 0 … S+ = 17, 기준 C = 7)
+_GRADE_SCALE = ['E-','E','E+','D-','D','D+','C-','C','C+','B-','B','B+','A-','A','A+','S-','S','S+']
+_GRADE_IDX   = {g: i for i, g in enumerate(_GRADE_SCALE)}
+
+def _grade_to_num(grade: str | None) -> int:
+    return _GRADE_IDX.get(grade, 7) if grade else 7
+
+def _diff_to_mod(diff: int) -> int:
+    if diff >=  6: return  3
+    if diff >=  3: return  2
+    if diff >=  1: return  1
+    if diff >= -2: return  0
+    if diff >= -5: return -2
+    return -3
+
+def calc_stat_modifier(state: dict, stat_key: str,
+                       opponent_faction_id: str | None = None) -> tuple[str, int] | None:
+    """플레이어-상대 등급차 수정치. 차이 0 또는 양측 stats 없으면 None."""
+    protagonist = state.get('protagonist')
+    if not protagonist:
+        return None
+    chars        = state.get('characters', {})
+    player_grade = (chars.get(protagonist) or {}).get('stats', {}).get(stat_key)
+
+    opp_grade = None
+    if opponent_faction_id:
+        for cid, c in chars.items():
+            if cid == protagonist:
+                continue
+            if c.get('faction_id') == opponent_faction_id:
+                grade = (c.get('stats') or {}).get(stat_key)
+                if grade is not None:
+                    opp_grade = grade
+                    break
+
+    diff = _grade_to_num(player_grade) - _grade_to_num(opp_grade)
+    mod  = _diff_to_mod(diff)
+    if mod == 0:
+        return None
+    return (f"{stat_key} 등급차", mod)
+
 
 # 날씨 유형 → (공격측 수정치, 방어측 수정치, 레이블)
 # 방어측(is_defense=True) 기준: 양수=유리, 음수=불리
@@ -172,12 +214,9 @@ def _graded_resolution(action_type: str, roll: int, modifiers: list[tuple[str, i
 
 
 def _resolve_military_action(action_type: str,
-                              quality_modifier: tuple[str, int] | None = None) -> dict:
+                              extra_modifiers: list[tuple[str, int]] | None = None) -> dict:
     roll      = sum(random.randint(1, 6) for _ in range(4))
-    modifiers: list[tuple[str, int]] = []
-
-    if quality_modifier:
-        modifiers.append(quality_modifier)
+    modifiers = list(extra_modifiers) if extra_modifiers else []
 
     res = _graded_resolution(action_type, roll, modifiers)
     res["luck_label"] = res["tier"]
@@ -212,8 +251,8 @@ def _net_to_phase_outcome(net: int) -> str:
 
 
 def _resolve_phase_dice(command: str, state: dict, action_type: str,
-                        quality_modifier: tuple[str, int] | None = None) -> dict:
-    """전투 페이즈 주사위. (아군 2d6 − 적군 2d6) + 지형 + 날씨 + 전술 품질 → phase_outcome."""
+                        extra_modifiers: list[tuple[str, int]] | None = None) -> dict:
+    """전투 페이즈 주사위. (아군 2d6 − 적군 2d6) + 지형 + 날씨 + 수정치 합산 → phase_outcome."""
     a = sum(random.randint(1, 6) for _ in range(2))  # 아군 2d6
     b = sum(random.randint(1, 6) for _ in range(2))  # 적군 2d6
     roll = a - b                                      # 대결 차이: -10 ~ +10
@@ -222,8 +261,8 @@ def _resolve_phase_dice(command: str, state: dict, action_type: str,
     is_defense = action_type == "defense"
     modifiers.extend(_terrain_modifier(command, state, is_defense))
     modifiers.extend(_weather_modifier(state, is_defense))
-    if quality_modifier:
-        modifiers.append(quality_modifier)
+    if extra_modifiers:
+        modifiers.extend(extra_modifiers)
 
     net           = roll + sum(v for _, v in modifiers)
     phase_outcome = _net_to_phase_outcome(net)
@@ -240,23 +279,15 @@ def _resolve_phase_dice(command: str, state: dict, action_type: str,
     }
 
 
-def _resolve_diplomatic_action(quality_modifier: tuple[str, int] | None = None) -> dict:
+def _resolve_diplomatic_action(extra_modifiers: list[tuple[str, int]] | None = None) -> dict:
     roll      = sum(random.randint(1, 6) for _ in range(4))
-    modifiers: list[tuple[str, int]] = []
-
-    if quality_modifier:
-        modifiers.append(quality_modifier)
-
+    modifiers = list(extra_modifiers) if extra_modifiers else []
     return _graded_resolution("diplomatic", roll, modifiers)
 
 
-def _resolve_intrigue_action(quality_modifier: tuple[str, int] | None = None) -> dict:
+def _resolve_intrigue_action(extra_modifiers: list[tuple[str, int]] | None = None) -> dict:
     roll      = sum(random.randint(1, 6) for _ in range(4))
-    modifiers: list[tuple[str, int]] = []
-
-    if quality_modifier:
-        modifiers.append(quality_modifier)
-
+    modifiers = list(extra_modifiers) if extra_modifiers else []
     return _graded_resolution("intrigue", roll, modifiers)
 
 
@@ -265,7 +296,7 @@ def needs_resolution(command: str) -> bool:
 
 
 def resolve_action(command: str, state: dict,
-                   quality_modifier: tuple[str, int] | None = None,
+                   extra_modifiers: list[tuple[str, int]] | None = None,
                    action_type: str | None = None) -> dict:
     if action_type is None:
         action_type = classify_action_type(command)
@@ -273,11 +304,11 @@ def resolve_action(command: str, state: dict,
         return _narrative_resolution(action_type)
 
     if action_type in {"military", "surprise", "defense"}:
-        return _resolve_military_action(action_type, quality_modifier)
+        return _resolve_military_action(action_type, extra_modifiers)
     if action_type == "diplomatic":
-        return _resolve_diplomatic_action(quality_modifier)
+        return _resolve_diplomatic_action(extra_modifiers)
     if action_type == "intrigue":
-        return _resolve_intrigue_action(quality_modifier)
+        return _resolve_intrigue_action(extra_modifiers)
     return _narrative_resolution(action_type)
 
 
@@ -444,7 +475,7 @@ _SIEGE_TERRAIN_MULT: dict[str, float] = {
 
 
 def init_combat_phase(command: str, state: dict,
-                      quality_modifier=None,
+                      extra_modifiers: list[tuple[str, int]] | None = None,
                       classification: dict | None = None) -> tuple[dict, dict]:
     """전투 개시: 준비 단계 판정 + combat_state 초기화.
 
@@ -513,8 +544,8 @@ def init_combat_phase(command: str, state: dict,
     if player_fid: pending[player_fid] = 0
     if enemy_fid:  pending[enemy_fid]  = 0
 
-    # 개시 페이즈 주사위 (적 예고 행동 없으므로 quality modifier 없이 지형·날씨만 반영)
-    resolution = _resolve_phase_dice(command, state, action_type)
+    # 개시 페이즈 주사위 (적 예고 행동 없으므로 quality modifier 없음, stat modifier는 반영)
+    resolution = _resolve_phase_dice(command, state, action_type, extra_modifiers)
 
     combat_state = {
         "active":                True,
@@ -538,14 +569,14 @@ def init_combat_phase(command: str, state: dict,
 
 
 def advance_combat_phase(command: str, state: dict,
-                         quality_modifier=None) -> tuple[dict, dict]:
+                         extra_modifiers: list[tuple[str, int]] | None = None) -> tuple[dict, dict]:
     """전투 페이즈 한 턴: 이전 phase_outcome 피해 적용 → 이번 주사위 사기 즉시 반영 → 사기 붕괴 확인."""
     cs          = state.get("combatState", {})
     action_type = classify_action_type(command)
     if action_type not in ("military", "surprise", "defense"):
         action_type = "military"
 
-    resolution = _resolve_phase_dice(command, state, action_type, quality_modifier)
+    resolution = _resolve_phase_dice(command, state, action_type, extra_modifiers)
 
     phase_number    = cs.get("phase_number", 1)
     player_morale   = cs.get("player_morale", 100)

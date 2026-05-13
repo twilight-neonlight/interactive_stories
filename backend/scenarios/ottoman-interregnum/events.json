@@ -22,7 +22,7 @@
   },
   {
     "id": "timur_warning",
-    "name": "티무르의 경고서", "sub": "1402~1404년 · 사마르칸트→아나톨리아",
+    "name": "티무르의 경고서", "sub": "1402~1404년 · 아나톨리아?",
     "trigger_condition": "germiyanids_defeated and year < 1405 or tekke_defeated and year < 1405 or jandarids_defeated and year < 1405",
     "end_condition": "year >= 1405",
     "body": "티무르가 복권시킨 베이릭 중 하나가 무너졌다는 소식이 사마르칸트에 전해졌다. 그를 노골적으로 무시한 행위로, 사절을 통해 무너뜨린 공국을 복원하라는 강경 경고가 전달됐다. 복권된 공국들을 건드리지 말라는 것이 티무르의 분명한 뜻이다. 이대로 시간을 보내면 재침의 빌미로 삼을 것이다.",
@@ -34,7 +34,7 @@
   {
     "id": "karaman_ambition",
     "name": "카라만의 아나톨리아 패권 시도", "sub": "1402년~ · 아나톨리아 중남부",
-    "end_condition": "karamanids_defeated or civil_war_ended and karamanids_score >= 34 or karaman_dominance_active",
+    "end_condition": "karamanids_defeated or civil_war_ended and player_strength > karamanids_strength or karaman_dominance_active",
     "body": "오스만 공위 분쟁을 틈타 중앙 아나톨리아에서 영향력을 확대하는 중이다. 내전이 길어질수록 위험성이 커진다. 가장 먼저 맞닥뜨릴 외부 위협.",
     "effects": [
       { "key": "카라만 성장", "desc": "내전 방치 중 연간 세력 확대 (+15)", "type": "faction_growth", "frequency": "annual", "value": 15, "target": "karamanids" }
@@ -44,7 +44,7 @@
   {
     "id": "karaman_dominance",
     "name": "카라만의 아나톨리아 지배 공고화", "sub": "1413년 이후 · 아나톨리아 중남부",
-    "trigger_condition": "year >= 1413 and karamanids_defeated == false",
+    "trigger_condition": "year >= 1413 and karaman_ambition_ended == false",
     "end_condition": "karamanids_defeated or karamanids_score >= 34",
     "body": "10년 넘게 오스만 내전의 어부지리를 누린 카라만이 사실상 아나톨리아 패권을 확립했다. 중부 고원의 주요 교역로와 요충지를 장악하고 있으며, 이제는 공위 분쟁의 승자를 상대로도 대등하게 협상을 요구할 수 있는 위치에 올라섰다.",
     "effects": [
@@ -131,6 +131,22 @@
       { "key": "이중 전선", "desc": "비잔틴과 무스타파를 동시에 상대해야 하는 구도" }
     ],
     "dot": "#9B59B6", "region": "콘스탄티노플·루멜리아", "badge": "badge-ongoing", "badgeText": "위협 현실화"
+  },
+  {
+    "id": "aydinid_return",
+    "name": "아이딘 왕조의 귀환",
+    "sub": "1404년 · 서부 아나톨리아",
+    "trigger_condition": "year >= 1404 and smyrna_contested",
+    "end_condition": "smyrna_contested == false",
+    "body": "티무르 침공으로 와해됐던 아이딘 왕조 잔존 세력이 에게해 연안에 재집결했다. 스미르나의 공백을 틈타 옛 영토 회복에 나섰다.",
+    "prompt": "아이딘 왕조 잔존 세력이 스미르나를 실효 점거했다. 이번 응답에서 이 사건을 서술에 반영하고, STATE_UPDATE의 new_factions에 아이딘 왕조(id: aydinids, name: 아이딘 왕조, type: emirate, strength_score 90~100, color: #7A9E5A)를 추가하라. 동시에 location_changes로 smyrna의 controller를 aydinids로 갱신하라.",
+    "effects": [
+      { "key": "거점 확보", "desc": "스미르나 장악 — 에게해 연안 교역·항구 통제권 획득" }
+    ],
+    "dot": "#7A9E5A",
+    "region": "서부 아나톨리아",
+    "badge": "badge-ongoing",
+    "badgeText": "부활"
   },
   {
     "id": "bulgarian_revolt",

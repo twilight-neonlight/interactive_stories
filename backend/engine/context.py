@@ -60,6 +60,38 @@ def _event_condition_context(state: dict, current_year: int | None) -> dict:
     protagonist = state.get("protagonist")
     if prince_ids:
         ctx["active_princes"] = sum(1 for pid in prince_ids if pid != protagonist)
+
+    # faction_vars 세력: {id}_defeated, {id}_strength 변수 추가
+    faction_vars = (state.get("eventContext") or {}).get("faction_vars", [])
+    for fid in faction_vars:
+        f = facs.get(fid, {})
+        ctx[f"{fid}_defeated"] = bool(f.get("defeated", False))
+        ctx[f"{fid}_strength"] = max(0, (f.get("strength_score") or 0) - (f.get("battle_damage") or 0))
+
+    # location_vars 거점: {id}_contested 변수 추가
+    location_vars = (state.get("eventContext") or {}).get("location_vars", [])
+    for lid in location_vars:
+        loc = locs.get(lid, {})
+        ctx[f"{lid}_contested"] = (loc.get("controller", "") == "contested")
+
+    # 플레이어 세력 유효 전력
+    if protagonist:
+        chars = state.get("characters", {})
+        pc    = chars.get(protagonist, {})
+        pfid  = pc.get("faction_id") or (protagonist if protagonist in facs else None)
+        pf    = facs.get(pfid, {}) if pfid else {}
+        ctx["player_strength"] = max(0, (pf.get("strength_score") or 0) - (pf.get("battle_damage") or 0))
+
+    # 이벤트 상태 플래그: {event_id}_active, {event_id}_ended
+    for ev in state.get("events", []):
+        eid = ev.get("id")
+        if not eid:
+            continue
+        triggered = _evaluate_event_condition(_event_condition_expr(ev), ctx)
+        ended     = bool(ev.get("end_condition")) and _evaluate_event_condition(ev["end_condition"], ctx)
+        ctx[f"{eid}_active"] = triggered and not ended
+        ctx[f"{eid}_ended"]  = ended
+
     return ctx
 
 
@@ -161,8 +193,9 @@ def _extract_trigger_year(ev: dict) -> int | None:
     return None
 
 
-def build_scenario_context(state: dict) -> str:
+def build_scenario_context(state: dict, scenario_prompts: dict | None = None) -> str:
     """state에서 시나리오 정보를 추출해 시스템 프롬프트 끝에 추가합니다."""
+    protagonist_id = state.get("protagonist", "")
     lines = [
         "",
         "---",
@@ -170,17 +203,19 @@ def build_scenario_context(state: dict) -> str:
         f"시나리오: {state.get('scenarioTitle', '불명')}",
     ]
 
-    rules = state.get("rules", [])
-    if rules:
-        lines.append("\n## 시나리오 특수 규칙")
-        for r in rules:
-            name = r.get("name", "")
-            body = r.get("rule", "")
-            lines.append(f"- **{name}**: {body}" if name else f"- {body}")
+    if scenario_prompts:
+        global_p = scenario_prompts.get("global", "").strip()
+        char_p   = scenario_prompts.get("characters", {}).get(protagonist_id, "").strip()
+        if global_p or char_p:
+            lines.append("\n## 시나리오 특수 지시")
+            if global_p:
+                lines.append(global_p)
+            if char_p:
+                lines.append("\n### 캐릭터 전용 지시")
+                lines.append(char_p)
 
-    protagonist_id = state.get("protagonist")
-    chars          = state.get("characters", {})
-    factions       = state.get("factions", {})
+    chars     = state.get("characters", {})
+    factions  = state.get("factions", {})
     tpp            = state.get("troopsPerPoint")  # troops per strength_score point
     if protagonist_id and protagonist_id in chars:
         c = chars[protagonist_id]
@@ -270,25 +305,25 @@ def build_scenario_context(state: dict) -> str:
     if active_events:
         lines.append("\n동시 진행 사건:")
         for ev in active_events:
-            name       = ev.get("name", "?")
-            region     = ev.get("region", "")
-            body       = ev.get("body", "")
-            body_short = body[:80] + "…" if len(body) > 80 else body
+            name   = ev.get("name", "?")
+            region = ev.get("region", "")
+            text   = ev.get("prompt") or ev.get("body", "")
+            text_out = text if ev.get("prompt") else (text[:80] + "…" if len(text) > 80 else text)
             lines.append(
                 f"  - {name}" + (f" ({region})" if region else "")
-                + (f"\n    {body_short}" if body_short else "")
+                + (f"\n    {text_out}" if text_out else "")
             )
 
     if future_events:
         lines.append("\n역사적 예정 사건 (내러티브 참고 — UI 미표시):")
         for ev in future_events:
-            name       = ev.get("name", "?")
-            trigger    = _extract_trigger_year(ev) or "?"
-            body       = ev.get("body", "")
-            body_short = body[:80] + "…" if len(body) > 80 else body
+            name    = ev.get("name", "?")
+            trigger = _extract_trigger_year(ev) or "?"
+            text    = ev.get("prompt") or ev.get("body", "")
+            text_short = text[:80] + "…" if len(text) > 80 else text
             lines.append(
                 f"  - [{trigger}년 예정] {name}"
-                + (f"\n    {body_short}" if body_short else "")
+                + (f"\n    {text_short}" if text_short else "")
             )
 
     weather = state.get("weather")
@@ -352,11 +387,11 @@ def build_scenario_context(state: dict) -> str:
     return "\n".join(lines)
 
 
-def build_opening_npc_context(state: dict, npc_pool: dict) -> str:
-    """오프닝 전용: 등장 인물 + NPC 풀을 LLM에 전달합니다."""
+def build_opening_context(state: dict) -> str:
+    """오프닝 전용: 기존 등장 인물을 LLM에 전달합니다."""
     chars          = state.get("characters", {})
     protagonist_id = state.get("protagonist", "")
-    lines          = ["\n\n---\n## 오프닝 장면 등장 가능 인물"]
+    lines          = ["\n\n---\n## 오프닝 장면 등장 인물"]
 
     supporting = [c for c in chars.values() if c.get("id") != protagonist_id]
     if supporting:
@@ -367,18 +402,6 @@ def build_opening_npc_context(state: dict, npc_pool: dict) -> str:
             desc    = c.get("desc") or c.get("notes") or ""
             disp    = c.get("disposition", "")
             lines.append(f"  - {name}({epithet}) [{disp}]: {desc[:120]}")
-
-    pool_npcs = npc_pool.get("default", []) if isinstance(npc_pool, dict) else []
-    eligible  = [
-        n for n in pool_npcs
-        if n.get("start_eligible", True) and n["id"] not in chars and n["id"] != protagonist_id
-    ]
-    if eligible:
-        lines.append("\n### NPC 풀 (장면에 등장 가능)")
-        for n in sorted(eligible, key=lambda x: -x.get("weight", 0))[:8]:
-            lines.append(
-                f"  - {n['name']}({n.get('epithet', '')}) [weight {n.get('weight',0)}]: {n.get('desc','')[:120]}"
-            )
 
     lines.append("\n위 인물들의 성격·역할·성향을 장면에 반영하시오.")
     lines.append("장면에 등장한 인물은 반드시 응답 끝 [STATE_UPDATE]의 new_characters에 포함할 것.")

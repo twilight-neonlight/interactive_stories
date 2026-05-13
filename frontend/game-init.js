@@ -15,7 +15,6 @@ let _ui      = null;
     const qb = JSON.parse(_qbRaw);
     _state = GameState.fromJSON(qb.stateJson);
     _state.troopsPerPoint = qb.troopsPerPoint;
-    _state.npcPool        = {};
     _state.eventContext   = {};
     _state.mapSvg         = '';
     _ui = window.getScenarioUI('ottoman-interregnum');
@@ -37,7 +36,6 @@ let _ui      = null;
       _ui = window.getScenarioUI(data.scenarioId);
       tagStyle = { ...BASE_TAG_STYLE, ..._ui.tagExtras };
       _state = GameState.fromJSON(data);
-      _state.npcPool        = scenario.npc_pool     ?? {};
       _state.eventContext   = scenario.event_context ?? {};
       _state.mapSvg         = scenario.map_svg       ?? '';
       _state.troopsPerPoint = scenario.troops_per_strength_point ?? null;
@@ -100,7 +98,6 @@ let _ui      = null;
   }
 
   if (_state) {
-    _state.npcPool        = scenario.npc_pool     ?? {};
     _state.eventContext   = scenario.event_context ?? {};
     _state.troopsPerPoint = scenario.troops_per_strength_point ?? null;
     // 히스토리가 없으면 아직 게임이 시작되지 않은 상태 — initial_diplomacy를 재적용해

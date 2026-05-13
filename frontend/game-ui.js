@@ -93,10 +93,26 @@ function renderTimestamp(progress) {
 }
 
 // ── 지휘관 패널
+const _ABILITY_KEYS = ['통솔', '지략', '외교', '행정', '무력'];
+const _GRADE_COLOR  = { S: '#c084fc', A: '#e8a838', B: '#5ba0d8' };
+
+function _gradeHtml(grade) {
+  if (!grade) return `<span class="ability-grade">—</span>`;
+  const color = _GRADE_COLOR[grade[0].toUpperCase()];
+  return `<span class="ability-grade"${color ? ` style="color:${color}"` : ''}>${grade}</span>`;
+}
+
 function renderCommanderPanel(state) {
   const panel = document.getElementById('commander-panel');
   if (!panel || !_ui) return;
-  const { name, sub, fields } = _ui.commanderInfo(state);
+  const { name, sub, strength, stats } = _ui.commanderInfo(state);
+
+  const statsHtml = stats
+    ? `<div class="ability-grid">${_ABILITY_KEYS.map(k =>
+        `<div class="ability-cell"><div class="ability-cell-key">${k}</div>${_gradeHtml(stats[k])}</div>`
+      ).join('')}</div>`
+    : '';
+
   panel.innerHTML = `
     <div class="panel-label">지휘관</div>
     <div class="profile-block">
@@ -104,9 +120,10 @@ function renderCommanderPanel(state) {
       <div>
         <div class="profile-name">${name}</div>
         <div class="profile-sub">${sub}</div>
+        <div class="profile-sub">병력 ${strength}</div>
       </div>
     </div>
-    ${fields.map(f => `<div class="stat-row"><span class="stat-key">${f.key}</span><span class="stat-val">${f.val}</span></div>`).join('')}`;
+    ${statsHtml}`;
   rebindTooltips();
 }
 

@@ -20,6 +20,31 @@ function selectChoice(btn) {
   document.getElementById('cmd').value = btn.textContent.trim();
 }
 
+// ── LLM 생성 NPC 외정 스탯 자동 배정 (정규분포, 중심 C)
+const _EXT_STAT_KEYS = ['통솔', '지략', '외교', '무력'];
+const _GRADE_SCALE   = ['E-','E','E+','D-','D','D+','C-','C','C+','B-','B','B+','A-','A','A+','S-','S','S+'];
+const _GRADE_CENTER  = 7; // C 인덱스
+const _GRADE_STD     = 3;
+
+function _gauss() {
+  let u, v;
+  do { u = Math.random(); } while (u === 0);
+  do { v = Math.random(); } while (v === 0);
+  return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v);
+}
+
+function _randomGrade() {
+  const idx = Math.round(_GRADE_CENTER + _GRADE_STD * _gauss());
+  return _GRADE_SCALE[Math.max(0, Math.min(_GRADE_SCALE.length - 1, idx))];
+}
+
+function _assignExternalStats(char) {
+  if (!char.stats) char.stats = {};
+  for (const key of _EXT_STAT_KEYS) {
+    if (char.stats[key] == null) char.stats[key] = _randomGrade();
+  }
+}
+
 // ── 공통 상태 업데이트 (submitTurn + combat-ui.js 가 공유)
 function applyStateUpdates(su) {
   Object.assign(_state.progress, {
@@ -32,7 +57,10 @@ function applyStateUpdates(su) {
 
   if (Array.isArray(su.new_characters)) {
     for (const c of su.new_characters) {
-      if (c.id && !_state.characters.has(c.id)) _state.addCharacter(c);
+      if (c.id && !_state.characters.has(c.id)) {
+        _assignExternalStats(c);
+        _state.addCharacter(c);
+      }
     }
   }
   if (Array.isArray(su.dead_characters)) {

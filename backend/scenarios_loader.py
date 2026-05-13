@@ -72,7 +72,7 @@ def load_scenarios() -> list[dict]:
         if not meta_path.exists():
             continue
         scenario = json.loads(meta_path.read_text(encoding="utf-8"))
-        for key in ("locations", "factions", "characters", "events", "rules"):
+        for key in ("locations", "factions", "characters", "events"):
             path = scenario_dir / f"{key}.json"
             scenario[key] = json.loads(path.read_text(encoding="utf-8")) if path.exists() else []
         for loc in scenario["locations"]:
@@ -81,8 +81,14 @@ def load_scenarios() -> list[dict]:
                 loc["controller"] = loc.pop("controlling_faction")
         char_select_path = scenario_dir / "character-select.json"
         scenario["character_select"] = json.loads(char_select_path.read_text(encoding="utf-8")) if char_select_path.exists() else []
-        npc_pool_path = scenario_dir / "npc-pool.json"
-        scenario["npc_pool"] = json.loads(npc_pool_path.read_text(encoding="utf-8")) if npc_pool_path.exists() else {}
+        # 시나리오 프롬프트 지시문 로드 (prompt.md + prompt_{char_id}.md)
+        global_prompt_path = scenario_dir / "prompt.md"
+        global_prompt = global_prompt_path.read_text(encoding="utf-8").strip() if global_prompt_path.exists() else ""
+        char_prompts: dict[str, str] = {}
+        for p in sorted(scenario_dir.glob("prompt_*.md")):
+            char_id = p.stem[len("prompt_"):]
+            char_prompts[char_id] = p.read_text(encoding="utf-8").strip()
+        scenario["scenario_prompts"] = {"global": global_prompt, "characters": char_prompts}
         event_context_path = scenario_dir / "event_context.json"
         scenario["event_context"] = json.loads(event_context_path.read_text(encoding="utf-8")) if event_context_path.exists() else {}
         map_path = scenario_dir / "map.svg"
