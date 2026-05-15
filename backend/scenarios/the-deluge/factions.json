@@ -2,17 +2,19 @@
   {
     "id": "zaporozhian-host",
     "name": "자포로지아 코사크",
-    "type": "rebel",
+    "type": "rebels",
     "strength_score": 420,
+    "field_army": 40000,
     "disposition": "적대",
     "color": "#C44E3A",
-    "notes": "보흐단 흐멜니츠키가 이끄는 코사크 반란군. 등록 코사크와 농민 반란군·타타르 용병이 혼합된 구성. 전투력은 높으나 내부 통제가 느슨해 약탈·이탈이 잦다. 타타르와의 동맹이 군사력의 핵심 축이다."
+    "notes": "보흐단 흐멜니츠키가 이끄는 코사크 봉기 세력. 등록 코사크와 농민 반란군·타타르 용병이 혼합된 구성. 전투력은 높으나 내부 통제가 느슨해 약탈·이탈이 잦다. 타타르와의 동맹이 군사력의 핵심 축이다."
   },
   {
     "id": "crimean-khanate",
     "name": "크림 칸국",
     "type": "kingdom",
     "strength_score": 280,
+    "field_army": 30000,
     "disposition": "적대",
     "color": "#C8981A",
     "notes": "이슬람 기레이 칸이 이끄는 타타르 기병대. 코사크와 동맹 상태이나 이해관계가 엇갈리면 언제든 철수하거나 배신할 수 있다. 전쟁보다 포로·약탈을 우선시하며, 협상 카드로도 활용 가능하다."
@@ -22,8 +24,18 @@
     "name": "폴란드 왕국",
     "type": "kingdom",
     "strength_score": 300,
+    "field_army": 25000,
     "disposition": "동맹",
     "color": "#9E2020",
+    "initial_diplomacy": {
+      "zaporozhian-host": -80,
+      "crimean-khanate": -70,
+      "grand-duchy-lithuania": 60,
+      "muscovy": -20,
+      "sweden": -30,
+      "brandenburg": 0,
+      "duchy-prussia": 40
+    },
     "notes": "얀 2세 카지미에시 치하의 폴란드 왕실군. 귀족 의회(세임)의 제약으로 동원 속도가 느리고 재정이 만성 부족. 후사리아 중기병은 최강이나 보병·포병이 열세. 마그나트 귀족들의 독자 행동이 걸림돌이다."
   },
   {
@@ -31,8 +43,18 @@
     "name": "리투아니아 대공국",
     "type": "kingdom",
     "strength_score": 210,
+    "field_army": 15000,
     "disposition": "동맹",
     "color": "#4A7A3A",
+    "initial_diplomacy": {
+      "zaporozhian-host": -70,
+      "crimean-khanate": -60,
+      "polish-crown": 40,
+      "muscovy": -40,
+      "sweden": 10,
+      "brandenburg": 10,
+      "duchy-prussia": 20
+    },
     "notes": "연방의 공동 구성국. 야누시 라지비우 공이 군을 지휘하나 독자 노선을 걷는 경향이 있다. 북방 국경 방어가 우선 과제이며, 스웨덴과 모스크바 양쪽 모두를 경계한다."
   },
   {
@@ -40,6 +62,7 @@
     "name": "모스크바 차르국",
     "type": "kingdom",
     "strength_score": 380,
+    "field_army": 40000,
     "disposition": "중립",
     "color": "#4050A0",
     "notes": "알렉세이 1세 치하. 정교회 코사크를 지원할 명분과 연방의 혼란을 이용할 기회를 동시에 노리고 있다. 코사크 사절단을 접견하며 개입 명분을 저울질하는 중이다."
@@ -49,6 +72,7 @@
     "name": "스웨덴 왕국",
     "type": "kingdom",
     "strength_score": 350,
+    "field_army": 30000,
     "disposition": "중립",
     "color": "#3A78C8",
     "notes": "크리스티나 여왕 치하. 발트해 패권 확보를 노리며 연방의 붕괴를 기회로 간주한다. 폴란드 귀족 일부가 스웨덴 보호를 자처할 가능성이 있다."
@@ -58,6 +82,7 @@
     "name": "브란덴부르크 선제후국",
     "type": "kingdom",
     "strength_score": 130,
+    "field_army": 10000,
     "disposition": "중립",
     "color": "#5A6475",
     "notes": "호엔촐레른 왕가의 프리드리히 빌헬름 대선제후가 통치. 신성로마제국 내 영방이지만 발트해 무역로 확보와 프로이센 공국의 자립을 위해 스웨덴·폴란드 사이에서 기회를 저울질한다. 현재는 중립을 지키지만 연방의 혼란이 깊어질수록 행동할 이유가 생긴다."
@@ -67,6 +92,7 @@
     "name": "프로이센 공국 (폴란드 봉신)",
     "type": "vassal",
     "strength_score": 70,
+    "field_army": 5000,
     "disposition": "우호",
     "color": "#7A6845",
     "notes": "1525년 이래 폴란드 왕국의 봉신. 브란덴부르크와 동군연합으로 프리드리히 빌헬름이 통치하나 법적으로 폴란드 왕에게 충성 서약 의무가 있다. 연방의 약체화가 지속되면 봉신 의무를 청산하려는 유혹을 떨치기 어렵다."

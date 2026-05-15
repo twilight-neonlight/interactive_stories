@@ -1,1 +1,106 @@
-[]
+[
+  {
+    "id": "persian_watch",
+    "name": "페르시아의 시선",
+    "sub": "533년~ · 동부 국경",
+    "end_condition": "persian_peace_unravels_active or sassanid-persia_defeated",
+    "body": "호스로 1세와의 '영원한 평화' 협약이 532년에 체결됐으나, 사산조 페르시아는 비잔틴이 서방에 집중하는 틈을 호시탐탐 노린다. 원정이 길어지면 협약은 종잇조각이 된다. 동쪽 국경은 항상 불안정하다.",
+    "effects": [
+      { "key": "전력 분산", "desc": "동방 방어를 위해 제국 전력 일부가 서방 원정에 투입되지 못한다" }
+    ],
+    "dot": "#4050A0",
+    "region": "동부 국경",
+    "badge": "badge-ongoing",
+    "badgeText": "잠재 위협"
+  },
+  {
+    "id": "vandal_campaign",
+    "name": "아프리카 원정 개시",
+    "sub": "533년 · 북아프리카",
+    "end_condition": "vandal-kingdom_defeated",
+    "body": "벨리사리우스가 지휘하는 약 15,000명의 원정군이 카르타고를 향해 진격했다. 겔리메르는 반달 전군으로 응전 준비 중이다. 아프리카를 되찾으면 제국 서방 재건의 발판이 마련되지만, 패배하면 제국 전략 전체가 흔들린다.",
+    "effects": [
+      { "key": "병참 부담", "desc": "장기 원정 중 보급선이 늘어날수록 전력 회복이 지연된다" }
+    ],
+    "dot": "#5A7A4A",
+    "region": "북아프리카",
+    "badge": "badge-active",
+    "badgeText": "진행 중"
+  },
+  {
+    "id": "berber_neutrality",
+    "name": "베르베르 부족의 관망",
+    "sub": "533년~ · 북아프리카 내륙",
+    "end_condition": "vandal-kingdom_defeated",
+    "body": "북아프리카 내륙의 베르베르 부족 연합은 새로 상륙한 비잔틴군을 경계하며 중립을 지키고 있다. 이들은 승리하는 쪽에 가담하는 실용적 집단이다. 초반 전투에서 확실한 우세를 보이면 자연스럽게 협력 관계로 전환될 수 있으며, 경기병 전력으로서 유용하다.",
+    "effects": [
+      { "key": "관망 중", "desc": "전투 결과에 따라 비잔틴군 지원 또는 반달군 합류를 결정" }
+    ],
+    "dot": "#C8981A",
+    "region": "북아프리카 내륙",
+    "badge": "badge-unknown",
+    "badgeText": "관망 중"
+  },
+  {
+    "id": "gothic_succession_crisis",
+    "name": "동고트 왕국의 균열",
+    "sub": "534년 이후 · 이탈리아",
+    "trigger_condition": "vandal-kingdom_defeated",
+    "end_condition": "ostrogothic-kingdom_defeated",
+    "body": "아말라수인타 왕비의 섭정 통치에 불만을 품은 고트 귀족들이 세력을 규합하고 있다. 유스티아누스와의 우호 관계는 그녀의 신변 보호에 달려 있으나, 귀족들이 그녀를 제거한다면 제국은 이탈리아 원정의 명분을 얻게 된다. 이탈리아 재정복의 문이 열리기 시작했다.",
+    "effects": [
+      { "key": "이탈리아 개입 명분", "desc": "아말라수인타 위기 해결 방향에 따라 이탈리아 원정의 정당성이 달라진다" }
+    ],
+    "dot": "#8B6914",
+    "region": "이탈리아",
+    "badge": "badge-ongoing",
+    "badgeText": "내부 분열"
+  },
+  {
+    "id": "justinians_jealousy",
+    "name": "황제의 질투",
+    "sub": "534년 이후 · 콘스탄티노폴리스",
+    "trigger_condition": "chapter >= 3",
+    "end_condition": "year >= 545",
+    "body": "벨리사리우스의 연이은 승리가 콘스탄티노폴리스에서 대중적 영웅 서사로 번지기 시작했다. 나르세스와 요한 카파도키아인을 비롯한 궁정 세력이 황제에게 '지나치게 빛나는 장군'을 경계하라는 밀서를 올리고 있다. 유스티아누스는 여전히 신임하지만, 그 신임이 영원하지 않다는 신호가 감지된다.",
+    "effects": [
+      { "key": "소환 위험", "desc": "공적이 너무 크거나 황제와 독립적으로 행동하면 소환 명령이 내려질 수 있다" }
+    ],
+    "dot": "#5E3F8A",
+    "region": "콘스탄티노폴리스",
+    "badge": "badge-unknown",
+    "badgeText": "잠재적 위협"
+  },
+  {
+    "id": "persian_peace_unravels",
+    "name": "'영원한 평화'의 균열",
+    "sub": "540년 이후 · 동부 국경",
+    "trigger_condition": "year >= 540",
+    "end_condition": "chapter >= 8",
+    "body": "호스로 1세가 비잔틴의 서방 집중을 기회로 판단, '영원한 평화' 협약을 파기하고 시리아 방면 침공을 개시했다. 안티오크가 위협받고 있으며 유스티아누스는 벨리사리우스를 동방으로 불러들이는 것을 진지하게 고려하기 시작했다.",
+    "prompt": "사산조 페르시아가 동부 국경을 돌파했다. 이 사건이 이미 발생한 맥락이라면 서술에 반영하라. 유스티아누스가 벨리사리우스에게 즉각 귀환을 검토 중이라는 압박이 가시화됐음을 STATE_UPDATE의 character_disposition_changes로 justinian의 disposition을 '비우호'로 갱신하라.",
+    "effects": [
+      { "key": "동방 위기", "desc": "페르시아 침공으로 유스티아누스가 벨리사리우스 소환을 적극 검토한다" }
+    ],
+    "dot": "#4050A0",
+    "region": "시리아·메소포타미아",
+    "badge": "badge-active",
+    "badgeText": "위기 발생"
+  },
+  {
+    "id": "plague_of_justinian",
+    "name": "유스티아누스 역병",
+    "sub": "541년 이후 · 콘스탄티노폴리스·지중해 전역",
+    "trigger_condition": "year >= 541",
+    "end_condition": "year >= 544",
+    "body": "이집트에서 시작된 전염병이 콘스탄티노폴리스를 강타하고 제국 전역으로 확산됐다. 유스티아누스 황제 본인도 감염됐다는 소문이 들린다. 병력 충원과 물자 보급이 대폭 차질을 빚으며, 원정군의 전력 회복 속도가 급격히 저하된다.",
+    "effects": [
+      { "key": "병력 고갈", "desc": "역병으로 제국의 병력 보충·보급이 크게 지연된다", "type": "recovery_rate", "value": 0.3, "target": "expedition-force" },
+      { "key": "제국 약화", "desc": "콘스탄티노폴리스 행정이 마비 상태에 가깝다" }
+    ],
+    "dot": "#888780",
+    "region": "지중해 전역",
+    "badge": "badge-active",
+    "badgeText": "진행 중"
+  }
+]
