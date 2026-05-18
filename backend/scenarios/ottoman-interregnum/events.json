@@ -4,53 +4,97 @@
     "name": "오스만 공위 분쟁", "sub": "1402년~ · 오스만 제국 전역",
     "end_condition": "active_princes == 0",
     "body": "앙카라 전투 패배와 바야지트 1세 사망으로 술탄위가 공석이다. 루멜리아와 아나톨리아를 아우르던 영토는 왕자들과 복권된 구 베일리크들로 분열되었다. 어느 왕자도 단독으로 전체를 통제하지 못하는 불안정한 균형.",
-    "effects": [
-      { "key": "병력 회복", "desc": "내전 지속 중 전군 병력 회복 속도 대폭 저하 (×0.2)", "type": "recovery_rate", "value": 0.2, "target": "protagonist" }
+    "on_end_prompt": "공위 분쟁이 종식됐다. 이번 서술에서 마지막 경쟁 왕자가 제거되거나 항복하는 장면을 묘사하라. 오스만 술탄국이 한 인물 아래 다시 하나로 통합되는 역사적 순간임을 강조하고, 이 승리가 어떤 새로운 과제를 남기는지 암시하라.",
+    "active_chains": [
+      {"condition": "year >= 1410", "chain_trigger": "mustafa_rumor"}
     ],
     "dot": "#C5932A", "region": "제국 전역", "badge": "badge-active", "badgeText": "진행 중"
   },
   {
     "id": "beylik_restoration",
     "name": "아나톨리아 베이릭 복원", "sub": "1402년~ · 아나톨리아 중·서부",
-    "end_condition": "year >= 1405 or germiyanids_defeated and tekke_defeated and jandarids_defeated",
     "body": "티무르가 오스만에 흡수됐던 소규모 공국(베이릭)들을 복원시키고 철수했다. 이들은 독립을 주장하며 영역을 회복 중인데, 만약 어느 왕자가 무리하게 재합병을 추진할 경우 티무르가 다시 이 지역에 개입할 명분이 생길 수 있다.",
-    "effects": [
-      { "key": "티무르 경고", "desc": "복권 베이릭 중 하나라도 흡수 시 즉각 경고 이벤트 발동" },
-      { "key": "베이릭 자립", "desc": "1405년 시한 만료 시 생존 베이릭의 전력 50% 즉시 증가", "type": "on_end_boost", "value": 0.5, "targets": ["germiyanids", "tekke", "jandarids", "karamanids"], "trigger": "year >= 1405" }
+    "end_pathways": [
+      {
+        "id": "timur_died_beyliks_grow",
+        "condition": "year >= 1405",
+        "on_end_prompt": "1405년, 티무르가 사망했다. 이번 서술에서 티무르의 죽음으로 복원 베이릭들에 대한 외압이 사라졌음을 언급하라. 생존 베이릭들이 독자 노선을 굳히며 세력을 키우고 있다는 소식도 전달하라.",
+        "state_effects": {
+          "faction_strength_changes": [
+            {"id": "germiyanids", "delta": 20, "condition": "germiyanids_defeated == false"},
+            {"id": "tekke",       "delta": 20, "condition": "tekke_defeated == false"},
+            {"id": "jandarids",   "delta": 20, "condition": "jandarids_defeated == false"}
+          ]
+        }
+      },
+      {
+        "id": "all_beyliks_destroyed",
+        "condition": "germiyanids_defeated and tekke_defeated and jandarids_defeated",
+        "on_end_prompt": "복원됐던 베이릭들이 모두 소멸됐다. 이번 서술에서 아나톨리아 중·서부의 베이릭 문제가 완전히 정리됐음을 간략히 언급하라."
+      }
     ],
     "dot": "#EF9F27", "region": "아나톨리아 중·서부", "badge": "badge-ongoing", "badgeText": "진행 중"
   },
   {
     "id": "timur_warning",
-    "name": "티무르의 경고서", "sub": "1402~1404년 · 아나톨리아?",
+    "name": "티무르의 경고서", "sub": "1402~1404년 · 아나톨리아",
     "trigger_condition": "germiyanids_defeated and year < 1405 or tekke_defeated and year < 1405 or jandarids_defeated and year < 1405",
-    "end_condition": "year >= 1405",
     "body": "티무르가 복권시킨 베이릭 중 하나가 무너졌다는 소식이 사마르칸트에 전해졌다. 그를 노골적으로 무시한 행위로, 사절을 통해 무너뜨린 공국을 복원하라는 강경 경고가 전달됐다. 복권된 공국들을 건드리지 말라는 것이 티무르의 분명한 뜻이다. 이대로 시간을 보내면 재침의 빌미로 삼을 것이다.",
-    "effects": [
-      { "key": "재침 위험", "desc": "6개월 이내 굴복하고 베이릭 복구를 하지 않으면 티무르군이 다시 이 지역에 개입한다" }
+    "on_trigger_prompt": "이번 서술에서 티무르의 경고 서한이 도착하는 장면을 묘사하라. 사절이 전달하는 내용을 대화 또는 요약 형식으로 보여주고, 이것이 왕자의 정치적 선택에 어떤 압박을 가하는지 인식시켜라.",
+    "end_pathways": [
+      {
+        "id": "timur_died",
+        "condition": "year >= 1405",
+        "on_end_prompt": "이번 서술에서 티무르가 사망했다는 소식을 전달하라. 티무르의 죽음으로 경고 서한의 위협이 자연 소멸됐고, 생존 베이릭들이 독자 노선을 굳힐 시간을 벌었음을 서술에 반영하라."
+      },
+      {
+        "id": "timur_invades",
+        "condition": "timur_warning_trigger_year + 1 <= year",
+        "on_end_prompt": "경고 서한 발송 이후 1년이 지났으나 베이릭이 복원되지 않았다. 이번 서술에서 티무르가 선전포고하고 아나톨리아 방면으로 군대를 진격시키기 시작했다는 급보를 전달하라. 이것이 새로운 전면 위기의 시작임을 명확히 하라.",
+        "chain_trigger": "timur_second_invasion"
+      }
     ],
     "dot": "#EF9F27", "region": "사마르칸트·아나톨리아", "badge": "badge-ongoing", "badgeText": "외교 위기"
   },
   {
+    "id": "timur_second_invasion",
+    "name": "티무르의 재침", "sub": "1404년 이후 · 아나톨리아",
+    "end_condition": "year >= 1406 or germiyanids_defeated and tekke_defeated and jandarids_defeated",
+    "body": "경고를 무시한 결과로 티무르군이 아나톨리아로 재진입했다. 베이릭을 복원하라는 최후통첩이 거부된 상황이다. 티무르의 목표는 서방 원정이 아니라 이 지역의 질서 재편이며, 공위 분쟁의 승자가 누가 되든 개입을 정당화할 명분을 확보했다.",
+    "on_trigger_prompt": "티무르의 재침이 시작됐다. 이번 서술에서 티무르군이 아나톨리아 동부 국경을 넘어 진격하고 있다는 긴박한 전황을 묘사하라. 경고를 무시한 왕자가 이 결과를 직면하는 장면을 포함하고, 지금 당장 어느 방향으로 대응해야 하는지 선택을 압박하는 분위기를 조성하라.",
+    "dot": "#E24B4A", "region": "아나톨리아 동부", "badge": "badge-active", "badgeText": "재침 시작"
+  },
+  {
     "id": "karaman_ambition",
     "name": "카라만의 아나톨리아 패권 시도", "sub": "1402년~ · 아나톨리아 중남부",
-    "end_condition": "karamanids_defeated or civil_war_ended and player_strength > karamanids_strength or karaman_dominance_active",
     "body": "오스만 공위 분쟁을 틈타 중앙 아나톨리아에서 영향력을 확대하는 중이다. 내전이 길어질수록 위험성이 커진다. 가장 먼저 맞닥뜨릴 외부 위협.",
-    "effects": [
-      { "key": "카라만 성장", "desc": "내전 방치 중 연간 세력 확대 (+15)", "type": "faction_growth", "frequency": "annual", "value": 15, "target": "karamanids" }
+    "end_pathways": [
+      {
+        "id": "karaman_defeated",
+        "condition": "karamanids_defeated",
+        "on_end_prompt": "카라만 베이릭이 무너졌다. 이번 서술에서 카라만의 패배가 아나톨리아 중남부 권력 구도에 미치는 영향을 간략히 언급하라."
+      },
+      {
+        "id": "diplomatic_resolution",
+        "condition": "year > 1412 and karamanids_score >= 30",
+        "on_end_prompt": "1412년 이후 플레이어 세력과 카라만 사이의 관계가 안정 수준에 도달했다. 이번 서술에서 카라만과의 긴장이 외교적으로 봉합됐음을 언급하라. 카라만은 더 이상 팽창 야욕을 추구할 위치가 아님을 암시하라."
+      },
+      {
+        "id": "karaman_dominates",
+        "condition": "year > 1412",
+        "on_end_prompt": "1412년이 지났으나 카라만과의 관계가 개선되지 않았다. 이번 서술에서 카라만이 아나톨리아 패권을 굳히기 시작한다는 첩보가 입수됐음을 전달하고, 이 상황이 새로운 차원의 위협으로 격상될 것임을 암시하라.",
+        "chain_trigger": "karaman_dominance"
+      }
     ],
     "dot": "#E24B4A", "region": "아나톨리아 중남부", "badge": "badge-ongoing", "badgeText": "진행 중"
   },
   {
     "id": "karaman_dominance",
     "name": "카라만의 아나톨리아 지배 공고화", "sub": "1413년 이후 · 아나톨리아 중남부",
-    "trigger_condition": "year >= 1413 and karaman_ambition_ended == false",
-    "end_condition": "karamanids_defeated or karamanids_score >= 34",
+    "end_condition": "karamanids_defeated",
     "body": "10년 넘게 오스만 내전의 어부지리를 누린 카라만이 사실상 아나톨리아 패권을 확립했다. 중부 고원의 주요 교역로와 요충지를 장악하고 있으며, 이제는 공위 분쟁의 승자를 상대로도 대등하게 협상을 요구할 수 있는 위치에 올라섰다.",
-    "effects": [
-      { "key": "카라만 급성장", "desc": "패권 공고화로 연간 대규모 세력 확대 (+25)", "type": "faction_growth", "frequency": "annual", "value": 25, "target": "karamanids" },
-      { "key": "확장 행보", "desc": "아나톨리아 권역의 잔존하는 모든 contrest 도시들을 인수" }
-    ],
+    "on_trigger_prompt": "이번 서술에서 카라만의 패권 공고화 소식을 다루어라. 정보원이나 상인, 혹은 귀환한 사절을 통해 카라만이 아나톨리아 중부를 사실상 장악했다는 사실이 플레이어에게 전달되는 장면을 삽입하라. 이것이 게임 후반의 주요 위협임을 인식시켜라.",
+    "on_end_prompt": "카라만이 마침내 무너졌다. 이번 서술에서 아나톨리아 중남부 패권자의 몰락이 오스만 재통합 작업에 어떤 의미를 갖는지 언급하라.",
     "dot": "#E24B4A", "region": "아나톨리아 중남부", "badge": "badge-ongoing", "badgeText": "위협 고조"
   },
   {
@@ -59,9 +103,6 @@
     "protagonist_only": ["musa"],
     "end_condition": "musa_rumelia_boost_applied",
     "body": "포로에서 탈출한 무사에게 아나톨리아는 더 이상 안전한 땅이 아니다. 술레이만의 세력이 루멜리아를 장악하고 있지만 그 내부에는 술레이만의 통치에 불만을 품은 귀족과 가지 전사들이 있다. 루멜리아로 건너가 그 불만 세력을 규합하는 것만이 역전의 발판이 된다.",
-    "effects": [
-      { "key": "루멜리아 도달 시", "desc": "현지 3개월 거점 유지 후 술레이만 반대파 흡수 — 전력 +100 증가" }
-    ],
     "dot": "#8b2020", "region": "아나톨리아→루멜리아", "badge": "badge-unknown", "badgeText": "잠재적 기회"
   },
   {
@@ -70,9 +111,6 @@
     "end_condition": "bulgarian-rebels_defeated",
     "protagonist_only": ["suleyman"],
     "body": "앙카라 패배 소식이 퍼지자 오스만 치하 불가리아·트라키아 지역의 기독교 귀족과 도시들이 권력의 공백을 감지하고 있다. 공납 거부와 지방 무장 움직임이 산발적으로 보고되며, 루멜리아를 기반으로 삼은 왕자에게는 후방 안정이 최우선 과제가 됐다.",
-    "effects": [
-      { "key": "후방 교란", "desc": "루멜리아 공납 일부 거부, 병력 회복 속도 저하 (×0.5)", "type": "recovery_rate", "value": 0.5, "target": "protagonist" }
-    ],
     "dot": "#7F77DD", "region": "루멜리아 전역", "badge": "badge-ongoing", "badgeText": "진행 중"
   },
   {
@@ -82,9 +120,6 @@
     "end_condition": "year >= 1415 or civil_war_ended or bulgarian-rebels_defeated",
     "protagonist_only": ["isa", "musa", "mehmed"],
     "body": "술레이만과 경쟁자들 사이의 분쟁이 장기화되는 사이, 트라키아·불가리아의 기독교 귀족들이 세력 공백을 감지했다는 첩보가 입수됐다. 아직 조직적 봉기로 발전하지는 않았으나, 루멜리아를 차지한 세력이 이를 방치하면 반란이 현실화될 수 있다.",
-    "effects": [
-      { "key": "봉기 위험", "desc": "1415년까지 해소하지 못하면 불가리아 대봉기로 격화" }
-    ],
     "dot": "#7F77DD", "region": "루멜리아", "badge": "badge-unknown", "badgeText": "잠재적 위협"
   },
   {
@@ -93,43 +128,56 @@
     "trigger_condition": "has_exiled_prince",
     "end_condition": "has_exiled_prince == false",
     "body": "거점을 잃고 망명한 왕자가 왈라키아의 지배자인 미르체아 대공의 궁정에 피신했다. 미르체아는 이 망명자를 빌미로 다뉴브 이남 거점 반환을 요구하는 동시에, 경쟁 왕자들에게도 사신을 보내 이중 외교를 펼치고 있다. 망명 왕자를 지원할 수도 있고 고립시킬 수도 있는 왈라키아의 입장이 루멜리아 전선의 새로운 변수가 된다.",
-    "effects": [
-      { "key": "왈라키아 레버리지", "desc": "망명 왕자를 빌미로 왈라키아 외교 협상 비용 2배 증가", "type": "diplomacy_cost_multiplier", "value": 2.0, "target": "wallachia" }
-    ],
+    "on_trigger_prompt": "이번 서술에서 왕자의 망명 사실이 플레이어에게 전달되는 장면을 포함하라. 첩자나 사신을 통해 해당 왕자가 왈라키아로 도주했으며 미르체아 대공이 이를 외교 카드로 삼기 시작했다는 정보가 들어오는 상황을 묘사하라.",
     "dot": "#3a7abf", "region": "다뉴브 이북", "badge": "badge-unknown", "badgeText": "잠재적 위협"
   },
   {
     "id": "mustafa_rumor",
     "name": "무스타파 왕자의 귀환", "sub": "1410년 이후 · 루멜리아·아나톨리아",
-    "trigger_condition": "year >= 1410",
-    "end_condition": "mustafa_defeated or year >= 1412",
     "body": "티무르의 진영에서 실종된 바야지트의 아들 무스타파가 생존해 있다는 소문이 번지기 시작한다. 진위가 불분명하지만 비잔틴과 베이릭들이 이 주장에 귀를 기울이기 시작했다. 빠른 진위 확인과 대응이 없으면 소문은 실체 있는 위협으로 자라날 것이다.",
-    "effects": [
-      { "key": "소문 확산", "desc": "비잔틴·베이릭과의 외교 불안정, 조기 진압 시 이 단계에서 차단 가능" }
+    "on_trigger_prompt": "이번 서술에서 '죽은 줄 알았던 무스타파 왕자가 살아있다'는 소문이 처음 들어오는 장면을 묘사하라. 출처가 불분명한 첩보를 보고하는 측근의 대화나 시장 소문 형태로 전달하고, 플레이어가 이 정보를 심각하게 받아들여야 할 이유를 제시하라.",
+    "end_pathways": [
+      {
+        "id": "mustafa_squashed",
+        "condition": "mustafa_defeated",
+        "on_end_prompt": "무스타파라고 자칭하던 인물이 실체를 드러내기 전에 제거됐다. 이번 서술에서 소문의 주인공이 사라졌다는 소식을 전달하라. 비잔틴과 베이릭들이 잠시 술렁이다 잠잠해지는 분위기를 묘사하고, 왕자 행세를 한 자의 죽음이 공위 분쟁에 미치는 영향을 간략히 언급하라."
+      },
+      {
+        "id": "mustafa_emerges",
+        "condition": "year >= 1412",
+        "on_end_prompt": "소문을 잠재우지 못한 사이 2년이 흘렀다. 이번 서술에서 무스타파가 소문의 영역을 벗어나 실제 세력을 규합하고 있다는 첩보가 들어오는 장면을 묘사하라. 루멜리아 일부 귀족이 그의 기치 아래 모이기 시작했으며, 이제 단순한 소문이 아닌 정치적 실체로 대응해야 할 시점임을 명확히 하라.",
+        "chain_trigger": "mustafa_army"
+      }
     ],
     "dot": "#9B59B6", "region": "루멜리아·아나톨리아", "badge": "badge-unknown", "badgeText": "잠재적 위협"
   },
   {
     "id": "mustafa_army",
     "name": "무스타파의 루멜리아 출병", "sub": "1412년 이후 · 루멜리아",
-    "trigger_condition": "mustafa_rumor_ended and mustafa_defeated == false",
-    "end_condition": "mustafa_defeated",
     "body": "무스타파 왕자의 존재가 소문에서 현실이 됐다. 비잔틴의 묵인과 일부 루멜리아 귀족의 지지를 등에 업고 실질적인 군세를 구성해 오스만 계승권을 정면으로 요구하고 있다. 공위 분쟁을 종식하고 싶다면 이 새로운 경쟁자를 먼저 처리해야 한다.",
-    "effects": [
-      { "key": "무스타파 성장", "desc": "비잔틴 묵인·귀족 지원으로 연간 세력 확대 (+20)", "type": "faction_growth", "frequency": "annual", "value": 20, "target": "mustafa" }
+    "on_trigger_prompt": "이번 서술에서 무스타파가 실제 군대를 이끌고 루멜리아에 나타났다는 긴급 보고가 들어오는 장면을 삽입하라. 비잔틴의 지원을 등에 업은 그의 출병 소식이 가져오는 정치적 충격을 묘사하고, 이것이 단순한 소문이 아닌 실체 있는 위협임을 명확히 하라.",
+    "end_pathways": [
+      {
+        "id": "mustafa_defeated_in_field",
+        "condition": "mustafa_defeated",
+        "on_end_prompt": "무스타파가 야전에서 패퇴했다. 이번 서술에서 무스타파의 군대가 분산·해체되고 그의 루멜리아 출병이 실패로 끝났음을 묘사하라. 그를 지지했던 귀족들이 발을 빼거나 항복하는 분위기를 반영하고, 비잔틴의 태도가 어떻게 변화하는지도 간략히 암시하라."
+      },
+      {
+        "id": "byzantine_support_secured",
+        "condition": "year >= 1415",
+        "on_end_prompt": "무스타파의 출병이 3년을 넘겼다. 이번 서술에서 비잔틴이 무스타파를 단순 묵인에서 공식 후원으로 격상시켰다는 정보가 플레이어 진영에 전달되는 장면을 묘사하라. 이것이 새로운 차원의 위협임을 명확히 하고, 비잔틴과 무스타파를 동시에 상대해야 하는 국면이 열렸음을 인식시켜라.",
+        "chain_trigger": "byzantine_mustafa"
+      }
     ],
     "dot": "#9B59B6", "region": "루멜리아", "badge": "badge-ongoing", "badgeText": "위협 현실화"
   },
   {
     "id": "byzantine_mustafa",
     "name": "비잔틴의 무스타파 공식 후원", "sub": "1415년 이후 · 콘스탄티노플·루멜리아",
-    "trigger_condition": "mustafa_army_active and year >= 1415",
     "end_condition": "mustafa_defeated",
     "body": "무스타파가 3년 넘게 건재하자 비잔틴 황제가 공식적으로 그를 오스만 합법 후계자로 인정하고 군사 지원에 나섰다. 단순한 묵인을 넘어 제국의 자원이 무스타파 진영으로 흘러들어가고 있다. 오스만의 통일 자체를 방해하려는 비잔틴의 전략이 구체화됐으며, 무스타파를 처리하지 않고는 술탄국 재건이 불가능해졌다.",
-    "effects": [
-      { "key": "제국 직접 지원", "desc": "비잔틴 군사 자원 투입으로 무스타파 추가 성장 (+20)", "type": "faction_growth", "frequency": "annual", "value": 20, "target": "mustafa" },
-      { "key": "이중 전선", "desc": "비잔틴과 무스타파를 동시에 상대해야 하는 구도" }
-    ],
+    "on_trigger_prompt": "이번 서술에서 비잔틴 황제가 무스타파를 공식 후원한다는 외교 서한 또는 정보가 플레이어 진영에 도달하는 장면을 묘사하라. 이것이 단순한 묵인과 다른 차원의 위협임을 강조하고, 이제 비잔틴과 무스타파를 동시에 상대해야 하는 국면이 됐음을 인식시켜라.",
+    "on_end_prompt": "무스타파가 최종 패배했다. 이번 서술에서 비잔틴의 후원을 등에 업고도 버텨낸 무스타파가 결국 제거됐음을 묘사하라. 비잔틴이 이 결과를 받아들이는 방식을 짧게 암시하고, 술탄국 재건에서 가장 위험했던 변수 하나가 제거됐다는 안도감과 함께 남은 과제를 환기시켜라.",
     "dot": "#9B59B6", "region": "콘스탄티노플·루멜리아", "badge": "badge-ongoing", "badgeText": "위협 현실화"
   },
   {
@@ -140,9 +188,7 @@
     "end_condition": "smyrna_contested == false",
     "body": "티무르 침공으로 와해됐던 아이딘 왕조 잔존 세력이 에게해 연안에 재집결했다. 스미르나의 공백을 틈타 옛 영토 회복에 나섰다.",
     "prompt": "아이딘 왕조 잔존 세력이 스미르나를 실효 점거했다. 이번 응답에서 이 사건을 서술에 반영하고, STATE_UPDATE의 new_factions에 아이딘 왕조(id: aydinids, name: 아이딘 왕조, type: emirate, strength_score 90~100, color: #7A9E5A)를 추가하라. 동시에 location_changes로 smyrna의 controller를 aydinids로 갱신하라.",
-    "effects": [
-      { "key": "거점 확보", "desc": "스미르나 장악 — 에게해 연안 교역·항구 통제권 획득" }
-    ],
+    "on_trigger_prompt": "이번 서술에서 아이딘 왕조 잔존 세력이 스미르나를 점거했다는 보고가 들어오는 장면을 묘사하라. 이들이 에게해 연안에서 세력을 재건하는 것이 서부 아나톨리아 전략에 미치는 함의를 플레이어가 인식하도록 하라.",
     "dot": "#7A9E5A",
     "region": "서부 아나톨리아",
     "badge": "badge-ongoing",
@@ -155,10 +201,7 @@
     "end_condition": "bulgarian-rebels_defeated or civil_war_ended",
     "protagonist_only": ["isa", "musa", "mehmed"],
     "body": "오랜 혼란을 틈타 규모를 키운 트라키아·불가리아의 기독교 귀족 연합이 전면 봉기에 나섰다. 더 이상 산발적 불만이 아닌 조직화된 반오스만 세력으로, 루멜리아 전역의 오스만 거점을 동시에 위협한다. 이들을 방치한 채 왕좌를 차지하더라도 통치 기반이 흔들릴 것이다.",
-    "effects": [
-      { "key": "반군 성장", "desc": "봉기군이 연간 루멜리아 거점 확대 (+25)", "type": "faction_growth", "frequency": "annual", "value": 25, "target": "bulgarian-rebels" },
-      { "key": "후방 교란", "desc": "루멜리아 지배 불안정으로 병력 회복 속도 저하 (×0.4)", "type": "recovery_rate", "value": 0.4, "target": "protagonist" }
-    ],
+    "on_trigger_prompt": "이번 서술에서 불가리아·트라키아 전역에서 동시다발 봉기가 발생했다는 긴급 보고가 쏟아지는 장면을 묘사하라. 산발적 불만이 조직화된 전면 반란으로 격화됐음을 나타내고, 루멜리아 후방 전체가 흔들리는 위기감을 전달하라.",
     "dot": "#7B4F2E", "region": "루멜리아 전역", "badge": "badge-ongoing", "badgeText": "위협 현실화"
   }
 ]

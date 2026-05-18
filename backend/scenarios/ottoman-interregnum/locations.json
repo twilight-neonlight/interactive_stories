@@ -46,9 +46,10 @@
     "region": "중앙 아나톨리아", "continent": "아나톨리아",
     "controller": "contested",
     "tier": "regional_city",
-    "garrison_modifier": 0.2,
+    "conquered_at": "1402년 7월",
+    "conquest_disposition": "약탈",
     "terrain": "아나톨리아 고원 — 성채 언덕",
-    "notes": "1402년의 전투의 현장. 중앙 아나톨리아의 교통 교차로로, 티무르의 침공이 남긴 상흔이 집약된 지점."
+    "notes": "1402년 전투의 현장. 중앙 아나톨리아의 교통 교차로로, 티무르의 침공이 남긴 상흔이 집약된 지점."
   },
   {
     "id": "antalya",
@@ -87,8 +88,10 @@
     "region": "비티니아", "continent": "아나톨리아",
     "controller": "isa",
     "tier": "major_city",
+    "conquered_at": "1402년 8월",
+    "conquest_disposition": "약탈",
     "terrain": "울루다으 산 북록 — 비옥한 평원",
-    "notes": "오스만 최초의 수도이자 상업 중심지이자, 아나톨리아 서부 패권의 상징."
+    "notes": "오스만 최초의 수도이자 상업 중심지. 앙카라 전투 이후 티무르에게 약탈당했고, 이후 이사가 접수했으나 도시는 아직 복구 중이다."
   },
   {
     "id": "caffa",
@@ -147,9 +150,10 @@
     "region": "동부 아나톨리아", "continent": "아나톨리아",
     "controller": "contested",
     "tier": "small_city",
-    "garrison_modifier": 0.25,
+    "conquered_at": "1402년 6월",
+    "conquest_disposition": "약탈",
     "terrain": "유프라테스 강 상류(카라수) 분지 — 산악 포위 내륙 도시",
-    "notes": "아나톨리아와 코카서스·이란을 잇는 내륙 교역로의 교차점. 티무르 침공 이후 현지 투르코만 세력이 각축하는 동부 아나톨리아의 관문."
+    "notes": "아나톨리아와 코카서스·이란을 잇는 내륙 교역로의 교차점. 티무르 서진 과정에서 약탈당했고, 이후 현지 투르코만 세력이 각축하는 동부 아나톨리아의 관문."
   },
   {
     "id": "filibe",
@@ -238,9 +242,10 @@
     "region": "서부 아나톨리아", "continent": "아나톨리아",
     "controller": "contested",
     "tier": "small_city",
-    "garrison_modifier": 0.5,
+    "conquered_at": "1402년 12월",
+    "conquest_disposition": "약탈",
     "terrain": "에게해 만 항구 — 평지 해안 도시",
-    "notes": "에게해 교역의 핵심 항구. 티무르의 침공 이후 성요한 기사단이 물러나며 지배권이 공백 상태. 아나톨리아 베이릭과 오스만 형제 모두가 탐내는 서부 아나톨리아의 관문."
+    "notes": "에게해 교역의 핵심 항구. 티무르의 침공으로 성요한 기사단이 물러난 지 불과 석 달이 지나 도시는 아직 혼란 속에 있다. 아나톨리아 베이릭과 오스만 형제 모두가 탐내는 서부 아나톨리아의 관문."
   },
   {
     "id": "targoviste",

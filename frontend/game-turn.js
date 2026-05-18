@@ -104,8 +104,17 @@ function applyStateUpdates(su) {
   if (Array.isArray(su.location_changes)) {
     for (const lc of su.location_changes) {
       const loc = _state.locations.get(lc.id);
-      if (loc && lc.controller && _state.factions.has(lc.controller)) {
-        loc.controller = lc.controller;
+      if (!loc) continue;
+      if (lc.controller && _state.factions.has(lc.controller)) loc.controller = lc.controller;
+      if (typeof lc.garrison_modifier === 'number') loc.garrison_modifier = lc.garrison_modifier;
+      if (typeof lc.garrison === 'number') loc.garrison = lc.garrison;
+      if ('conquered_at' in lc) {
+        if (lc.conquered_at === null) delete loc.conquered_at;
+        else loc.conquered_at = lc.conquered_at;
+      }
+      if ('conquest_disposition' in lc) {
+        if (lc.conquest_disposition === null) delete loc.conquest_disposition;
+        else loc.conquest_disposition = lc.conquest_disposition;
       }
     }
   }
@@ -144,6 +153,12 @@ function applyStateUpdates(su) {
   }
   if (typeof su.weather === 'string') {
     _state.weather = su.weather;
+  }
+  if (su.event_state_changes && typeof su.event_state_changes === 'object') {
+    _state.eventStates = { ...su.event_state_changes };
+  }
+  if (Array.isArray(su.pending_conquest_dispositions)) {
+    _state.pendingConquestDispositions = su.pending_conquest_dispositions;
   }
 }
 

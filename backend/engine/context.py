@@ -82,6 +82,19 @@ def _event_condition_context(state: dict, current_year: int | None) -> dict:
         pf    = facs.get(pfid, {}) if pfid else {}
         ctx["player_strength"] = max(0, (pf.get("strength_score") or 0) - (pf.get("battle_damage") or 0))
 
+    # 모든 세력의 외교 수치: {fid}_score
+    for fid, f in facs.items():
+        score = f.get("diplomacy_score")
+        if score is not None:
+            ctx[f"{fid}_score"] = int(score)
+
+    # 저장된 이벤트 상태에서 trigger_year 변수 추가
+    stored_event_states = state.get("eventStates", {})
+    for eid, ev_data in stored_event_states.items():
+        ty = ev_data.get("trigger_year") if isinstance(ev_data, dict) else None
+        if ty is not None:
+            ctx[f"{eid}_trigger_year"] = ty
+
     # 이벤트 상태 플래그: {event_id}_active, {event_id}_ended
     for ev in state.get("events", []):
         eid = ev.get("id")
@@ -191,6 +204,247 @@ def _extract_trigger_year(ev: dict) -> int | None:
             year = int(m.group(1))
             return year + 1 if m.group(2) == "<" else year
     return None
+
+
+def _ev_state(val) -> str | None:
+    """eventStates 값에서 state 문자열을 추출합니다 (구 형식 str / 신 형식 dict 호환)."""
+    if isinstance(val, str):
+        return val
+    if isinstance(val, dict):
+        return val.get("state")
+    return None
+
+
+def strip_event_states(states: dict) -> dict:
+    """내부 전용 키(_로 시작)를 제거해 직렬화 가능한 형태로 반환합니다."""
+    result: dict = {}
+    for eid, data in states.items():
+        if isinstance(data, dict):
+            result[eid] = {k: v for k, v in data.items() if not k.startswith("_")}
+        else:
+            result[eid] = data
+    return result
+
+
+def compute_event_states(state: dict) -> dict:
+    """
+    이벤트 상태를 계산합니다.
+
+    반환값: {event_id: {"state": "active"|"ended", "trigger_year": int|None, "end_pathway": str|None}}
+    내부 전용 키 "_end_pathway_data"는 detect_event_transitions 에서 사용 후 strip_event_states로 제거합니다.
+    chain_trigger가 있는 end_pathway 발동 시 해당 이벤트가 force_active에 추가되어 2패스로 처리됩니다.
+    """
+    events = state.get("events", [])
+    stored_states = state.get("eventStates", {})
+    ts = state.get("progress", {}).get("timestamp", "")
+    m = re.search(r'(\d{3,4})년', ts)
+    current_year = int(m.group(1)) if m else None
+    cond_ctx = _event_condition_context(state, current_year)
+
+    ev_map = {ev["id"]: ev for ev in events if ev.get("id")}
+    new_states: dict = {}
+    force_active: set = set()
+
+    def _prev_state(eid: str) -> str | None:
+        return _ev_state(stored_states.get(eid))
+
+    def _prev_trigger_year(eid: str) -> int | None:
+        d = stored_states.get(eid)
+        return d.get("trigger_year") if isinstance(d, dict) else None
+
+    def _process_event(eid: str, is_forced: bool = False) -> None:
+        ev = ev_map.get(eid)
+        if not ev:
+            return
+        prev_st = _prev_state(eid)
+        prev_ty = _prev_trigger_year(eid)
+
+        triggered = is_forced or _evaluate_event_condition(_event_condition_expr(ev), cond_ctx)
+        if not triggered:
+            return
+
+        trigger_year = prev_ty if prev_st == "active" else current_year
+
+        # end_pathways: 첫 번째로 조건 충족되는 경로 사용
+        pathway_hit = None
+        pathways = ev.get("end_pathways", [])
+        if pathways:
+            for pw in pathways:
+                if _evaluate_event_condition(pw.get("condition"), cond_ctx):
+                    pathway_hit = pw
+                    break
+        else:
+            # 단일 end_condition 방식 (기존 호환)
+            end_cond = ev.get("end_condition")
+            if end_cond and _evaluate_event_condition(end_cond, cond_ctx):
+                pathway_hit = {
+                    "id": "_end",
+                    "on_end_prompt": ev.get("on_end_prompt"),
+                    "chain_trigger": None,
+                }
+
+        if pathway_hit:
+            new_states[eid] = {
+                "state":        "ended",
+                "trigger_year": trigger_year,
+                "end_pathway":  pathway_hit.get("id"),
+                "_end_pathway_data": pathway_hit,  # strip_event_states로 제거됨
+            }
+            chain = pathway_hit.get("chain_trigger")
+            if chain:
+                force_active.add(chain)
+        else:
+            # active_chains: 활성 중 조건이 충족되면 한 번만 발화하는 부속 체인
+            prev_fired: set[str] = set(
+                (stored_states.get(eid) or {}).get("fired_chains", [])
+                if isinstance(stored_states.get(eid), dict) else []
+            )
+            new_fired = set(prev_fired)
+            for ac in ev.get("active_chains", []):
+                cid = ac.get("chain_trigger")
+                if cid and cid not in prev_fired:
+                    if _evaluate_event_condition(ac.get("condition"), cond_ctx):
+                        force_active.add(cid)
+                        new_fired.add(cid)
+            entry: dict = {"state": "active", "trigger_year": trigger_year}
+            if new_fired:
+                entry["fired_chains"] = sorted(new_fired)
+            new_states[eid] = entry
+
+    # 1패스: 모든 이벤트 정상 처리
+    for ev in events:
+        eid = ev.get("id")
+        if eid:
+            _process_event(eid)
+
+    # 2패스: chain_trigger로 강제 발동된 이벤트 (아직 미처리된 것만)
+    for eid in force_active:
+        if eid not in new_states:
+            _process_event(eid, is_forced=True)
+
+    return new_states
+
+
+def detect_event_transitions(
+    stored: dict,
+    current: dict,
+    events: list[dict],
+) -> tuple[list[tuple], list[tuple]]:
+    """신규 활성화·종료 이벤트를 검출합니다.
+    Returns (newly_active, newly_ended) — 각각 (event_dict, state_data) 튜플 리스트.
+    """
+    ev_map = {ev["id"]: ev for ev in events if ev.get("id")}
+    newly_active: list[tuple] = []
+    newly_ended:  list[tuple] = []
+    for eid, cur_data in current.items():
+        cur_state  = _ev_state(cur_data)
+        prev_state = _ev_state(stored.get(eid))
+        ev = ev_map.get(eid)
+        if not ev:
+            continue
+        if cur_state == "active" and prev_state != "active":
+            newly_active.append((ev, cur_data))
+        elif cur_state == "ended" and prev_state == "active":
+            newly_ended.append((ev, cur_data))
+    return newly_active, newly_ended
+
+
+def collect_transition_effects(
+    newly_active: list[tuple],
+    newly_ended:  list[tuple],
+    state: dict,
+    protagonist_id: str | None = None,
+) -> dict:
+    """이벤트 전환 시 LLM 없이 시스템이 직접 적용할 상태 변경을 수집합니다.
+
+    Returns: {
+        "faction_strength_changes":     [{id, delta}, ...],
+        "character_disposition_changes": [{id, disposition}, ...],
+        "faction_diplomacy_changes":    [{id, delta}, ...],
+    }
+    각 항목의 "condition" 필드가 있으면 현재 컨텍스트로 평가 후 조건 불충족 시 건너뜁니다.
+    """
+    ts = state.get("progress", {}).get("timestamp", "")
+    m  = re.search(r'(\d{3,4})년', ts)
+    current_year = int(m.group(1)) if m else None
+    cond_ctx = _event_condition_context(state, current_year)
+
+    faction_strength:  list[dict] = []
+    char_disposition:  list[dict] = []
+    faction_diplomacy: list[dict] = []
+
+    def _applies(ev: dict) -> bool:
+        po = ev.get("protagonist_only")
+        return not po or not protagonist_id or protagonist_id in po
+
+    def _apply(effects: dict):
+        for item in effects.get("faction_strength_changes", []):
+            if item.get("condition") and not _evaluate_event_condition(item["condition"], cond_ctx):
+                continue
+            faction_strength.append({"id": item["id"], "delta": item["delta"]})
+        for item in effects.get("character_disposition_changes", []):
+            if item.get("condition") and not _evaluate_event_condition(item["condition"], cond_ctx):
+                continue
+            char_disposition.append({"id": item["id"], "disposition": item["disposition"]})
+        for item in effects.get("faction_diplomacy_changes", []):
+            if item.get("condition") and not _evaluate_event_condition(item["condition"], cond_ctx):
+                continue
+            faction_diplomacy.append({"id": item["id"], "delta": item["delta"]})
+
+    for ev, _ in newly_active:
+        if not _applies(ev):
+            continue
+        effects = ev.get("on_trigger_effects")
+        if effects:
+            _apply(effects)
+
+    for ev, state_data in newly_ended:
+        if not _applies(ev):
+            continue
+        pathway_data = state_data.get("_end_pathway_data") if isinstance(state_data, dict) else None
+        effects = (pathway_data.get("state_effects") if pathway_data else None) or ev.get("on_end_effects")
+        if effects:
+            _apply(effects)
+
+    result: dict = {}
+    if faction_strength:
+        result["faction_strength_changes"] = faction_strength
+    if char_disposition:
+        result["character_disposition_changes"] = char_disposition
+    if faction_diplomacy:
+        result["faction_diplomacy_changes"] = faction_diplomacy
+    return result
+
+
+def build_event_transition_prompt(
+    newly_active: list[tuple],
+    newly_ended:  list[tuple],
+    protagonist_id: str | None = None,
+) -> str:
+    """이번 턴 이벤트 전환을 LLM 서술에 반영하도록 지시하는 프롬프트를 반환합니다."""
+    def _applies(ev: dict) -> bool:
+        po = ev.get("protagonist_only")
+        return not po or not protagonist_id or protagonist_id in po
+
+    active_ok = [(ev, d) for ev, d in newly_active if _applies(ev)]
+    ended_ok  = [(ev, d) for ev, d in newly_ended  if _applies(ev)]
+    if not active_ok and not ended_ok:
+        return ""
+
+    lines = ["\n\n---\n## 이번 턴 이벤트 전환 (서술 반영 필수)"]
+    for ev, _ in active_ok:
+        prompt = ev.get("on_trigger_prompt") or f'"{ev.get("name", ev["id"])}" 이벤트가 발동됐다. 이번 서술에 자연스럽게 반영하라.'
+        lines.append(f"\n### 발동: {ev.get('name', ev['id'])}\n{prompt}")
+    for ev, state_data in ended_ok:
+        # end_pathway가 있으면 pathway의 on_end_prompt 우선 사용
+        pathway_data = state_data.get("_end_pathway_data") if isinstance(state_data, dict) else None
+        prompt = (
+            (pathway_data.get("on_end_prompt") if pathway_data else None)
+            or ev.get("on_end_prompt")
+            or f'"{ev.get("name", ev["id"])}" 이벤트가 해소됐다. 이번 서술에 자연스럽게 반영하라.'
+        )
+        lines.append(f"\n### 해소: {ev.get('name', ev['id'])}\n{prompt}")
+    return "\n".join(lines)
 
 
 def build_scenario_context(state: dict, scenario_prompts: dict | None = None) -> str:

@@ -4,8 +4,8 @@
     "strength_score": 254, "field_army": 9700, "disposition": "중립", "color": "#3a7abf",
     "notes": "루멜리아 전역과 비잔틴·제노바 외교망을 보유한 형제 중 가장 강력한 왕자. 귀족·봉신 의존 구조로 중앙집권이 약하며, 외교 결단에 내부 반발이 따르기 쉽다.",
     "initial_diplomacy": {
-      "byzantine": 50, "genoa": 35, "karamanids": -25,
-      "isa": -50, "musa": -80, "mehmed": -50, "bulgarian-rebels": -80
+      "byzantine": 30, "genoa": 20, "karamanids": -20,
+      "isa": -50, "musa": -80, "mehmed": -50, "bulgarian-rebels": -100
     }
   },
   {
@@ -13,7 +13,7 @@
     "strength_score": 81, "field_army": 1500, "disposition": "중립", "color": "#888780",
     "notes": "부르사를 거점으로 한 왕자. 아나톨리아 서부를 장악했으나 사방이 경쟁 세력에 노출된 구조적으로 취약한 위치. 기동전에 강하고 고위험 고수익 전략을 구사한다.",
     "initial_diplomacy": {
-      "byzantine": -20, "karamanids": -50, "germiyanids": 50, "tekke": 50,
+      "byzantine": -20, "karamanids": -30, "germiyanids": 20, "tekke": 20,
       "suleyman": -50, "musa": -50, "mehmed": -80
     }
   },
@@ -22,7 +22,7 @@
     "strength_score": 32, "field_army": 2100, "disposition": "중립", "color": "#8b2020",
     "notes": "아나톨리아 가지·유목 세력을 기반으로 한 전투형 왕자. 외교보다 전쟁을 선호해 협상 비용이 높으며, 전투력은 강하나 장기 행정 능력이 부재하다.",
     "initial_diplomacy": {
-      "byzantine": -30, "karamanids": -50, "suleyman": -80, "isa": -50, "mehmed": -50
+      "byzantine": -30, "karamanids": -30, "suleyman": -80, "isa": -50, "mehmed": -50
     }
   },
   {
@@ -30,8 +30,8 @@
     "strength_score": 128, "field_army": 6800, "disposition": "중립", "color": "#C5932A",
     "notes": "아마스야 요새와 흑해 교역 수입을 기반으로 한 가장 신중한 왕자. 초반에는 열세지만 균형 외교와 장기 전략에 능하다.",
     "initial_diplomacy": {
-      "byzantine": -20, "genoa": 25, "karamanids": -50,
-      "suleyman": -50, "isa": -80, "musa": -50, "eretna-remnants": -80
+      "byzantine": -20, "genoa": 25, "karamanids": -40,
+      "suleyman": -50, "isa": -80, "musa": -50, "eretna-remnants": -100
     }
   },
   {

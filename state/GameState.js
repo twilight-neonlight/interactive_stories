@@ -107,6 +107,12 @@ class GameState {
     /** @type {Object|null} 다중 턴 전투 진행 상태 (전투 중일 때만 non-null) */
     this.combatState = null;
 
+    /** @type {Object<string, 'active'|'ended'>} 이벤트 상태 추적 (미발동 = 부재) */
+    this.eventStates = {};
+
+    /** @type {Array<{id: string, tier: string, name: string}>} 처분 미결 점령지 목록 */
+    this.pendingConquestDispositions = [];
+
     // 시나리오 초기값을 깊은 복사해서 Map으로 변환
     for (const char of scenario.characters ?? []) {
       this.characters.set(char.id, {
@@ -394,6 +400,8 @@ class GameState {
       locations:     Object.fromEntries(this.locations),
       events:        this.events.slice(),
       combatState:   this.combatState,
+      eventStates:   { ...this.eventStates },
+      pendingConquestDispositions: this.pendingConquestDispositions.slice(),
     };
   }
 
@@ -420,6 +428,10 @@ class GameState {
     state.locations       = new Map(Object.entries(data.locations));
     state.events          = Array.isArray(data.events) ? data.events.slice() : [];
     state.combatState     = data.combatState ?? null;
+    state.eventStates     = (data.eventStates && typeof data.eventStates === 'object')
+                            ? { ...data.eventStates } : {};
+    state.pendingConquestDispositions = Array.isArray(data.pendingConquestDispositions)
+                            ? data.pendingConquestDispositions.slice() : [];
     // UI 전용 데이터는 직렬화 대상 아님 — game.html에서 scenario fetch 후 재주입
     state.opening        = {};
     state.troopsPerPoint = null;

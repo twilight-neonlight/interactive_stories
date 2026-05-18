@@ -12,5 +12,6 @@
   "iconBg": "rgba(197,147,42,0.09)",
 "protagonistMode": "select",
   "characterSelectPage": "prince_select.html",
-  "troops_per_strength_point": 65
+  "troops_per_strength_point": 65,
+  "start_timestamp": "1403년 3월"
 }
