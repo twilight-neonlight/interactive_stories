@@ -1,5 +1,6 @@
 {
-  "faction_vars": ["germiyanids", "tekke", "jandarids", "karamanids", "wallachia", "mustafa",
+  "faction_vars": ["suleyman", "isa", "musa", "mehmed",
+                   "germiyanids", "tekke", "jandarids", "karamanids", "wallachia", "mustafa",
                    "bulgarian-rebels", "eretna-remnants", "timur_expedition", "aydinids"],
-  "location_vars": ["smyrna"]
+  "location_vars": ["smyrna", "filibe", "gallipoli", "varna"]
 }

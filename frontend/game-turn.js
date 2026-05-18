@@ -160,6 +160,9 @@ function applyStateUpdates(su) {
   if (Array.isArray(su.pending_conquest_dispositions)) {
     _state.pendingConquestDispositions = su.pending_conquest_dispositions;
   }
+  if (su.lost_battles && typeof su.lost_battles === 'object') {
+    _state.lostBattles = { ..._state.lostBattles, ...su.lost_battles };
+  }
 }
 
 // ── 턴 전진

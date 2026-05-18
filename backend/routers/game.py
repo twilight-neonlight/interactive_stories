@@ -427,6 +427,12 @@ async def process_turn(req: TurnRequest):
             state_updates["faction_battle_damage"] = [
                 {"id": fid, "damage": dmg} for fid, dmg in pending.items() if dmg > 0
             ]
+            # 전투 패배 이력 누적 — 이벤트 조건 평가에서 lost_to_{fid}로 참조
+            if new_combat_state.get("winner") == "enemy":
+                enemy_fid = new_combat_state.get("enemy_faction_id")
+                if enemy_fid:
+                    existing = req.state.get("lostBattles") or {}
+                    state_updates["lost_battles"] = {**existing, enemy_fid: True}
 
     return {
         "content":      content,

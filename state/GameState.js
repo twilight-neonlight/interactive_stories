@@ -113,6 +113,9 @@ class GameState {
     /** @type {Array<{id: string, tier: string, name: string}>} 처분 미결 점령지 목록 */
     this.pendingConquestDispositions = [];
 
+    /** @type {Object<string, boolean>} 전투 패배 이력 — {faction_id: true} */
+    this.lostBattles = {};
+
     // 시나리오 초기값을 깊은 복사해서 Map으로 변환
     for (const char of scenario.characters ?? []) {
       this.characters.set(char.id, {
@@ -402,6 +405,7 @@ class GameState {
       combatState:   this.combatState,
       eventStates:   { ...this.eventStates },
       pendingConquestDispositions: this.pendingConquestDispositions.slice(),
+      lostBattles:   { ...this.lostBattles },
     };
   }
 
@@ -432,6 +436,8 @@ class GameState {
                             ? { ...data.eventStates } : {};
     state.pendingConquestDispositions = Array.isArray(data.pendingConquestDispositions)
                             ? data.pendingConquestDispositions.slice() : [];
+    state.lostBattles  = (data.lostBattles && typeof data.lostBattles === 'object')
+                            ? { ...data.lostBattles } : {};
     // UI 전용 데이터는 직렬화 대상 아님 — game.html에서 scenario fetch 후 재주입
     state.opening        = {};
     state.troopsPerPoint = null;

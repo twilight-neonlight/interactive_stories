@@ -41,7 +41,16 @@ def _troops_range(score: int, per_point: int) -> str:
     return f"약 {lo:,}~{hi:,}명"
 
 
-def _event_condition_context(state: dict, current_year: int | None) -> dict:
+def _parse_year_month(ts: str) -> tuple[int | None, int | None]:
+    """타임스탬프에서 (year, month)를 파싱합니다. 없으면 None."""
+    m_ym = re.search(r'(\d{3,4})년\s*(\d{1,2})월', ts)
+    if m_ym:
+        return int(m_ym.group(1)), int(m_ym.group(2))
+    m_y = re.search(r'(\d{3,4})년', ts)
+    return (int(m_y.group(1)), None) if m_y else (None, None)
+
+
+def _event_condition_context(state: dict, current_year: int | None, current_month: int | None = None) -> dict:
     """이벤트 trigger_condition 평가에 쓰일 컨텍스트를 구성합니다."""
     locs        = state.get("locations", {})
     facs        = state.get("factions", {})
@@ -50,6 +59,7 @@ def _event_condition_context(state: dict, current_year: int | None) -> dict:
 
     ctx: dict = {
         "year": current_year,
+        "month": current_month,
         "chapter": state.get("progress", {}).get("chapter"),
         "scene": state.get("progress", {}).get("scene"),
         "has_exiled_prince": any(
@@ -68,18 +78,24 @@ def _event_condition_context(state: dict, current_year: int | None) -> dict:
         ctx[f"{fid}_defeated"] = bool(f.get("defeated", False))
         ctx[f"{fid}_strength"] = max(0, (f.get("strength_score") or 0) - (f.get("battle_damage") or 0))
 
-    # location_vars 거점: {id}_contested 변수 추가
-    location_vars = (state.get("eventContext") or {}).get("location_vars", [])
-    for lid in location_vars:
-        loc = locs.get(lid, {})
-        ctx[f"{lid}_contested"] = (loc.get("controller", "") == "contested")
-
-    # 플레이어 세력 유효 전력
+    # 플레이어 세력 id (location_vars 처리에도 필요하므로 먼저 계산)
+    _pfid: str | None = None
     if protagonist:
         chars = state.get("characters", {})
         pc    = chars.get(protagonist, {})
-        pfid  = pc.get("faction_id") or (protagonist if protagonist in facs else None)
-        pf    = facs.get(pfid, {}) if pfid else {}
+        _pfid = pc.get("faction_id") or (protagonist if protagonist in facs else None)
+
+    # location_vars 거점: {id}_contested, {id}_player_controlled 변수 추가
+    location_vars = (state.get("eventContext") or {}).get("location_vars", [])
+    for lid in location_vars:
+        loc        = locs.get(lid, {})
+        controller = loc.get("controller", "")
+        ctx[f"{lid}_contested"]        = (controller == "contested")
+        ctx[f"{lid}_player_controlled"] = (controller == _pfid) if _pfid else False
+
+    # 플레이어 세력 유효 전력
+    if _pfid:
+        pf = facs.get(_pfid, {})
         ctx["player_strength"] = max(0, (pf.get("strength_score") or 0) - (pf.get("battle_damage") or 0))
 
     # 모든 세력의 외교 수치: {fid}_score
@@ -88,12 +104,27 @@ def _event_condition_context(state: dict, current_year: int | None) -> dict:
         if score is not None:
             ctx[f"{fid}_score"] = int(score)
 
-    # 저장된 이벤트 상태에서 trigger_year 변수 추가
+    # lost_to_{fid} — 해당 세력과의 전투 패배 이력
+    lost_battles = state.get("lostBattles", {})
+    for fid, lost in lost_battles.items():
+        ctx[f"lost_to_{fid}"] = bool(lost)
+
+    # 저장된 이벤트 상태에서 trigger_year/trigger_month 변수, months_since_trigger 추가
     stored_event_states = state.get("eventStates", {})
+    current_total_months = (
+        current_year * 12 + (current_month - 1)
+        if current_year is not None and current_month is not None else None
+    )
     for eid, ev_data in stored_event_states.items():
-        ty = ev_data.get("trigger_year") if isinstance(ev_data, dict) else None
+        if not isinstance(ev_data, dict):
+            continue
+        ty = ev_data.get("trigger_year")
+        tm = ev_data.get("trigger_month")
         if ty is not None:
             ctx[f"{eid}_trigger_year"] = ty
+        if ty is not None and current_total_months is not None:
+            trigger_total = ty * 12 + ((tm - 1) if tm is not None else 0)
+            ctx[f"{eid}_months_since_trigger"] = current_total_months - trigger_total
 
     # 이벤트 상태 플래그: {event_id}_active, {event_id}_ended
     for ev in state.get("events", []):
@@ -237,9 +268,8 @@ def compute_event_states(state: dict) -> dict:
     events = state.get("events", [])
     stored_states = state.get("eventStates", {})
     ts = state.get("progress", {}).get("timestamp", "")
-    m = re.search(r'(\d{3,4})년', ts)
-    current_year = int(m.group(1)) if m else None
-    cond_ctx = _event_condition_context(state, current_year)
+    current_year, current_month = _parse_year_month(ts)
+    cond_ctx = _event_condition_context(state, current_year, current_month)
 
     ev_map = {ev["id"]: ev for ev in events if ev.get("id")}
     new_states: dict = {}
@@ -252,18 +282,24 @@ def compute_event_states(state: dict) -> dict:
         d = stored_states.get(eid)
         return d.get("trigger_year") if isinstance(d, dict) else None
 
+    def _prev_trigger_month(eid: str) -> int | None:
+        d = stored_states.get(eid)
+        return d.get("trigger_month") if isinstance(d, dict) else None
+
     def _process_event(eid: str, is_forced: bool = False) -> None:
         ev = ev_map.get(eid)
         if not ev:
             return
         prev_st = _prev_state(eid)
         prev_ty = _prev_trigger_year(eid)
+        prev_tm = _prev_trigger_month(eid)
 
         triggered = is_forced or _evaluate_event_condition(_event_condition_expr(ev), cond_ctx)
         if not triggered:
             return
 
-        trigger_year = prev_ty if prev_st == "active" else current_year
+        trigger_year  = prev_ty if prev_st == "active" else current_year
+        trigger_month = prev_tm if prev_st == "active" else current_month
 
         # end_pathways: 첫 번째로 조건 충족되는 경로 사용
         pathway_hit = None
@@ -284,12 +320,15 @@ def compute_event_states(state: dict) -> dict:
                 }
 
         if pathway_hit:
-            new_states[eid] = {
+            ended_entry: dict = {
                 "state":        "ended",
                 "trigger_year": trigger_year,
                 "end_pathway":  pathway_hit.get("id"),
                 "_end_pathway_data": pathway_hit,  # strip_event_states로 제거됨
             }
+            if trigger_month is not None:
+                ended_entry["trigger_month"] = trigger_month
+            new_states[eid] = ended_entry
             chain = pathway_hit.get("chain_trigger")
             if chain:
                 force_active.add(chain)
@@ -307,6 +346,8 @@ def compute_event_states(state: dict) -> dict:
                         force_active.add(cid)
                         new_fired.add(cid)
             entry: dict = {"state": "active", "trigger_year": trigger_year}
+            if trigger_month is not None:
+                entry["trigger_month"] = trigger_month
             if new_fired:
                 entry["fired_chains"] = sorted(new_fired)
             new_states[eid] = entry
@@ -365,9 +406,8 @@ def collect_transition_effects(
     각 항목의 "condition" 필드가 있으면 현재 컨텍스트로 평가 후 조건 불충족 시 건너뜁니다.
     """
     ts = state.get("progress", {}).get("timestamp", "")
-    m  = re.search(r'(\d{3,4})년', ts)
-    current_year = int(m.group(1)) if m else None
-    cond_ctx = _event_condition_context(state, current_year)
+    current_year, current_month = _parse_year_month(ts)
+    cond_ctx = _event_condition_context(state, current_year, current_month)
 
     faction_strength:  list[dict] = []
     char_disposition:  list[dict] = []
@@ -540,10 +580,9 @@ def build_scenario_context(state: dict, scenario_prompts: dict | None = None) ->
 
     events       = state.get("events", [])
     ts           = state.get("progress", {}).get("timestamp", "")
-    m            = re.search(r'(\d{3,4})년', ts)
-    current_year = int(m.group(1)) if m else None
+    current_year, current_month = _parse_year_month(ts)
 
-    cond_ctx = _event_condition_context(state, current_year)
+    cond_ctx = _event_condition_context(state, current_year, current_month)
     active_events = [
         ev for ev in events
         if _evaluate_event_condition(_event_condition_expr(ev), cond_ctx)
