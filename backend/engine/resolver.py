@@ -861,7 +861,9 @@ def combat_end_prompt(cs: dict, resolution: dict) -> str:
         "승패와 그 여파, 양측의 상황 변화를 묘사하시오.\n"
         "사상자 서술 시 총 손실의 약 1/4은 전사자, 3/4은 중상자·탈영자·낙오자로 구성된다. "
         "부상자 다수는 시간이 지나면 전열에 복귀할 수 있다.\n"
-        "패배한 세력이 반군·잔당 계열(rebels/remnant 유형)이고 지배 거점이 없으며 잔존 전력이 "
-        "impotent 수준(strength_score 100 미만)이라면, STATE_UPDATE의 defeated_factions에 해당 세력 id를 반드시 포함하시오.\n"
+        "패배한 세력이 반군·잔당 계열(rebels/remnant 유형)이고 잔존 전력이 "
+        "30 미만이라면, STATE_UPDATE의 defeated_factions에 해당 세력 id를 반드시 포함하시오.\n"
+        "일반 세력(faction·kingdom 등)이 이번 전투로 모든 거점을 상실했고 잔존 전력이 30 미만이라면 마찬가지로 defeated_factions에 포함하시오. "
+        "잔존 전력이 30 이상이면 패퇴 처리하지 않고 new_factions로 잔당 세력을 등록한 뒤 원 세력을 defeated_factions에 추가하시오.\n"
         "전투 후 다음 행동 선택지를 제시하시오."
     )

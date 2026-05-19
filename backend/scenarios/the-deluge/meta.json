@@ -12,5 +12,5 @@
   "iconBg": "rgba(139,26,26,0.09)",
   "protagonistMode": "select",
   "characterSelectPage": "character_select_deluge.html",
-  "troops_per_strength_point": 60
+  "troops_per_strength_point": 78
 }

@@ -34,26 +34,6 @@ function _totalMonths(year, month) {
   return year * 12 + month;
 }
 
-function _buildEventConditionContext(state, year = _parseYear(state.progress?.timestamp)) {
-  const month = _parseMonth(state.progress?.timestamp);
-  return {
-    year,
-    month,
-    chapter: state.progress?.chapter ?? null,
-    scene:   state.progress?.scene   ?? null,
-  };
-}
-
-function _eventConditionExpr(ev) {
-  if (typeof ev.trigger_condition === 'string' && ev.trigger_condition.trim()) {
-    return ev.trigger_condition.trim();
-  }
-  if (ev.trigger_year != null) {
-    return `year >= ${Number(ev.trigger_year)}`;
-  }
-  return null;
-}
-
 function _coerceConditionValue(token, context) {
   const key = token.trim();
   if (key in context) return context[key];
@@ -102,24 +82,10 @@ function _evaluateEventCondition(expression, context) {
   return _evalConditionAtom(expr, context);
 }
 
-/**
- * 이벤트 상태 컨텍스트 빌더.
- * id가 있는 이벤트마다 {id}_active / {id}_ended 불리언 변수를 생성해 반환.
- * baseContext만 사용해 평가하므로 순환 의존 없이 단일 패스로 동작한다.
- */
-function _buildEventStateContext(events, baseContext) {
-  const evCtx = {};
-  for (const ev of events ?? []) {
-    if (!ev.id) continue;
-    const triggerExpr = _eventConditionExpr(ev);
-    const triggerMet  = _evaluateEventCondition(triggerExpr, baseContext);
-    const endMet      = ev.end_condition
-      ? _evaluateEventCondition(ev.end_condition, baseContext)
-      : false;
-    evCtx[`${ev.id}_active`] = triggerMet && !endMet;
-    evCtx[`${ev.id}_ended`]  = endMet;
-  }
-  return evCtx;
+/** eventStates 항목에서 상태 문자열을 추출합니다 (dict / 구형 string 모두 처리). */
+function _evStateStr(entry) {
+  if (typeof entry === 'string') return entry;
+  return entry?.state ?? '';
 }
 
 /**
@@ -318,13 +284,12 @@ const CONFIGS = {
     mapMarkerStyle: defaultMapMarkerStyle,
 
     getEvents(state) {
-      const baseCtx = _buildEventConditionContext(state);
-      const context  = { ...baseCtx, ..._buildEventStateContext(state.events, baseCtx) };
       return (state.events ?? [])
-        .filter(ev =>
-          _evaluateEventCondition(_eventConditionExpr(ev), context) &&
-          !(ev.end_condition && _evaluateEventCondition(ev.end_condition, context))
-        )
+        .filter(ev => {
+          if (ev.protagonist_only?.length && state.protagonist &&
+              !ev.protagonist_only.includes(state.protagonist)) return false;
+          return _evStateStr((state.eventStates ?? {})[ev.id]) === 'active';
+        })
         .map(ev => ({ ...ev, rows: (ev.effects ?? []).map(e => `${e.key}:${e.desc}`).join('|') }));
     },
 
@@ -382,46 +347,21 @@ const CONFIGS = {
 
     /** trigger_condition / end_condition을 평가해 현재 시점에 활성화된 이벤트만 반환 */
     getEvents(state) {
-      const year      = _parseYear(state.progress?.timestamp);
-      const factions  = state.factions;
+      const factions = state.factions;
       const princeFactionIds = Array.from(factions.values())
         .filter(f => f.type === 'faction').map(f => f.id);
-      const controllersInUse = new Set(
-        Array.from(state.locations.values()).map(l => l.controller)
-      );
-      // 1패스: 기본 컨텍스트 (세력·진행 변수)
-      const baseContext = {
-        ..._buildEventConditionContext(state, year),
-        active_princes: princeFactionIds
-          .filter(id => id !== state.protagonist && !factions.get(id)?.defeated).length,
-        has_exiled_prince: princeFactionIds.some(id => {
-          if (controllersInUse.has(id)) return false;
-          return (factions.get(id)?.battle_damage ?? 0) > 0;
-        }),
-      };
-      // 무사 루멜리아 흡수 완료 여부
-      baseContext.musa_rumelia_boost_applied = state.flags?.musa_rumelia_boost_applied ?? false;
-      // event_context.json 의 faction_vars 목록에 따라 {id}_defeated / {id}_score 추가
-      for (const id of (state.eventContext?.faction_vars ?? [])) {
-        const f = factions.get(id);
-        baseContext[`${id}_defeated`] = f?.defeated ?? false;
-        baseContext[`${id}_score`]    = f?.diplomacy_score ?? 0;
-      }
-      // 2패스: 이벤트 상태 변수 ({id}_active / {id}_ended) 를 기본 컨텍스트로 평가해 병합
-      const context = { ...baseContext, ..._buildEventStateContext(state.events, baseContext) };
+      const activePrinces = princeFactionIds
+        .filter(id => id !== state.protagonist && !factions.get(id)?.defeated).length;
       return (state.events ?? [])
         .filter(ev => {
           if (ev.protagonist_only?.length && state.protagonist &&
               !ev.protagonist_only.includes(state.protagonist)) return false;
-          return (
-            _evaluateEventCondition(_eventConditionExpr(ev), context) &&
-            !(ev.end_condition && _evaluateEventCondition(ev.end_condition, context))
-          );
+          return _evStateStr((state.eventStates ?? {})[ev.id]) === 'active';
         })
         .map(ev => {
           let rows = (ev.effects ?? []).map(e => `${e.key}:${e.desc}`).join('|');
           if (ev.end_condition?.includes('active_princes'))
-            rows += `|남은 경쟁자:${context.active_princes}명`;
+            rows += `|남은 경쟁자:${activePrinces}명`;
           return { ...ev, rows };
         });
     },
@@ -608,24 +548,11 @@ const CONFIGS = {
     mapMarkerStyle: defaultMapMarkerStyle,
 
     getEvents(state) {
-      const year     = _parseYear(state.progress?.timestamp);
-      const baseCtx  = {
-        ..._buildEventConditionContext(state, year),
-      };
-      for (const id of (state.eventContext?.faction_vars ?? [])) {
-        const f = state.factions.get(id);
-        baseCtx[`${id}_defeated`] = f?.defeated ?? false;
-        baseCtx[`${id}_score`]    = f?.diplomacy_score ?? 0;
-      }
-      const context = { ...baseCtx, ..._buildEventStateContext(state.events, baseCtx) };
       return (state.events ?? [])
         .filter(ev => {
           if (ev.protagonist_only?.length && state.protagonist &&
               !ev.protagonist_only.includes(state.protagonist)) return false;
-          return (
-            _evaluateEventCondition(_eventConditionExpr(ev), context) &&
-            !(ev.end_condition && _evaluateEventCondition(ev.end_condition, context))
-          );
+          return _evStateStr((state.eventStates ?? {})[ev.id]) === 'active';
         })
         .map(ev => {
           const rows = (ev.effects ?? []).map(e => `${e.key}:${e.desc}`).join('|');

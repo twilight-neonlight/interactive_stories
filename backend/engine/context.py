@@ -140,12 +140,10 @@ def _event_condition_context(state: dict, current_year: int | None, current_mont
 
 
 def _event_condition_expr(ev: dict) -> str | None:
-    """신규 trigger_condition 또는 레거시 trigger_year를 조건식으로 정규화합니다."""
+    """trigger_condition을 조건식 문자열로 반환합니다."""
     cond = ev.get("trigger_condition")
     if isinstance(cond, str) and cond.strip():
         return cond.strip()
-    if ev.get("trigger_year") is not None:
-        return f"year >= {int(ev['trigger_year'])}"
     return None
 
 
@@ -214,10 +212,7 @@ def _evaluate_event_condition(expression: str | None, ctx: dict) -> bool:
 
 
 def _extract_trigger_year(ev: dict) -> int | None:
-    """future_events 표시에 쓸 기준 연도를 추출합니다."""
-    if ev.get("trigger_year") is not None:
-        return int(ev["trigger_year"])
-
+    """trigger_condition에서 발동 연도를 추출합니다 (future_events 표시용)."""
     cond = ev.get("trigger_condition")
     if not isinstance(cond, str) or not cond.strip():
         return None
@@ -294,7 +289,7 @@ def compute_event_states(state: dict) -> dict:
         prev_ty = _prev_trigger_year(eid)
         prev_tm = _prev_trigger_month(eid)
 
-        triggered = is_forced or _evaluate_event_condition(_event_condition_expr(ev), cond_ctx)
+        triggered = is_forced or (not ev.get("chain_only") and _evaluate_event_condition(_event_condition_expr(ev), cond_ctx))
         if not triggered:
             return
 

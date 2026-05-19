@@ -100,9 +100,17 @@ let _ui      = null;
   if (_state) {
     _state.eventContext   = scenario.event_context ?? {};
     _state.troopsPerPoint = scenario.troops_per_strength_point ?? null;
+    _state.events         = scenario.events ?? [];
     // 히스토리가 없으면 아직 게임이 시작되지 않은 상태 — initial_diplomacy를 재적용해
     // 세션스토리지에 오래된 데이터가 남아있어도 올바른 초기값으로 복구된다.
     if (_state.history.length === 0) {
+      const startingStates = {};
+      for (const ev of (_state.events ?? [])) {
+        if (!ev.default_active) continue;
+        if (ev.protagonist_only?.length && !ev.protagonist_only.includes(_state.protagonist)) continue;
+        startingStates[ev.id] = { state: 'active' };
+      }
+      _state.eventStates = startingStates;
       GameState.applyInitialDiplomacy(_state, _state.protagonist);
       _ui.initDispositions(_state);
       _manager.save();
@@ -120,6 +128,13 @@ let _ui      = null;
     if (scenario) {
       _state = _manager.init(scenario, protagonistId);
       _state.eventContext = scenario.event_context ?? {};
+      const startingStates = {};
+      for (const ev of (_state.events ?? [])) {
+        if (!ev.default_active) continue;
+        if (ev.protagonist_only?.length && !ev.protagonist_only.includes(_state.protagonist)) continue;
+        startingStates[ev.id] = { state: 'active' };
+      }
+      _state.eventStates = startingStates;
       _ui.initDispositions(_state);
       _ui.onInit?.(_state);
       _manager.save();
@@ -150,6 +165,10 @@ let _ui      = null;
           for (const c of su.new_characters) {
             if (c.id && !_state.characters.has(c.id)) _state.addCharacter(c);
           }
+        }
+        if (su?.event_state_changes && typeof su.event_state_changes === 'object') {
+          _state.eventStates = { ..._state.eventStates, ...su.event_state_changes };
+          renderEventList(_state);
         }
 
         _state.pushHistory('user',      '[게임 시작]');

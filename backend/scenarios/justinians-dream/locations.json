@@ -8,7 +8,6 @@
     "controller": "byzantine",
     "tier": "metropolis",
     "terrain": "삼면이 바다로 둘러싸인 반도 도시. 테오도시우스 성벽이 서쪽 유일한 육상 접근로를 막는다.",
-    "garrison": 4000,
     "notes": "동로마 제국의 수도이자 유스티아누스 황제의 궁정. 제국의 행정·군사·종교가 교차하는 중심지로, 원정의 모든 명령과 병참 지원이 이곳에서 출발한다."
   },
   {
@@ -20,7 +19,6 @@
     "controller": "byzantine",
     "tier": "major_city",
     "terrain": "해안 반도 요새 도시. 항구가 잘 발달해 함대 보급의 거점이 된다.",
-    "garrison": 1000,
     "notes": "아프리카 원정군이 집결한 비잔틴 함대 기지. 지중해 중앙을 장악하는 전략적 요충지로, 서방 어느 방면으로든 출항할 수 있는 위치다."
   },
   {
@@ -32,7 +30,6 @@
     "controller": "vandal-kingdom",
     "tier": "major_city",
     "terrain": "지중해 연안 평야에 자리한 항구 도시. 성벽이 견고하고 항구를 통해 외부 물자를 받을 수 있다.",
-    "garrison": 2000,
     "notes": "반달 왕국의 수도이자 지중해 서부 교역의 중심. 겔리메르가 쿠데타 이후 왕권을 공고히 하며 방어 태세를 정비하고 있다. 항구를 통해 유입되는 교역 수입이 반달 왕국 재정의 근간이다."
   },
   {
@@ -44,7 +41,6 @@
     "controller": "vandal-kingdom",
     "tier": "town",
     "terrain": "카르타고 남쪽 평원. 육로가 교차하는 교통 요지로 방어 시설은 미약하다.",
-    "garrison": 200,
     "notes": "카르타고 남쪽 약 10마일 지점의 교통 요지. 카르타고로 이어지는 주요 육로가 통과하며, 반달군의 방어 거점 중 하나다."
   },
   {
@@ -56,7 +52,6 @@
     "controller": "vandal-kingdom",
     "tier": "regional_city",
     "terrain": "지중해 연안 항구 도시. 주변은 평야이나 남쪽으로 산악 지대가 이어진다.",
-    "garrison": 500,
     "notes": "아우구스티누스가 주교로 봉직했던 도시. 북아프리카 서부의 주요 항구로 반달 왕국의 내륙 거점이다. 로마 시대부터 이어진 상업 도시로 항만 시설이 잘 갖춰져 있다."
   },
   {
@@ -68,7 +63,6 @@
     "controller": "ostrogothic-kingdom",
     "tier": "major_city",
     "terrain": "광대한 습지와 석호로 둘러싸인 요새 도시. 육상 접근로가 극히 제한되며 항구만이 외부와 연결된다.",
-    "garrison": 2500,
     "notes": "동고트 왕국의 수도. 사방이 저지대 습지로 둘러싸여 접근이 어렵고 항구를 통해 외부 물자를 안정적으로 공급받는다. 테오도리쿠스 대왕 시절부터 고트족의 행정 중심지다."
   },
   {
@@ -80,7 +74,6 @@
     "controller": "ostrogothic-kingdom",
     "tier": "major_city",
     "terrain": "티베르 강변 구릉 도시. 아우렐리아누스 성벽이 도시를 감싸며 강이 서쪽 방어선을 형성한다.",
-    "garrison": 1500,
     "notes": "옛 서로마 제국의 수도. 현재 동고트 왕국 치하에 있으며 고트 주둔군이 배치돼 있다. 교황청과 원로원이 남아 있어 종교·상징적 권위는 여전히 크지만, 도시 규모와 인구는 전성기에 비해 크게 줄었다."
   },
   {
@@ -92,7 +85,6 @@
     "controller": "ostrogothic-kingdom",
     "tier": "major_city",
     "terrain": "구릉과 화산 지형에 자리한 항구 도시. 두꺼운 그리스 시대 성벽이 방어력의 근간이다.",
-    "garrison": 1500,
     "notes": "이탈리아 남부의 주요 항구 도시. 동고트 왕국 치하에 있으며 강력한 성벽으로 방어되고 있다. 오랜 그리스 식민지 전통을 이어받아 주민 상당수가 그리스어를 사용한다."
   },
   {
@@ -104,7 +96,6 @@
     "controller": "byzantine",
     "tier": "major_city",
     "terrain": "오론테스 강변 산록에 자리한 대도시. 강과 구릉이 자연 방어선을 이루나 성벽 외곽 평야에서는 노출된다.",
-    "garrison": 2500,
     "notes": "시리아 최대 도시이자 동방 국경의 행정 중심. 콘스탄티노폴리스에 이어 제국 내 두 번째 규모의 도시로 동방 군단의 병참 기지다. 사산조 페르시아와의 접경 지역에서 가장 가까운 대도시다."
   },
   {
@@ -116,7 +107,6 @@
     "controller": "ostrogothic-kingdom",
     "tier": "major_city",
     "terrain": "포 강 평원 남쪽에 자리한 내륙 도시. 알프스를 넘어오는 교통로의 관문이며 사방으로 간선로가 뻗는다.",
-    "garrison": 1500,
     "notes": "북이탈리아의 행정·교통 중심지. 동고트 왕국 치하에 있으며 알프스 이북 프랑크 왕국과 연결되는 관문 역할을 한다. 로마 시대 서방 황제들이 거처로 삼은 전략적 요충지다."
   },
   {
@@ -128,7 +118,6 @@
     "controller": "ostrogothic-kingdom",
     "tier": "regional_city",
     "terrain": "아르노 강변 구릉 도시. 이탈리아 중부 내륙 교통로의 요지로 북쪽 아펜니노 산맥을 우회하는 경로상에 있다.",
-    "garrison": 500,
     "notes": "아르노 강을 끼고 발전한 이탈리아 중부의 중소 도시. 동고트 왕국 치하에서 군사 거점보다는 라벤나와 로마를 잇는 교통 중계지 역할을 한다."
   },
   {
@@ -140,7 +129,6 @@
     "controller": "frankish-kingdom",
     "tier": "major_city",
     "terrain": "론 강과 손 강이 합류하는 지점의 도시. 갈리아 내륙 교통의 중심으로 사방으로 로마 시대 가도가 뻗는다.",
-    "garrison": 1000,
     "notes": "갈리아의 주요 내륙 도시. 프랑크 왕국 치하에서 이탈리아와 히스파니아 방면을 잇는 교통 요지다. 로마 시대 이후 갈리아 상업·행정의 중심으로 기능해왔다."
   },
   {
@@ -152,7 +140,6 @@
     "controller": "byzantine",
     "tier": "metropolis",
     "terrain": "나일 강 삼각주 서쪽 연안의 대도시. 지중해에 면한 대형 항구가 발달해 동지중해 교역과 곡물 수송의 핵심 거점이다.",
-    "garrison": 2000,
     "notes": "이집트 최대 도시이자 동지중해 교역의 핵심 항구. 비잔틴 제국의 곡물 공급 기지로 아프리카 원정의 후방 보급을 뒷받침한다. 동방 신학 논쟁의 중심지이기도 하다."
   },
   {
@@ -164,7 +151,171 @@
     "controller": "byzantine",
     "tier": "small_city",
     "terrain": "유프라테스 상류 지류 강변의 요새 도시. 유스티아누스가 페르시아 방어를 위해 신축한 방어 공사가 탄탄하다.",
-    "garrison": 1500,
     "notes": "유스티아누스 황제가 페르시아 국경 방어를 위해 건설한 요새 도시. 530년 벨리사리우스가 이곳에서 사산조 대군을 격파해 명성을 얻었다. 동쪽 국경을 마주한 최전방 군사 거점이다."
+  },
+  {
+    "id": "thessalonica",
+    "x": 0, "y": 0,
+    "name": "테살로니카 (Thessalonica)",
+    "region": "마케도니아",
+    "continent": "유럽",
+    "controller": "byzantine",
+    "tier": "major_city",
+    "terrain": "에게해 북안 — 테르마이코스 만 연안 평지 항구 도시",
+    "notes": "동로마 제국의 제2도시. 발칸과 콘스탄티노폴리스를 잇는 에그나티아 가도의 핵심 거점으로 제국의 서방 방어선을 지탱한다."
+  },
+  {
+    "id": "cyrene",
+    "x": 0, "y": 0,
+    "name": "키레네 (Cyrene)",
+    "region": "키레나이카",
+    "continent": "아프리카",
+    "controller": "byzantine",
+    "tier": "small_city",
+    "terrain": "리비아 고원 북단 — 지중해 연안 그리스 식민 도시",
+    "notes": "북아프리카 동부 키레나이카 속주의 중심 도시. 반달 영역과 동로마 영역 사이의 경계 지대에 위치하며 이집트로 이어지는 해안 교역로를 감시한다."
+  },
+  {
+    "id": "hadrumentum",
+    "x": 0, "y": 0,
+    "name": "하드루메툼 (Hadrumentum)",
+    "region": "북아프리카",
+    "continent": "아프리카",
+    "controller": "vandal-kingdom",
+    "tier": "regional_city",
+    "terrain": "튀니지 동해안 평야 — 지중해 항구 도시",
+    "notes": "카르타고 남쪽의 주요 항구. 반달 왕국의 북아프리카 방어선 후방 거점으로 지중해 교역의 중요한 기착지다."
+  },
+  {
+    "id": "lepcis-magna",
+    "x": 0, "y": 0,
+    "name": "렙티스 마그나 (Lepcis Magna)",
+    "region": "트리폴리타니아",
+    "continent": "아프리카",
+    "controller": "vandal-kingdom",
+    "tier": "small_city",
+    "terrain": "리비아 해안 평야 — 쇠락한 로마 대도시",
+    "notes": "한때 북아프리카 최대 도시 중 하나였으나 반달 지배 이후 크게 쇠락. 베르베르 세력과의 완충지이자 트리폴리타니아 해안의 동쪽 거점."
+  },
+  {
+    "id": "cagliari",
+    "x": 0, "y": 0,
+    "name": "칼라리스 (Caralis / Cagliari)",
+    "region": "사르데냐",
+    "continent": "지중해",
+    "controller": "vandal-kingdom",
+    "tier": "small_city",
+    "terrain": "사르데냐 남부 만 — 항구 도시",
+    "notes": "반달 왕국이 지배하는 사르데냐의 주도. 겔리메르의 형 차라존이 통치하다 마테스의 반란이 일어난 곳으로, 반달의 서지중해 방어선을 구성한다."
+  },
+  {
+    "id": "tarentum",
+    "x": 0, "y": 0,
+    "name": "타렌툼 (Tarentum)",
+    "region": "이탈리아 남부",
+    "continent": "유럽",
+    "controller": "ostrogothic-kingdom",
+    "tier": "small_city",
+    "terrain": "이탈리아 반도 발뒤꿈치 내만 — 항구 도시",
+    "notes": "이탈리아 남부의 주요 항구. 동고트 왕국의 남부 방어선 거점으로 동지중해로 나가는 해상 통로를 통제한다."
+  },
+  {
+    "id": "brundisium",
+    "x": 0, "y": 0,
+    "name": "브룬디시움 (Brundisium)",
+    "region": "이탈리아 남부",
+    "continent": "유럽",
+    "controller": "ostrogothic-kingdom",
+    "tier": "small_city",
+    "terrain": "이탈리아 반도 발뒤꿈치 — 아드리아 해 항구",
+    "notes": "아피아 가도의 종점이자 그리스·발칸으로 건너가는 핵심 해상 관문. 이탈리아에서 동방을 연결하는 가장 짧은 항로의 출발점이다."
+  },
+  {
+    "id": "aquileia",
+    "x": 0, "y": 0,
+    "name": "아퀼레이아 (Aquileia)",
+    "region": "이탈리아 북동부",
+    "continent": "유럽",
+    "controller": "ostrogothic-kingdom",
+    "tier": "regional_city",
+    "terrain": "포 강 하류 평원 — 내륙 항구 교통 요지",
+    "notes": "북이탈리아와 발칸·다뉴브 방면을 잇는 교통 요충지. 동고트 왕국의 북동부 방어선을 구성하며 랑고바르드·프랑크 방면의 위협을 감시한다."
+  },
+  {
+    "id": "ctesiphon",
+    "x": 0, "y": 0,
+    "name": "크테시폰 (Ctesiphon)",
+    "region": "메소포타미아",
+    "continent": "아시아",
+    "controller": "sassanid-persia",
+    "tier": "metropolis",
+    "terrain": "티그리스 강변 평원 — 이중 왕도 도시군",
+    "notes": "사산조 페르시아의 수도이자 동서 교역로의 중심. 강 건너 셀레우키아와 함께 쌍둥이 도시를 이루며, 안티오크와 다라를 위협하는 제국 동방 팽창의 근원지."
+  },
+  {
+    "id": "nisibis",
+    "x": 0, "y": 0,
+    "name": "니시비스 (Nisibis)",
+    "region": "메소포타미아 북부",
+    "continent": "아시아",
+    "controller": "sassanid-persia",
+    "tier": "regional_city",
+    "terrain": "카부르 강 상류 분지 — 국경 요새 도시",
+    "notes": "363년 로마가 양도한 뒤 사산조의 서방 전진 기지 역할을 해온 요새 도시. 다라와 마주한 국경선의 핵심 거점이다."
+  },
+  {
+    "id": "toletum",
+    "x": 0, "y": 0,
+    "name": "톨레툼 (Toletum)",
+    "region": "히스파니아",
+    "continent": "유럽",
+    "controller": "visigothic-kingdom",
+    "tier": "major_city",
+    "terrain": "타호 강 만곡부 구릉 — 이베리아 내륙 고원 요충지",
+    "notes": "서고트 왕국의 수도. 이베리아 반도 내륙 중심부에 자리해 히스파니아 지배의 행정·군사·종교 중심지 역할을 한다."
+  },
+  {
+    "id": "hispalis",
+    "x": 0, "y": 0,
+    "name": "히스팔리스 (Hispalis)",
+    "region": "히스파니아 남부",
+    "continent": "유럽",
+    "controller": "visigothic-kingdom",
+    "tier": "regional_city",
+    "terrain": "과달키비르 강 하류 평야 — 항구 도시",
+    "notes": "히스파니아 남부의 주요 항구이자 상업 도시. 지중해와 대서양 교역로의 결절점으로 서고트 왕국의 경제적 후방을 담당한다."
+  },
+  {
+    "id": "caesaraugusta",
+    "x": 0, "y": 0,
+    "name": "카이사라우구스타 (Caesaraugusta)",
+    "region": "히스파니아 북동부",
+    "continent": "유럽",
+    "controller": "visigothic-kingdom",
+    "tier": "small_city",
+    "terrain": "에브로 강 중류 — 내륙 교통 요지",
+    "notes": "에브로 강변의 교통 요충지. 히스파니아 북부와 피레네 너머를 연결하는 중간 거점으로 서고트 왕국의 북방 방어선을 구성한다."
+  },
+  {
+    "id": "lutetia",
+    "x": 0, "y": 0,
+    "name": "루테티아 (Lutetia)",
+    "region": "갈리아 북부",
+    "continent": "유럽",
+    "controller": "frankish-kingdom",
+    "tier": "regional_city",
+    "terrain": "센 강 시테 섬 — 갈리아 북부 교통 중심",
+    "notes": "센 강 섬 위에 발전한 프랑크 왕국의 핵심 도시. 갈리아 전역의 교역로가 교차하는 곳으로 프랑크 왕국의 정치·군사 중심지로 성장 중이다."
+  },
+  {
+    "id": "massilia",
+    "x": 0, "y": 0,
+    "name": "마실리아 (Massilia)",
+    "region": "갈리아 남부",
+    "continent": "유럽",
+    "controller": "frankish-kingdom",
+    "tier": "small_city",
+    "terrain": "지중해 연안 항구 — 석회암 구릉 만 도시",
+    "notes": "그리스 식민지 이래 지중해 교역의 핵심 항구. 프랑크 왕국의 남해 출구로, 북아프리카·이탈리아 방면으로 연결되는 해상 통로를 통제한다."
   }
 ]

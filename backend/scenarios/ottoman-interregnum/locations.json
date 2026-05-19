@@ -253,7 +253,7 @@
     "name": "타르고비슈테 (Târgoviște)",
     "region": "왈라키아", "continent": "루멜리아",
     "controller": "wallachia",
-    "tier": "small_city",
+    "tier": "regional_city",
     "terrain": "다뉴브 북안 평원 — 왈라키아 공국 수도",
     "notes": "왈라키아 공국의 수도. 카르파티아 산맥 남록의 평원에 자리해 트란실바니아와 다뉴브 평원을 연결하는 교역 중계지로, 미르체아 대공이 통치하는 왈라키아의 행정·군사 중심지."
   },

@@ -165,7 +165,16 @@ function renderFactionBars(state) {
   const playerFactionId = _pChar?.faction_id
     || (state.factions.has(state.protagonist) ? state.protagonist : null);
 
-  container.innerHTML = Array.from(state.factions.values()).filter(f => !f.defeated).map(f => {
+  const _factions = Array.from(state.factions.values()).filter(f => !f.defeated);
+  const _playerType = _factions.find(f => f.id === playerFactionId)?.type;
+  _factions.sort((a, b) => {
+    const sA = Math.max(0, (a.strength_score ?? 350) - (a.battle_damage ?? 0));
+    const sB = Math.max(0, (b.strength_score ?? 350) - (b.battle_damage ?? 0));
+    const rA = a.id === playerFactionId ? 0 : a.type === _playerType ? 1 : 2;
+    const rB = b.id === playerFactionId ? 0 : b.type === _playerType ? 1 : 2;
+    return rA !== rB ? rA - rB : sB - sA;
+  });
+  container.innerHTML = _factions.map(f => {
     const score = Math.max(0, (f.strength_score ?? 350) - (f.battle_damage ?? 0));
     const width = `${Math.min(100, Math.round(score / 7))}%`;
     const color = _ui.factionBarColor(f);
@@ -262,6 +271,7 @@ function renderMapMarkers(state) {
     pin.dataset.status  = statusText;
     pin.dataset.color   = color;
     pin.dataset.note    = loc.notes || '';
+    pin.dataset.tier    = loc.tier  || '';
     if (loc.garrison) pin.dataset.garrison = `${loc.garrison.toLocaleString()}명`;
     pin.style.left = `${loc.x}%`;
     pin.style.top  = `${loc.y}%`;
@@ -366,7 +376,6 @@ function renderEventList(state) {
     </div>
     <div class="event-meta">
       <span class="event-region">${ev.region}</span>
-      <span class="event-badge ${ev.badge}">${ev.badgeText}</span>
     </div>
   </div>`;
   }).join('');

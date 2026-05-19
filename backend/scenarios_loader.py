@@ -25,10 +25,21 @@ _DISPOSITION_GARRISON_BASE: dict[str, float] = {
 
 _GARRISON_RECOVERY_PER_MONTH = 0.03
 
-_EASTERN_KW = {
-    "중국", "일본", "몽골", "오스만", "인도", "페르시아", "아랍", "한국", "조선", "청",
-    "명", "당", "송", "무굴", "티무르", "오리엔트", "비잔틴", "사파비", "맘루크",
-    "셀주크", "아나톨리아", "흑해", "실크로드",
+# 동유럽·중동·이슬람 문명권 → base × 1.5
+_MIDEAST_EEUROPE_KW = {
+    # 중동·이슬람
+    "오스만", "비잔틴", "아랍", "페르시아", "사파비", "맘루크",
+    "셀주크", "아나톨리아", "오리엔트", "실크로드", "흑해", "티무르",
+    "이슬람", "칼리파", "술탄국",
+    # 동유럽·슬라브·발칸
+    "러시아", "폴란드", "슬라브", "헝가리", "발칸", "프로이센",
+    "코사크", "리투아니아", "오스트리아",
+}
+
+# 아시아(특히 동아시아)·남아시아·중앙아시아 → base × 3.0
+_EAST_ASIA_KW = {
+    "중국", "일본", "몽골", "한국", "조선", "청", "명", "당", "송", "원",
+    "고려", "신라", "고구려", "발해", "무굴", "인도",
 }
 
 
@@ -47,14 +58,15 @@ def _estimate_troops_per_point(scenario: dict) -> int:
     elif year < 1900:  base = 220
     else:              base = 400
 
-    # 동양 배경이면 1.3× (역사적으로 대규모 동원 경향)
     corpus = " ".join([
         eyebrow,
         scenario.get("title", ""),
         scenario.get("desc", ""),
         " ".join(scenario.get("tags", [])),
     ])
-    if any(kw in corpus for kw in _EASTERN_KW):
+    if any(kw in corpus for kw in _EAST_ASIA_KW):
+        base = round(base * 2.5)
+    elif any(kw in corpus for kw in _MIDEAST_EEUROPE_KW):
         base = round(base * 1.3)
 
     return base
@@ -80,10 +92,10 @@ def load_scenarios() -> list[dict]:
         meta_path = scenario_dir / "meta.json"
         if not meta_path.exists():
             continue
-        scenario = json.loads(meta_path.read_text(encoding="utf-8"))
+        scenario = json.loads(meta_path.read_text(encoding="utf-8-sig"))
         for key in ("locations", "factions", "characters", "events"):
             path = scenario_dir / f"{key}.json"
-            scenario[key] = json.loads(path.read_text(encoding="utf-8")) if path.exists() else []
+            scenario[key] = json.loads(path.read_text(encoding="utf-8-sig")) if path.exists() else []
         if "troops_per_strength_point" not in scenario:
             scenario["troops_per_strength_point"] = _estimate_troops_per_point(scenario)
         tpp      = scenario["troops_per_strength_point"]
@@ -106,19 +118,19 @@ def load_scenarios() -> list[dict]:
             if "controlling_faction" in loc and "controller" not in loc:
                 loc["controller"] = loc.pop("controlling_faction")
         char_select_path = scenario_dir / "character-select.json"
-        scenario["character_select"] = json.loads(char_select_path.read_text(encoding="utf-8")) if char_select_path.exists() else []
+        scenario["character_select"] = json.loads(char_select_path.read_text(encoding="utf-8-sig")) if char_select_path.exists() else []
         # 시나리오 프롬프트 지시문 로드 (prompt.md + prompt_{char_id}.md)
         global_prompt_path = scenario_dir / "prompt.md"
-        global_prompt = global_prompt_path.read_text(encoding="utf-8").strip() if global_prompt_path.exists() else ""
+        global_prompt = global_prompt_path.read_text(encoding="utf-8-sig").strip() if global_prompt_path.exists() else ""
         char_prompts: dict[str, str] = {}
         for p in sorted(scenario_dir.glob("prompt_*.md")):
             char_id = p.stem[len("prompt_"):]
-            char_prompts[char_id] = p.read_text(encoding="utf-8").strip()
+            char_prompts[char_id] = p.read_text(encoding="utf-8-sig").strip()
         scenario["scenario_prompts"] = {"global": global_prompt, "characters": char_prompts}
         event_context_path = scenario_dir / "event_context.json"
-        scenario["event_context"] = json.loads(event_context_path.read_text(encoding="utf-8")) if event_context_path.exists() else {}
+        scenario["event_context"] = json.loads(event_context_path.read_text(encoding="utf-8-sig")) if event_context_path.exists() else {}
         map_path = scenario_dir / "map.svg"
-        scenario["map_svg"] = map_path.read_text(encoding="utf-8") if map_path.exists() else ""
+        scenario["map_svg"] = map_path.read_text(encoding="utf-8-sig") if map_path.exists() else ""
         scenarios.append(scenario)
     return scenarios
 
