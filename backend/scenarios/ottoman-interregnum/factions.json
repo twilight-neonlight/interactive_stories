@@ -77,11 +77,12 @@
     "id": "byzantine",
     "name": "비잔틴 제국",
     "type": "empire",
-    "strength_score": 158,
+    "strength_score": 178,
     "field_army": 2500,
     "disposition": "중립",
     "color": "#7F77DD",
-    "notes": "마누엘 2세가 이끄는 쇠락한 제국. 군사 지원보다 외교 승인의 가치가 크며, 오스만 내전을 활용해 세력 균형을 유지하고 내정 간섭을 도모한다."
+    "notes": "마누엘 2세가 이끄는 쇠락한 제국. 군사 지원보다 외교 승인의 가치가 크며, 오스만 내전을 활용해 세력 균형을 유지하고 내정 간섭을 도모한다.",
+    "naval_base": 20
   },
   {
     "id": "karamanids",
@@ -97,8 +98,8 @@
     "id": "genoa",
     "name": "제노바 공화국",
     "type": "republic",
-    "strength_score": 129,
-    "field_army": 6000,
+    "strength_score": 183,
+    "field_army": 3500,
     "disposition": "중립",
     "color": "#2E8B57",
     "notes": "카파를 거점으로 흑해 교역을 독점하는 해상 강국. 전시에는 상시 주둔군 외에 추가적으로 본국 지원을 받을 수 있다. 베네치아와 앙숙 관계이며 오스만 내전을 이용해 흑해에서의 교역권 우위를 유지하려는 경향을 보인다.",
@@ -118,18 +119,19 @@
     "id": "trebizond",
     "name": "트레비존드 제국",
     "type": "empire",
-    "strength_score": 94,
+    "strength_score": 106,
     "field_army": 4500,
     "disposition": "중립",
     "color": "#4682B4",
-    "notes": "그랑 콤네노스 왕조의 소제국. 오스만 내전의 혼란 속에서도 동방 교역로 덕분에 독자 생존을 이어가며 어느 세력과도 섣불리 동맹하지 않는다."
+    "notes": "그랑 콤네노스 왕조의 소제국. 오스만 내전의 혼란 속에서도 동방 교역로 덕분에 독자 생존을 이어가며 어느 세력과도 섣불리 동맹하지 않는다.",
+    "naval_base": 12
   },
   {
     "id": "venice",
     "name": "베네치아 공화국",
     "type": "republic",
-    "strength_score": 168,
-    "field_army": 9300,
+    "strength_score": 207,
+    "field_army": 5000,
     "disposition": "중립",
     "color": "#B5682A",
     "notes": "동지중해 제해권을 장악한 해상 강국. 전시에는 상시 주둔군 외에 추가적으로 본국 지원을 받을 수 있다. 제노바와 앙숙 관계이며, 오스만 내전을 교역권 확대의 기회로 삼되 확실하지 않으면 어느 편도 섣불리 들지 않는다.",
@@ -189,11 +191,12 @@
     "id": "tekke",
     "name": "테케 왕조",
     "type": "emirate",
-    "strength_score": 43,
+    "strength_score": 51,
     "field_army": 2000,
     "disposition": "중립",
     "color": "#20B2AA",
-    "notes": "아나톨리아 남서부 지중해 연안을 지배하는 소규모 베이릭. 티무르가 복원한 왕조로 안탈리아 항구의 수익에 의존하며, 베네치아·카라만과의 외교 균형으로 독립을 유지한다. 군사력은 미약하나 지중해 교역로 통제권을 레버리지로 협상력을 유지한다."
+    "notes": "아나톨리아 남서부 지중해 연안을 지배하는 소규모 베이릭. 티무르가 복원한 왕조로 안탈리아 항구의 수익에 의존하며, 베네치아·카라만과의 외교 균형으로 독립을 유지한다. 군사력은 미약하나 지중해 교역로 통제권을 레버리지로 협상력을 유지한다.",
+    "naval_base": 8
   },
   {
     "id": "bulgarian-rebels",

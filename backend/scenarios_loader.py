@@ -21,7 +21,7 @@ _NO_TERRITORY_TYPES: frozenset[str] = frozenset({"rebels", "remnant"})
 
 
 def compute_faction_strength(faction: dict, fid: str, locations: list, tpp: int) -> int:
-    """field_army·보유 거점·naval_base(republic)에서 strength_score를 계산합니다.
+    """field_army·보유 거점·naval_base에서 strength_score를 계산합니다.
 
     Args:
         faction:   세력 데이터 dict (field_army, type, naval_base 포함 가능)
@@ -45,8 +45,8 @@ def compute_faction_strength(faction: dict, fid: str, locations: list, tpp: int)
             tier_pts *= 2  # 용병 고용 — 자국 도시 방위군 2배
         base += tier_pts
 
-    if ftype == "republic":
-        base += faction.get("naval_base", 0)
+    # naval_base: republic 전용 아님 — 해군력이 있는 모든 세력 유형에 적용 가능
+    base += faction.get("naval_base", 0)
 
     return max(1, base)
 
