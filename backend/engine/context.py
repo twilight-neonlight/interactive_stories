@@ -16,7 +16,6 @@ OPENING_INSTRUCTION = """
 플레이어가 게임에 처음 진입했다. 일반 턴이 아닌 **오프닝 장면**을 작성하라.
 
 ### 형식
-- `## 1장, SCENE 1` 헤더로 시작
 - `**시각:**` 줄 포함 (시나리오 맥락에 맞는 시점·장소)
 
 ### 장면 구성
@@ -60,8 +59,6 @@ def _event_condition_context(state: dict, current_year: int | None, current_mont
     ctx: dict = {
         "year": current_year,
         "month": current_month,
-        "chapter": state.get("progress", {}).get("chapter"),
-        "scene": state.get("progress", {}).get("scene"),
         "has_exiled_prince": any(
             pid not in controllers and (facs.get(pid, {}).get("battle_damage", 0) > 0)
             for pid in prince_ids
@@ -543,17 +540,11 @@ def build_scenario_context(state: dict, scenario_prompts: dict | None = None) ->
             s_dmg      = f.get("battle_damage", 0)
             s_eff      = (s_base - s_dmg) if s_base is not None else None
             field_army = f.get("field_army")
-            mult       = f.get("combat_multiplier", 1)
             if field_army is not None:
-                if mult > 1:
-                    total = field_army * mult
-                    mult_str = f" (본국 증원 포함 최대 {total:,}명)"
-                else:
-                    mult_str = ""
                 if s_base is not None and tpp:
-                    str_str = f" [전력 {_troops_range(int(s_base), tpp)} / 야전군 {field_army:,}명{mult_str}]"
+                    str_str = f" [전력 {_troops_range(int(s_base), tpp)} / 야전군 {field_army:,}명]"
                 else:
-                    str_str = f" [야전군 {field_army:,}명{mult_str}]"
+                    str_str = f" [야전군 {field_army:,}명]"
             else:
                 str_str = (f" [병력 {_troops_range(int(s_eff), tpp)}]"
                            if s_eff is not None and tpp else "")
@@ -623,21 +614,18 @@ def build_scenario_context(state: dict, scenario_prompts: dict | None = None) ->
         lines.append(f"\n현재 기상: {_WEATHER_LABELS.get(weather, weather)}")
 
     progress      = state.get("progress", {})
-    chapter       = progress.get("chapter", 1)
-    scene         = progress.get("scene", 1)
-    is_end        = progress.get("isChapterEnd", False)
     ts            = progress.get("timestamp", "")
     player_loc_id = progress.get("playerLocationId")
     player_loc_label = ""
     if player_loc_id:
         loc_entry = locations.get(player_loc_id, {})
-        player_loc_label = f" | 플레이어 거점: {loc_entry.get('name', player_loc_id)} ({player_loc_id})"
-    lines.append(
-        f"\n현재 위치: {chapter}장 SCENE {scene}"
-        + (" (장 종결 후 대기 중)" if is_end else "")
-        + (f" / {ts}" if ts else "")
-        + player_loc_label
-    )
+        player_loc_label = f"플레이어 거점: {loc_entry.get('name', player_loc_id)} ({player_loc_id})"
+    if ts or player_loc_label:
+        lines.append(
+            "\n현재 시점: "
+            + (ts if ts else "미상")
+            + (f" | {player_loc_label}" if player_loc_label else "")
+        )
 
     combat_state = state.get("combatState")
     if combat_state and combat_state.get("active"):

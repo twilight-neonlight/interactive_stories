@@ -44,7 +44,6 @@ def list_saves(user: dict = Depends(get_current_user)):
                 "filename":      f.name,
                 "scenarioId":    data.get("scenarioId", ""),
                 "scenarioTitle": data.get("scenarioTitle", ""),
-                "chapter":       data.get("progress", {}).get("chapter", 1),
                 "timestamp":     data.get("progress", {}).get("timestamp", ""),
                 "savedAt":       datetime.fromtimestamp(f.stat().st_mtime).strftime("%Y-%m-%d %H:%M"),
             })
@@ -57,9 +56,8 @@ def list_saves(user: dict = Depends(get_current_user)):
 async def create_save(req: Request, user: dict = Depends(get_current_user)):
     data        = await req.json()
     scenario_id = re.sub(r"[^\w\-]", "_", data.get("scenarioId", "unknown"))
-    chapter     = data.get("progress", {}).get("chapter", 1)
     ts          = datetime.now().strftime("%Y-%m-%d_%H-%M")
-    filename    = f"{scenario_id}_ch{chapter}_{ts}.json"
+    filename    = f"{scenario_id}_{ts}.json"
     (_user_dir(user["user_id"]) / filename).write_text(
         json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8"
     )

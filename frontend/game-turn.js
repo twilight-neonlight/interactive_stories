@@ -48,11 +48,7 @@ function _assignExternalStats(char) {
 // ── 공통 상태 업데이트 (submitTurn + combat-ui.js 가 공유)
 function applyStateUpdates(su) {
   Object.assign(_state.progress, {
-    scene:        su.scene,
-    chapter:      su.chapter,
-    chapterTitle: su.chapter_title || _state.progress.chapterTitle,
     timestamp:    su.timestamp     || _state.progress.timestamp,
-    isChapterEnd: su.is_chapter_end,
   });
 
   if (Array.isArray(su.new_characters)) {
@@ -76,9 +72,16 @@ function applyStateUpdates(su) {
       if (f.id && !_state.factions.has(f.id)) _state.addFaction(f);
     }
   }
-  if (Array.isArray(su.faction_strength_changes)) {
-    for (const fc of su.faction_strength_changes) {
-      if (fc.id && fc.delta != null) _state.updateFactionStrength(fc.id, fc.delta);
+  if (Array.isArray(su.faction_field_army_changes)) {
+    for (const fc of su.faction_field_army_changes) {
+      const faction = _state.factions.get(fc.id);
+      if (faction && fc.delta != null) faction.field_army = Math.max(0, (faction.field_army ?? 0) + fc.delta);
+    }
+  }
+  if (su.faction_strength_overrides && typeof su.faction_strength_overrides === 'object') {
+    for (const [fid, score] of Object.entries(su.faction_strength_overrides)) {
+      const faction = _state.factions.get(fid);
+      if (faction) faction.strength_score = score;
     }
   }
   if (Array.isArray(su.faction_battle_damage)) {
@@ -203,8 +206,6 @@ async function submitTurn() {
       renderChoices([]);
       const cmdEl = document.getElementById('cmd');
       if (cmdEl && pendingCrisis.user_prompt_hint) cmdEl.value = pendingCrisis.user_prompt_hint;
-    } else if (_state.progress.isChapterEnd) {
-      renderChapterClose(content);
     } else {
       renderSceneBody(markdownToHtml(extractNarrative(content)));
       renderChoices(extractChoices(content));

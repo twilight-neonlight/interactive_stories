@@ -4,13 +4,11 @@
 
 ---
 
-## 예시 1 — 표준 씬 (외교·정치 행동 후)
+## 예시 1 — 표준 응답 (외교·정치 행동 후)
 
-*상황: 플레이어(다윗)가 아말렉 지도자에게 동맹 제안을 보냈고 우호적인 응답을 받았다. 후새라는 인물이 이번 씬에서 처음 등장한다.*
+*상황: 플레이어(다윗)가 아말렉 지도자에게 동맹 제안을 보냈고 우호적인 응답을 받았다. 후새라는 인물이 이번 응답에서 처음 등장한다.*
 
 ---
-
-## 1장, SCENE 3
 
 **시각:** 기원전 약 1025년 초봄, 마하나임 왕의 천막
 
@@ -46,9 +44,6 @@
 
 [STATE_UPDATE]
 {
-  "scene": 3,
-  "chapter": 1,
-  "is_chapter_end": false,
   "new_characters": [{"id": "hushai", "name": "후새", "epithet": "아렉 사람", "disposition": "동맹", "desc": "다윗의 심복으로 예루살렘에 잠입해 압살롬 진영에서 첩보를 수집하는 밀정."}],
   "dead_characters": [],
   "new_factions": [],
@@ -67,14 +62,13 @@
   "player_coalition": [],
   "enemy_coalition": [],
   "weather": null,
-  "phase_outcome": null,
   "combat_victor": null,
   "enemy_next_action": null
 }
 
 ---
 
-## 예시 2 — 전투 진행 중 씬 (phase_outcome 포함)
+## 예시 2 — 전투 진행 중 응답
 
 *상황: 에브라임 숲 전투 2페이즈. 플레이어가 기병 측면 포위를 명령했고 전술적으로 우세했으나 결정적이지 않았다. 다음 페이즈에 적이 중앙 돌파를 시도할 것이 예상된다.*
 
@@ -111,9 +105,6 @@
 
 [STATE_UPDATE]
 {
-  "scene": 2,
-  "chapter": 2,
-  "is_chapter_end": false,
   "new_characters": [],
   "dead_characters": [],
   "new_factions": [],
@@ -134,85 +125,17 @@
   "player_coalition": [],
   "enemy_coalition": [],
   "weather": null,
-  "phase_outcome": "minor_success",
   "combat_victor": null,
   "enemy_next_action": "압살롬 본진 중앙 보병대가 능선을 향해 정면 압박을 가해 아군 전열을 밀어붙이려 한다."
 }
 
 ---
 
-## 예시 3 — 장 종결
-
-*상황: 에브라임 숲 전투가 끝났다. 압살롬이 요압에 의해 처형되었고 반란이 진압되었다. 다윗이 예루살렘으로 귀환한다.*
-
----
-
-## 1장 종결
-
-**기간 및 장소:** 기원전 약 1025년 초봄 ~ 3월 중순 / 마하나임 — 에브라임 숲 — 예루살렘
-
-압살롬의 군세는 에브라임 숲에서 무너졌다. 기병 우위를 상쇄한 지형과 측면을 끊은 요압의 기동이 맞물린 결과였다. 그러나 압살롬 본인의 최후는 다윗이 바랐던 것과 달랐다. 요압은 명령을 어기고 직접 그를 처형했으며, 이 결정이 남긴 그늘은 귀환 행렬에 곧바로 드리워졌다.
-
-**1장 요약:**
-
-| 항목 | 결과 |
-|---|---|
-| 전역 결과 | 압살롬 반란 진압, 왕권 회복 |
-| 압살롬 | 에브라임 숲 전투 중 요압에 의해 처형 |
-| 요압 | 왕명 불복종, 그러나 전술적 공로 인정 |
-| 아군 손실 | 보병 약 800명, 지휘관급 2명 |
-| 반란군 잔존 | 요단강 인근 병력 약 1천, 와해 중 |
-| 아말렉 | 협력 이행, 남방 보급로 유지 |
-| 다윗 귀환 | 예루살렘 입성 완료 |
-| 민심 | 수도 내 환영 분위기, 일부 지지자 간 동요 |
-| 후새 | 귀환, 압살롬 진영 첩보 추가 제공 |
-
-**총평:** 군사적으로는 완승이었다. 그러나 압살롬의 죽음은 다윗에게 승리보다 상실로 다가왔으며, 요압과의 균열은 봉합되지 않은 채 다음 국면으로 이어진다.
-
-**잔불:**
-- 요압의 독단 처형 — 왕명 불복종 선례 남음
-- 반란 가담 부족 처리 미결
-- 요단강 잔존 병력 행방 불명
-- 예루살렘 내 압살롬 지지 세력 동향
-- 후계 구도 불안정성
-
-[STATE_UPDATE]
-{
-  "scene": 7,
-  "chapter": 1,
-  "is_chapter_end": true,
-  "new_characters": [],
-  "dead_characters": ["absalom"],
-  "new_factions": [],
-  "defeated_factions": ["absalom_rebels"],
-  "faction_strength_changes": [{"id": "david_kingdom", "delta": 45}],
-  "faction_battle_damage": [],
-  "faction_battle_recovery": [{"id": "david_kingdom", "amount": 25}],
-  "character_troop_changes": [],
-  "faction_diplomacy_changes": [{"id": "amalek", "delta": 10}],
-  "character_disposition_changes": [{"id": "joab", "disposition": "우호"}],
-  "character_title_changes": [],
-  "faction_intel_changes": [],
-  "new_locations": [],
-  "location_changes": [{"id": "jerusalem", "controller": "david_kingdom"}],
-  "player_location_id": "jerusalem",
-  "player_coalition": [],
-  "enemy_coalition": [],
-  "weather": null,
-  "phase_outcome": null,
-  "combat_victor": null,
-  "enemy_next_action": null
-}
-
----
-
-## 예시 4 — 3등급 행동 (개연성 없는 입력)
+## 예시 3 — 3등급 행동 (개연성 없는 입력)
 
 *플레이어 입력: "부족 궁수 300명으로 단독 정면 돌격해 압살롬 본진 2만을 무너뜨린다."*
 
 ---
-
-## 1장, SCENE 2
 
 **시각:** 기원전 약 1025년, 마하나임 작전 천막
 
@@ -230,9 +153,6 @@
 
 [STATE_UPDATE]
 {
-  "scene": 2,
-  "chapter": 1,
-  "is_chapter_end": false,
   "new_characters": [],
   "dead_characters": [],
   "new_factions": [],
@@ -251,7 +171,6 @@
   "player_coalition": [],
   "enemy_coalition": [],
   "weather": null,
-  "phase_outcome": null,
   "combat_victor": null,
   "enemy_next_action": null
 }

@@ -148,12 +148,8 @@ function closeCombatOverlay() {
     renderAll(_state);
     renderResolution(_combatEndResolution);
     const content = _combatEndContent;
-    if (_state.progress.isChapterEnd) {
-      renderChapterClose(content);
-    } else {
-      renderSceneBody(markdownToHtml(extractNarrative(content)));
-      renderChoices(extractChoices(content));
-    }
+    renderSceneBody(markdownToHtml(extractNarrative(content)));
+    renderChoices(extractChoices(content));
     _combatEndContent    = null;
     _combatEndResolution = null;
   }

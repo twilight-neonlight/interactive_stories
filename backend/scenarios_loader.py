@@ -16,6 +16,40 @@ GARRISON_POINTS_BY_TIER: dict[str, int] = {
     "town":           5,
 }
 
+# 이 유형은 거점 tier 기여분 없이 field_army만으로 strength_score 계산
+_NO_TERRITORY_TYPES: frozenset[str] = frozenset({"rebels", "remnant"})
+
+
+def compute_faction_strength(faction: dict, fid: str, locations: list, tpp: int) -> int:
+    """field_army·보유 거점·naval_base(republic)에서 strength_score를 계산합니다.
+
+    Args:
+        faction:   세력 데이터 dict (field_army, type, naval_base 포함 가능)
+        fid:       세력 id (controller 매핑에 사용)
+        locations: list[dict] 형태의 거점 목록 (dict of {lid: loc} 도 허용)
+        tpp:       troops_per_strength_point
+    """
+    if not tpp:
+        return faction.get("strength_score", 0)
+    ftype = faction.get("type", "")
+    base  = round((faction.get("field_army") or 0) / tpp)
+
+    if ftype not in _NO_TERRITORY_TYPES:
+        loc_iter = locations.values() if isinstance(locations, dict) else locations
+        tier_pts = sum(
+            GARRISON_POINTS_BY_TIER.get(loc.get("tier", ""), 0)
+            for loc in loc_iter
+            if loc.get("controller") == fid
+        )
+        if ftype == "republic":
+            tier_pts *= 2  # 용병 고용 — 자국 도시 방위군 2배
+        base += tier_pts
+
+    if ftype == "republic":
+        base += faction.get("naval_base", 0)
+
+    return max(1, base)
+
 # 처분 유형별 garrison_modifier 초기값 (game.py의 _CONQUEST_DISPOSITIONS와 동기화)
 _DISPOSITION_GARRISON_BASE: dict[str, float] = {
     "초토화":      0.1,
@@ -117,6 +151,9 @@ def load_scenarios() -> list[dict]:
             loc["garrison"] = _resolve_garrison(loc, tpp)
             if "controlling_faction" in loc and "controller" not in loc:
                 loc["controller"] = loc.pop("controlling_faction")
+        # strength_score를 field_army + 거점 + naval_base에서 재계산
+        for f in scenario["factions"]:
+            f["strength_score"] = compute_faction_strength(f, f["id"], scenario["locations"], tpp)
         char_select_path = scenario_dir / "character-select.json"
         scenario["character_select"] = json.loads(char_select_path.read_text(encoding="utf-8-sig")) if char_select_path.exists() else []
         # 시나리오 프롬프트 지시문 로드 (prompt.md + prompt_{char_id}.md)

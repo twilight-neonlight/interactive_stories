@@ -362,11 +362,7 @@ async def start_quick_battle(battle_id: str):
         "scenarioTitle": battle["title"],
         "protagonist":   commander_id,
         "progress": {
-            "chapter":      1,
-            "scene":        1,
-            "chapterTitle": battle["title"],
-            "timestamp":    f"{battle['year']}년",
-            "isChapterEnd": False,
+            "timestamp": f"{battle['year']}년",
         },
         "history":    [],
         "characters": {

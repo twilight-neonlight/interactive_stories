@@ -192,7 +192,7 @@ async function openSaveList() {
       <div class="save-item" onclick="loadSave('${s.filename}')">
         <div class="save-item-info">
           <div class="save-item-title">${s.scenarioTitle || s.scenarioId}</div>
-          <div class="save-item-meta">${s.chapter}장 · ${s.timestamp || ''} · 저장 ${s.savedAt}</div>
+          <div class="save-item-meta">${s.timestamp || '시각 미상'} · 저장 ${s.savedAt}</div>
         </div>
         <button class="save-item-del" onclick="deleteSave(event, '${s.filename}')" title="삭제">×</button>
       </div>`).join('');

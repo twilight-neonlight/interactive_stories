@@ -42,11 +42,7 @@
 
 /**
  * @typedef {Object} SceneProgress
- * @property {number}  chapter       - 현재 장 번호 (1부터)
- * @property {number}  scene         - 현재 씬 번호 (1부터, LLM이 직접 지정)
- * @property {string}  chapterTitle  - 현재 장 제목 (LLM 응답에서 추출)
- * @property {string}  timestamp     - 현재 씬 시각·장소 (예: "868년 9월, 노팅엄 외곽")
- * @property {boolean} isChapterEnd  - 장 종결 여부
+ * @property {string}  timestamp - 현재 씬 시각·장소 (예: "868년 9월, 노팅엄 외곽")
  */
 
 /**
@@ -76,11 +72,7 @@ class GameState {
 
     /** @type {SceneProgress} */
     this.progress = {
-      chapter:      1,
-      scene:        1,
-      chapterTitle: '',
-      timestamp:    '',
-      isChapterEnd: false,
+      timestamp: '',
     };
 
     /**
@@ -141,34 +133,6 @@ class GameState {
 
     GameState.applyInitialDiplomacy(this, protagonistId);
 
-  }
-
-  // ── 장/씬 ─────────────────────────────────
-
-  /**
-   * LLM이 내려준 씬 번호로 progress.scene을 직접 설정합니다.
-   * @param {number} n
-   */
-  advanceScene(n) {
-    this.progress.scene = n;
-  }
-
-  /**
-   * 다음 장으로 넘어갑니다.
-   * @param {string} title - 새 장의 제목 (LLM 응답에서 추출)
-   */
-  advanceChapter(title) {
-    this.progress.chapter     += 1;
-    this.progress.scene        = 1;
-    this.progress.chapterTitle = title;
-    this.progress.isChapterEnd = false;
-  }
-
-  /**
-   * 현재 장을 종결 상태로 표시합니다.
-   */
-  markChapterEnd() {
-    this.progress.isChapterEnd = true;
   }
 
   /**
@@ -302,34 +266,20 @@ class GameState {
     const faction = this.factions.get(id);
     if (!faction) return;
     faction.strength_score = Math.max(0, Math.min(700, (faction.strength_score ?? 350) + delta));
+    this.autoDefeatCollapsedFactions();
   }
 
   /**
    * 전투 패배 페널티를 누적합니다. 패자에게만 적용.
-   * field_army / troops_count도 troopsPerPoint 비율로 함께 감소합니다.
+   * battle_damage만 증가. field_army는 faction_field_army_changes로만 변경.
    * @param {string} id
    * @param {number} damage - 양수. 실효 강도를 임시로 낮춥니다.
    */
   addFactionBattleDamage(id, damage) {
     const faction = this.factions.get(id);
     if (!faction) return;
-    const absDmg = Math.abs(damage);
-    faction.battle_damage = (faction.battle_damage ?? 0) + absDmg;
-    if (this.troopsPerPoint && absDmg > 0) {
-      const troopLoss = Math.round(absDmg * this.troopsPerPoint);
-      if (faction.field_army != null) {
-        faction.field_army = Math.max(0, faction.field_army - troopLoss);
-      }
-      if (this.protagonist) {
-        const char = this.characters.get(this.protagonist);
-        if (char?.troops_count != null) {
-          const pFid = char.faction_id || this.protagonist;
-          if (pFid === id) {
-            char.troops_count = Math.max(0, char.troops_count - troopLoss);
-          }
-        }
-      }
-    }
+    faction.battle_damage = (faction.battle_damage ?? 0) + Math.abs(damage);
+    this.autoDefeatCollapsedFactions();
   }
 
   /**
@@ -345,31 +295,14 @@ class GameState {
 
   /**
    * 시간 경과에 따라 battle_damage를 경감합니다.
-   * field_army / troops_count도 troopsPerPoint 비율로 함께 회복됩니다.
+   * battle_damage만 감소. field_army는 faction_field_army_changes로만 변경.
    * @param {string} id
    * @param {number} amount - 양수. 회복량.
    */
   recoverFactionBattleDamage(id, amount) {
     const faction = this.factions.get(id);
     if (!faction) return;
-    const absAmt    = Math.abs(amount);
-    const recovered = Math.min(absAmt, faction.battle_damage ?? 0);
-    faction.battle_damage = Math.max(0, (faction.battle_damage ?? 0) - absAmt);
-    if (this.troopsPerPoint && recovered > 0) {
-      const troopGain = Math.round(recovered * this.troopsPerPoint);
-      if (faction.field_army != null) {
-        faction.field_army += troopGain;
-      }
-      if (this.protagonist) {
-        const char = this.characters.get(this.protagonist);
-        if (char?.troops_count != null) {
-          const pFid = char.faction_id || this.protagonist;
-          if (pFid === id) {
-            char.troops_count += troopGain;
-          }
-        }
-      }
-    }
+    faction.battle_damage = Math.max(0, (faction.battle_damage ?? 0) - Math.abs(amount));
   }
 
   // ── 거점 ──────────────────────────────────
@@ -403,6 +336,7 @@ class GameState {
       locations:     Object.fromEntries(this.locations),
       events:        this.events.slice(),
       combatState:   this.combatState,
+      weather:       this.weather ?? 'clear',
       eventStates:   { ...this.eventStates },
       pendingConquestDispositions: this.pendingConquestDispositions.slice(),
       lostBattles:   { ...this.lostBattles },
@@ -420,11 +354,7 @@ class GameState {
     state.scenarioTitle   = data.scenarioTitle;
     state.protagonist     = data.protagonist;
     state.progress        = {
-      chapter:      data.progress?.chapter      ?? 1,
-      scene:        data.progress?.scene        ?? 1,
-      chapterTitle: data.progress?.chapterTitle ?? '',
-      timestamp:    data.progress?.timestamp    ?? '',
-      isChapterEnd: data.progress?.isChapterEnd ?? false,
+      timestamp: data.progress?.timestamp ?? '',
     };
     state.history         = Array.isArray(data.history) ? data.history.slice() : [];
     state.characters      = new Map(Object.entries(data.characters));
@@ -432,6 +362,7 @@ class GameState {
     state.locations       = new Map(Object.entries(data.locations));
     state.events          = Array.isArray(data.events) ? data.events.slice() : [];
     state.combatState     = data.combatState ?? null;
+    state.weather         = data.weather ?? 'clear';
     state.eventStates     = (data.eventStates && typeof data.eventStates === 'object')
                             ? { ...data.eventStates } : {};
     state.pendingConquestDispositions = Array.isArray(data.pendingConquestDispositions)

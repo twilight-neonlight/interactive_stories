@@ -94,10 +94,8 @@ def _build_military_context(state: dict, player_faction_id: str | None) -> list[
 
     def _faction_army_str(f: dict) -> str:
         fa   = f.get("field_army")
-        mult = f.get("combat_multiplier", 1)
         if fa is not None:
-            suffix = f" (본국 증원 포함 최대 {fa * mult:,}명)" if mult > 1 else ""
-            return f"야전군 {fa:,}명{suffix}"
+            return f"야전군 {fa:,}명"
         dmg = f.get("battle_damage", 0)
         eff = f.get("strength_score", 0) - dmg
         return f"실효 전력 {eff}"
@@ -216,10 +214,6 @@ def _build_eval_context(state: dict, action_type: str) -> str:
                          or (protagonist_id if protagonist_id in factions else None))
 
     lines = []
-    progress = state.get("progress", {})
-    if progress.get("chapter"):
-        lines.append(f"현재: {progress['chapter']}장 {progress.get('scene', 1)}씬")
-
     if action_type == "siege":
         lines += _build_siege_context(state, player_faction_id)
     elif action_type in {"military", "surprise", "defense"}:

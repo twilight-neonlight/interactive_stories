@@ -52,8 +52,7 @@ function markdownToHtml(md) {
 const CHOICE_SECTION_RE = /(^|\n)\s*(?:#{1,6}\s*)?\*{0,2}\s*결정\s*(시점|기로)\s*:?\s*\*{0,2}\s*:?/;
 
 function extractNarrative(text) {
-  let body = text.replace(/^##[^\n]*\n/, '').trim();
-  body = body.replace(/^\*\*시각:\*\*[^\n]*\n?/m, '').trim();
+  let body = text.replace(/^\*\*시각:\*\*[^\n]*\n?/m, '').trim();
   const match = body.match(CHOICE_SECTION_RE);
   if (match) body = body.slice(0, match.index + match[1].length).trim();
   return body;

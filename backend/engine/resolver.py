@@ -45,12 +45,17 @@ def _grade_to_num(grade: str | None) -> int:
     return _GRADE_IDX.get(grade, 7) if grade else 7
 
 def _diff_to_mod(diff: int) -> int:
-    if diff >=  6: return  3
-    if diff >=  3: return  2
-    if diff >=  1: return  1
+    if diff >= 15: return  5
+    if diff >= 12: return  4
+    if diff >=  9: return  3
+    if diff >=  6: return  2
+    if diff >=  3: return  1
     if diff >= -2: return  0
-    if diff >= -5: return -2
-    return -3
+    if diff >= -5: return -1
+    if diff >= -8: return -2
+    if diff >=-11: return -3
+    if diff >=-14: return -4
+    return -5
 
 def calc_stat_modifier(state: dict, stat_key: str,
                        opponent_faction_id: str | None = None) -> tuple[str, int] | None:
@@ -343,11 +348,11 @@ def resolution_prompt(res: dict) -> str:
 # 사상자 규모 레이블 → (최소, 최대) 절댓값 battle_damage 포인트 (0–700 스케일 기준)
 # 비율이 아닌 고정 범위 — 전력 크기와 무관하게 1페이즈당 손실을 예측 가능하게 유지
 DAMAGE_LABEL_RATIO: dict[str, tuple[int, int]] = {
-    "경미": (1,  3),
-    "보통": (3,  7),
-    "중대": (7, 14),
-    "심각": (14, 25),
-    "궤멸": (25, 40),
+    "경미": (1,  2),
+    "보통": (2,  4),
+    "중대": (4,  7),
+    "심각": (7, 12),
+    "궤멸": (12, 20),
 }
 
 # phase_outcome → (player_damage_label, enemy_damage_label)
@@ -591,8 +596,8 @@ def advance_combat_phase(command: str, state: dict,
     # 이전 턴 phase_outcome → 피해 누적 (deferred)
     if pending_outcome:
         p_label, e_label = combat_damage_labels(pending_outcome)
-        p_ratio = e_str / max(1, p_str)
-        e_ratio = p_str / max(1, e_str)
+        p_ratio = (e_str / max(1, p_str)) ** 0.5
+        e_ratio = (p_str / max(1, e_str)) ** 0.5
         if p_fid: pending[p_fid] = pending.get(p_fid, 0) + calc_phase_damage(p_label, p_ratio)
         if e_fid: pending[e_fid] = pending.get(e_fid, 0) + calc_phase_damage(e_label, e_ratio)
 
@@ -644,8 +649,8 @@ def advance_combat_phase(command: str, state: dict,
         else:
             # 최대 페이즈 도달: 이번 주사위 결과 즉시 적용 후 누적 피해로 판정
             cur_outcome = resolution["phase_outcome"]
-            p_ratio = e_str / max(1, p_str)
-            e_ratio = p_str / max(1, e_str)
+            p_ratio = (e_str / max(1, p_str)) ** 0.5
+            e_ratio = (p_str / max(1, e_str)) ** 0.5
             p_label, e_label = combat_damage_labels(cur_outcome)
             if p_fid: pending[p_fid] = pending.get(p_fid, 0) + calc_phase_damage(p_label, p_ratio)
             if e_fid: pending[e_fid] = pending.get(e_fid, 0) + calc_phase_damage(e_label, e_ratio)
@@ -861,9 +866,7 @@ def combat_end_prompt(cs: dict, resolution: dict) -> str:
         "승패와 그 여파, 양측의 상황 변화를 묘사하시오.\n"
         "사상자 서술 시 총 손실의 약 1/4은 전사자, 3/4은 중상자·탈영자·낙오자로 구성된다. "
         "부상자 다수는 시간이 지나면 전열에 복귀할 수 있다.\n"
-        "패배한 세력이 반군·잔당 계열(rebels/remnant 유형)이고 잔존 전력이 "
-        "30 미만이라면, STATE_UPDATE의 defeated_factions에 해당 세력 id를 반드시 포함하시오.\n"
-        "일반 세력(faction·kingdom 등)이 이번 전투로 모든 거점을 상실했고 잔존 전력이 30 미만이라면 마찬가지로 defeated_factions에 포함하시오. "
-        "잔존 전력이 30 이상이면 패퇴 처리하지 않고 new_factions로 잔당 세력을 등록한 뒤 원 세력을 defeated_factions에 추가하시오.\n"
+        "패배한 세력이 반군·잔당 계열(rebels/remnant 유형)이고 지배 거점이 없으며 잔존 전력이 "
+        "impotent 수준(strength_score 100 미만)이라면, STATE_UPDATE의 defeated_factions에 해당 세력 id를 반드시 포함하시오.\n"
         "전투 후 다음 행동 선택지를 제시하시오."
     )

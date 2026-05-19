@@ -3,7 +3,7 @@
     "id": "civil_war",
     "default_active": true,
     "name": "오스만 공위 분쟁", "sub": "1402년~ · 오스만 제국 전역",
-    "end_condition": "active_princes == 0",
+    "end_condition": "year > 1412 and active_princes == 0",
     "body": "앙카라 전투 패배와 바야지트 1세 사망으로 술탄위가 공석이다. 루멜리아와 아나톨리아를 아우르던 영토는 왕자들과 복권된 구 베이릭들로 분열되었다. 어느 왕자도 단독으로 전체를 통제하지 못하는 불안정한 균형.",
     "on_end_prompt": "공위 분쟁이 종식됐다. 이번 서술에서 마지막 경쟁 왕자가 제거되거나 항복하는 장면을 묘사하라. 오스만 술탄국이 한 인물 아래 다시 하나로 통합되는 역사적 순간임을 강조하고, 이 승리가 어떤 새로운 과제를 남기는지 암시하라.",
     "active_chains": [
@@ -370,7 +370,7 @@
     "id": "smyrna_uncontrolled",
     "default_active": true,
     "name": "스미르나 세력 공백", "sub": "1402년~ · 에게해 연안",
-    "body": "티무르의 구호기사단 축출 이후 스미르나 일대가 어느 세력도 확실한 지배권을 갖지 못한 채 방치되고 있다. 에게해 교역로의 핵심 거점인 이 항구도시를 둘러싼 공백이 길어질수록 구 베이릭 추종 세력이 결집할 위험이 커진다.",
+    "body": "티무르의 구호기사단 축출 이후 스미르나 일대가 어느 세력도 확실한 지배권을 갖지 못한 채 방치되고 있다. 에게해 교역로의 핵심 거점인 이 항구도시를 둘러싼 공백이 길어질수록 구 아이딘 왕조 추종 세력이 결집할 위험이 커진다.",
     "end_pathways": [
       {
         "id": "claimed_early",
@@ -380,23 +380,9 @@
       {
         "id": "aydinids_opportunity",
         "condition": "year >= 1404 and smyrna_contested",
-        "on_end_prompt": "1404년이 됐음에도 스미르나가 여전히 분쟁 중이다. 이번 서술에서 에게해 연안에 재집결한 아이딘 왕조 잔존 세력이 이 공백을 틈타 접근하고 있다는 첩보가 들어오는 장면을 암시하라.",
-        "chain_trigger": "aydinid_return"
+        "on_end_prompt": "해가 지나도록 스미르나가 통제되지 않았다. 이번 서술에서 에게해 연안에 재집결한 아이딘 왕조 잔존 세력이 스미르나를 실효 점거했다는 보고가 들어오는 장면을 묘사하라. 이들이 에게해 연안에서 세력을 재건하는 것이 서부 아나톨리아 전략에 미치는 함의를 인식시켜라. STATE_UPDATE의 new_factions에 아이딘 왕조(id: aydinids, name: 아이딘 왕조, type: emirate, strength_score 90~100, color: #7A9E5A)를 추가하고, location_changes로 smyrna의 controller를 aydinids로 갱신하라."
       }
     ],
     "dot": "#7A9E5A", "region": "에게해 연안"
-  },
-
-  {
-    "id": "aydinid_return",
-    "chain_only": true,
-    "name": "아이딘 왕조의 귀환",
-    "sub": "1404년 · 서부 아나톨리아",
-    "end_condition": "smyrna_contested == false",
-    "body": "티무르 침공으로 와해됐던 아이딘 왕조 잔존 세력이 에게해 연안에 재집결했다. 스미르나의 공백을 틈타 옛 영토 회복에 나섰다.",
-    "prompt": "아이딘 왕조 잔존 세력이 스미르나를 실효 점거했다. 이번 응답에서 이 사건을 서술에 반영하고, STATE_UPDATE의 new_factions에 아이딘 왕조(id: aydinids, name: 아이딘 왕조, type: emirate, strength_score 90~100, color: #7A9E5A)를 추가하라. 동시에 location_changes로 smyrna의 controller를 aydinids로 갱신하라.",
-    "on_trigger_prompt": "이번 서술에서 아이딘 왕조 잔존 세력이 스미르나를 점거했다는 보고가 들어오는 장면을 묘사하라. 이들이 에게해 연안에서 세력을 재건하는 것이 서부 아나톨리아 전략에 미치는 함의를 플레이어가 인식하도록 하라.",
-    "dot": "#7A9E5A",
-    "region": "서부 아나톨리아"
   }
 ]

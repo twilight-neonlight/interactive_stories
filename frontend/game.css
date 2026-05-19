@@ -200,13 +200,6 @@ body {
 /* ── 씬 ── */
 .scene-panel { flex: 1; display: flex; flex-direction: column; min-height: 0; }
 .scene-header { display: flex; align-items: center; gap: 8px; margin-bottom: 14px; }
-.scene-badge {
-  font-size: 11px; font-weight: 500; font-family: sans-serif;
-  background: var(--bg-secondary); color: var(--text-secondary);
-  padding: 3px 9px; border-radius: var(--radius-md);
-  border: 1px solid var(--border-light);
-}
-.chapter-info { font-size: 11px; color: var(--text-tertiary); margin-left: auto; font-family: sans-serif; }
 .resolution-badge {
   font-size: 11px; font-weight: 600; font-family: sans-serif;
   padding: 3px 9px; border-radius: var(--radius-md);
@@ -399,7 +392,7 @@ hr.divider { border: none; border-top: 1px solid var(--border-light); margin: 10
 }
 @keyframes _spin { to { transform: rotate(360deg); } }
 
-/* ── 챕터 종결 요약 테이블 ── */
+/* ── 마크다운 표 ── */
 .summary-table {
   width: 100%; border-collapse: collapse;
   font-size: 12px; font-family: sans-serif; margin: 8px 0 4px;
@@ -408,16 +401,6 @@ hr.divider { border: none; border-top: 1px solid var(--border-light); margin: 10
   padding: 5px 9px; border: 1px solid var(--border-light); text-align: left; vertical-align: top;
 }
 .summary-table th { background: var(--bg-secondary); color: var(--text-secondary); font-weight: 600; }
-
-/* ── 잔불 목록 ── */
-.embers-list { list-style: none; padding: 0; margin: 6px 0 0; }
-.embers-list li {
-  padding: 5px 0 5px 14px; border-bottom: 1px solid var(--border-light);
-  font-size: 12px; font-family: sans-serif; color: var(--text-secondary);
-  position: relative; line-height: 1.5;
-}
-.embers-list li::before { content: '·'; position: absolute; left: 2px; color: var(--text-tertiary); }
-.embers-list li:last-child { border-bottom: none; }
 
 /* ── 저장·불러오기 버튼 ── */
 .save-bar { display: flex; gap: 5px; margin-left: auto; }
@@ -430,16 +413,6 @@ hr.divider { border: none; border-top: 1px solid var(--border-light); margin: 10
 }
 .save-btn:hover { color: var(--text-primary); border-color: var(--text-secondary); }
 .save-btn:disabled { opacity: 0.45; cursor: default; }
-
-/* ── 다음 장 버튼 ── */
-.next-chapter-btn {
-  width: 100%; padding: 11px; font-size: 13px;
-  font-family: 'Georgia', serif; font-weight: 600;
-  background: var(--text-primary); color: var(--bg-primary);
-  border: none; border-radius: var(--radius-md); cursor: pointer;
-  transition: opacity 0.12s;
-}
-.next-chapter-btn:hover { opacity: 0.82; }
 
 /* ══ 전투 오버레이 ══════════════════════════════════════════════════ */
 #combat-overlay {

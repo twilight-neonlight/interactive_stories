@@ -51,8 +51,6 @@ let _ui      = null;
       if (lastAssistant) {
         if (_state.combatState?.active) {
           openCombatOverlay(lastAssistant.content, null);
-        } else if (_state.progress.isChapterEnd) {
-          renderChapterClose(lastAssistant.content);
         } else {
           renderSceneBody(markdownToHtml(extractNarrative(lastAssistant.content)));
           renderChoices(extractChoices(lastAssistant.content));
@@ -150,8 +148,6 @@ let _ui      = null;
     if (lastAssistant) {
       if (_state.combatState?.active) {
         openCombatOverlay(lastAssistant.content, null);
-      } else if (_state.progress.isChapterEnd) {
-        renderChapterClose(lastAssistant.content);
       } else {
         renderSceneBody(markdownToHtml(extractNarrative(lastAssistant.content)));
         renderChoices(extractChoices(lastAssistant.content));
@@ -175,7 +171,6 @@ let _ui      = null;
         _state.pushHistory('assistant', content);
         _manager.save();
 
-        renderSceneHeader(_state.progress, _state.scenarioTitle);
         if (timestamp) {
           const tsSpan = document.getElementById('timestamp-text');
           if (tsSpan) tsSpan.textContent = timestamp;

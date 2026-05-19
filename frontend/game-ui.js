@@ -77,16 +77,6 @@ function renderDebugPanel(container, resolution, debugData) {
 }
 window.renderDebugPanel = renderDebugPanel;
 
-// ── 씬 헤더 렌더링
-function renderSceneHeader(progress, scenarioTitle = '') {
-  const chapterBadge = document.getElementById('chapter-badge');
-  const sceneBadge   = document.getElementById('scene-badge');
-  const chapterInfo  = document.getElementById('chapter-info');
-  if (chapterBadge) chapterBadge.textContent = `${progress.chapter}장`;
-  if (sceneBadge)   sceneBadge.textContent   = progress.isChapterEnd ? '장 종결' : `SCENE ${progress.scene}`;
-  if (chapterInfo)  chapterInfo.textContent  = progress.chapterTitle || scenarioTitle;
-}
-
 function renderTimestamp(progress) {
   const span = document.getElementById('timestamp-text');
   if (span && progress.timestamp) span.textContent = progress.timestamp;
@@ -384,7 +374,6 @@ function renderEventList(state) {
 
 // ── 전체 UI 갱신
 function renderAll(state) {
-  renderSceneHeader(state.progress, state.scenarioTitle);
   renderTimestamp(state.progress);
   renderCommanderPanel(state);
   renderCharacterList(state);
@@ -460,42 +449,4 @@ function renderChoices(choices) {
 function showLoading() {
   renderSceneBody('<div class="scene-loading">생성 중…</div>');
   renderChoices([]);
-}
-
-// ── 챕터 종결 화면 렌더링
-function renderChapterClose(text) {
-  const body = text.replace(/^##[^\n]*\n/, '').trim();
-
-  const summaryIdx = body.search(/\*\*\d+장 요약\*\*/);
-  const assessIdx  = body.search(/\*\*총평\*\*/);
-  const embersIdx  = body.search(/\*\*잔불\*\*/);
-
-  const narrative    = summaryIdx !== -1 ? body.slice(0, summaryIdx).trim() : body;
-  const summaryBlock = summaryIdx !== -1 && assessIdx !== -1 ? body.slice(summaryIdx, assessIdx).trim() : '';
-  const assessBlock  = assessIdx  !== -1 && embersIdx !== -1 ? body.slice(assessIdx,  embersIdx).trim() : '';
-  const embersBlock  = embersIdx  !== -1 ? body.slice(embersIdx).trim() : '';
-
-  const embersLines = embersBlock
-    .split('\n')
-    .filter(l => /^- .+/.test(l.trim()))
-    .map(l => `<li>${inline(l.trim().slice(2))}</li>`)
-    .join('');
-
-  renderSceneBody(`
-    ${markdownToHtml(narrative)}
-    ${summaryBlock ? `<p class="panel-label" style="margin:16px 0 6px;">요약</p>${markdownToHtml(summaryBlock.replace(/\*\*\d+장 요약\*\*\n?/, ''))}` : ''}
-    ${assessBlock  ? `<p class="panel-label" style="margin:16px 0 6px;">총평</p>${markdownToHtml(assessBlock.replace(/\*\*총평\*\*\n?/, ''))}` : ''}
-    ${embersLines  ? `<p class="panel-label" style="margin:16px 0 6px;">잔불</p><ul class="embers-list">${embersLines}</ul>` : ''}
-  `);
-
-  const list = document.getElementById('choice-list');
-  if (list) list.innerHTML = '<button class="next-chapter-btn" onclick="startNextChapter()">다음 장으로 →</button>';
-}
-
-function startNextChapter() {
-  if (!_state) return;
-  renderSceneBody('<p style="color:var(--text-tertiary);font-family:sans-serif;font-size:13px;">다음 장의 방향을 입력하세요. (시간 경과·사건·개입 사항)</p>');
-  const list = document.getElementById('choice-list');
-  if (list) list.innerHTML = '';
-  document.getElementById('cmd')?.focus();
 }

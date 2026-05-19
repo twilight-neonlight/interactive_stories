@@ -2,11 +2,9 @@
 
 Only one format per response. Never mix formats.
 
-## Standard Scene
+## Standard Response
 
 ```
-## N장, SCENE M
-
 **시각:** N년 N월, 장소 — 본문에서 반복하지 말 것.
 
 **현재 상황:** 2–4문장 요약
@@ -20,22 +18,6 @@ Only one format per response. Never mix formats.
 
 마지막 줄: "위 선택지 중 하나를 고르거나, 직접 명령을 내리십시오."
 
-## Chapter Close
-
-```
-## N장 종결
-
-기간 및 주요 장소
-
-(최종 결정에서 이어지는 서술 — 표준 씬의 상황 전개와 동일한 분량)
-
-N장 요약: 최소 8항목 표
-
-총평: 1–3단락
-
-잔불: 3–5항목
-```
-
 ## Character Relationship Summary
 
 응답 어느 위치에도 인물·세력 관계표(`[주요 인물 관계]`)를 출력하지 말 것. 관계 변화는 STATE_UPDATE에만 반영한다.
@@ -47,28 +29,24 @@ N장 요약: 최소 8항목 표
 - No objectively correct option. No consequence-free option.
 - Do NOT prefix choices with bracketed labels such as **[강경 대응]** or **[실리 외교]**. Write the choice text directly.
 - **타 거점 주둔군 전량 차출 금지**: 다른 거점의 주둔 병력 전부를 한 곳으로 집결시키는 선택지는, 해당 거점에서 교전 중인 적 전력이 아군의 **3배 이상**인 경우에만 제시할 수 있다. 그 미만의 상황에서 이 선택지를 제시하지 말 것. 플레이어가 직접 차출을 명령한 경우에는 조건과 무관하게 실행한다.
-- **거점 점령 후 처분 선택**: 이번 씬에서 적 거점이 군사적으로 점령된 경우(지배 세력이 교체된 경우), **결정 기로** 선택지에 반드시 다음 세 가지 처분 방법을 포함하라. 나머지 자유 명령 선택지는 그대로 유지된다.
+- **거점 점령 후 처분 선택**: 이번 응답에서 적 거점이 군사적으로 점령된 경우(지배 세력이 교체된 경우), **결정 기로** 선택지에 반드시 다음 세 가지 처분 방법을 포함하라. 나머지 자유 명령 선택지는 그대로 유지된다.
   - **초토화** — 방어 시설·건물을 체계적으로 파괴하고 생존자를 몰아낸다.
   - **약탈** — 식량·재물을 수탈해 병력 보급에 활용하되 주민은 남긴다.
   - **피해 최소화** — 주민과 시설을 보호하며 통치를 신속히 안정시킨다.
 
 ## State Update Block
 
-씬 응답 맨 끝에 아래 블록을 항상 포함한다. 변경이 없는 배열은 빈 배열 `[]`로 둔다.
+응답 맨 끝에 아래 블록을 항상 포함한다. 변경이 없는 배열은 빈 배열 `[]`로 두거나 출력하지 않아도 된다.
 
 ```
 [STATE_UPDATE]
 {
-  "scene": 씬번호,
-  "chapter": 장번호,
-  "is_chapter_end": false,
   "new_characters": [{"id": "영문소문자_언더바", "name": "이름", "epithet": "별칭(없으면 빈 문자열)", "disposition": "동맹|우호|중립|비우호|적대|불명", "desc": "1-2문장 설명"}],
   "dead_characters": ["id1", "id2"],
   "new_factions": [{"id": "영문소문자_언더바", "name": "세력명", "type": "세력 유형", "disposition": "동맹|우호|중립|비우호|적대|불명", "strength": "extreme|very high|high|medium|low|very low|impotent", "notes": "1-2문장 설명"}],
   "defeated_factions": ["세력id1"],
-  "faction_strength_changes": [{"id": "기존세력id", "delta": 숫자}],
+  "faction_field_army_changes": [{"id": "기존세력id", "delta": 숫자}],
   "faction_battle_damage": [{"id": "기존세력id", "damage": 숫자}],
-  "faction_battle_recovery": [{"id": "기존세력id", "amount": 숫자}],
   "character_troop_changes": [{"id": "기존인물id", "delta": 숫자}],
   "faction_diplomacy_changes": [{"id": "기존세력id", "delta": 숫자}],
   "character_disposition_changes": [{"id": "기존인물id", "disposition": "동맹|우호|중립|비우호|적대|불명"}],
@@ -82,19 +60,15 @@ N장 요약: 최소 8항목 표
   "player_coalition": ["세력명1", "세력명2"],
   "enemy_coalition":  ["세력명1", "세력명2"],
   "weather": null,
-  "phase_outcome": null,  // 엔진이 자동 계산 — 출력 불필요 (null 유지)
   "combat_victor": null,
   "enemy_next_action": null
 }
 ```
 
-- `scene`: **필수.** 이번 씬의 씬 번호. 헤더의 `SCENE M`과 일치시킬 것. 장 종결이면 현재 씬 번호 유지.
-- `chapter`: **필수.** 이번 씬의 장 번호. 헤더의 `N장`과 일치시킬 것.
-- `is_chapter_end`: **필수.** 장 종결 씬이면 `true`, 그 외 `false`.
-- `new_characters`: 이번 씬에서 처음 등장하는 비중 있는 인물. 이미 등록된 인물은 생략. `stats` 필드를 포함하지 말 것 — 능력치는 시나리오 데이터에 사전 정의된 플레이어블 캐릭터에만 부여된다.
-- `dead_characters`: 이번 씬에서 사망·제거 확정된 인물의 id 목록.
-- `new_factions`: 이번 씬에서 처음 개입하는 세력. 이미 등록된 세력은 생략.
-- `defeated_factions`: 이번 씬에서 **패퇴 확정**된 세력의 id 목록. 패퇴 판정 기준은 세력 유형에 따라 다르다.
+- `new_characters`: 이번 응답에서 처음 등장하는 비중 있는 인물. 이미 등록된 인물은 생략. `stats` 필드를 포함하지 말 것 — 능력치는 시나리오 데이터에 사전 정의된 플레이어블 캐릭터에만 부여된다.
+- `dead_characters`: 이번 응답에서 사망·제거 확정된 인물의 id 목록.
+- `new_factions`: 이번 응답에서 처음 개입하는 세력. 이미 등록된 세력은 생략.
+- `defeated_factions`: 이번 응답에서 **패퇴 확정**된 세력의 id 목록. 패퇴 판정 기준은 세력 유형에 따라 다르다.
 
   **일반 세력** (faction·kingdom·empire·emirate·republic 등):
   1. **무조건 항복** — 지도자가 점유한 모든 영토를 상대방에게 명시적으로 양도하며 항복을 선언한 경우.
@@ -104,40 +78,38 @@ N장 요약: 최소 8항목 표
 
   **반군·잔당** (rebels·remnant 유형):
   - 처음부터 지배 거점이 없는 경우가 많으므로 거점 조건을 면제한다. 결정적 전투 패배 후 잔존 전력이 **impotent 수준(strength_score 30 미만)**이면 즉시 패퇴 처리한다.
-- `faction_strength_changes`: 세력의 **기반 강도** 변화. 정규 병력 증감·영토 획득/상실에 적용. 양측 모두 적용 가능. `delta` 범위 0–700.
-  - 영토 1개 획득/상실: ±30~50 / 대규모 병력 충원·괴멸: ±80~120
-  - 순수 전투 승패만으로는 적용하지 않는다 — 그것은 `faction_battle_damage`로 처리.
-- `faction_battle_damage`: **전투 페이즈 시스템 밖에서 발생한 전투**에만 사용. 전투 오버레이(combatState)로 처리된 전투는 엔진이 피해를 자동 산출하므로 이 필드를 출력하지 말 것. `damage`는 양수.
-  - 피로스의 승리(대승이지만 손실 과다): 승자에게도 `faction_strength_changes`로 음수 delta 적용.
-- `faction_battle_recovery`: 시간 경과로 battle_damage를 경감. **게임 내 시간 1개월 이상 경과 시** 전투 중이 아닌 세력에 적용.
-  - 1개월 경과: 20~30 / 1계절(3개월): 50~80 / 1년 이상: 완전 회복 가능
+- `faction_field_army_changes`: 세력의 **야전군 규모** 변화. 단위는 **명(名)**. 징병·용병 고용·대규모 파병·병력 괴멸에 적용. 양측 모두 적용 가능.
+  - 규모 기준: 전력 30~80점 상당 병력이 중규모, 80~200점 상당이 대규모. 시나리오 컨텍스트의 [전력 / 야전군] 비율로 환산할 것.
+  - 순수 전투 피해는 `faction_battle_damage`로 처리 — field_army를 직접 바꾸지 말 것.
+  - 거점 점령·상실에 따른 세력 변화는 `location_changes`에서 시스템이 자동 반영하므로 이 필드를 중복 출력하지 말 것.
+- `faction_battle_damage`: **전투 오버레이(combatState) 밖에서 발생한 전투**에만 사용. `damage`는 양수.
+  - 피로스의 승리(대승이지만 손실 과다): 승자에게도 `faction_field_army_changes`로 음수 delta 적용.
 - `character_troop_changes`: 플레이어 캐릭터 등 troops_count가 설정된 인물의 병력 변화. `delta`는 정수(명 단위).
   - 소규모 교전: ±수백 / 중규모 전투: ±1,000~3,000 / 대전투·증원: ±3,000 이상
-- `faction_diplomacy_changes`: 이번 씬에서 세력의 플레이어에 대한 외교 수치 변화. `delta`는 정수.
+- `faction_diplomacy_changes`: 이번 응답에서 세력의 플레이어에 대한 외교 수치 변화. `delta`는 정수.
   - 간단한 부탁·협조: ±5~10 / 중요한 협력·배신: ±15~25 / 결정적 사건(동맹 결성·선전포고): ±30~50
-- `character_disposition_changes`: 이번 씬에서 인물의 플레이어에 대한 태도가 바뀐 경우.
+- `character_disposition_changes`: 이번 응답에서 인물의 플레이어에 대한 태도가 바뀐 경우.
 - `character_title_changes`: 인물의 직위·칭호가 바뀐 경우 (예: 왕위 주장자 → 술탄, 장군 → 총사령관). 즉위·승진·폐위 등 서사적으로 명확한 전환점에서만 사용.
 - `faction_intel_changes`: 플레이어의 해당 세력에 대한 첩보 수준 변화. `delta`: +1(침투 부분 성공·성공), +2(대성공), -1(대실패).
-- `new_locations`: 이번 씬에서 새롭게 등장하는 거점. 이미 등록된 거점은 생략.
-- `location_changes`: 이번 씬에서 지배 세력이 바뀐 거점. `id`는 기존 locations의 id를 사용. `controller`는 반드시 현재 등록된 **factions의 id** 중 하나여야 하며, 인물 id·세력명·임의 문자열을 사용하면 안 된다.
-- `player_location_id`: 이번 씬에서 플레이어의 현재 거점이 바뀌거나 처음 확정된 경우. 반드시 현재 등록된 **locations의 id** 중 하나여야 한다. 변화 없으면 null.
+- `new_locations`: 이번 응답에서 새롭게 등장하는 거점. 이미 등록된 거점은 생략.
+- `location_changes`: 이번 응답에서 지배 세력이 바뀐 거점. `id`는 기존 locations의 id를 사용. `controller`는 반드시 현재 등록된 **factions의 id** 중 하나여야 하며, 인물 id·세력명·임의 문자열을 사용하면 안 된다.
+- `player_location_id`: 이번 응답에서 플레이어의 현재 거점이 바뀌거나 처음 확정된 경우. 반드시 현재 등록된 **locations의 id** 중 하나여야 한다. 변화 없으면 null.
 - `weather`: 날씨가 변한 경우에만 출력. 값: `"clear"` | `"rain"` | `"heavy_rain"` | `"snow"` | `"blizzard"` | `"heat"` | `"fog"` | `"storm"`. 유지되면 생략(null).
-- `phase_outcome`: **출력하지 말 것 (항상 null).** 페이즈 결과는 엔진(2d6 대결)이 자동으로 결정하며 LLM이 개입하지 않는다.
-- `combat_victor`: **전투 진행 중 씬에서** 전투가 사실상 종결되었다고 판단할 때만 사용. 적군이 붕괴·퇴각하면 `"player"`, 아군이 궤멸·패주하면 `"enemy"`. 진행 중이면 반드시 `null`.
-- `enemy_next_action`: **전투 진행 중 씬에서만** 사용. 적군이 다음 페이즈에 시도할 전술 행동을 1~2문장으로 기술. 전투가 종결된 씬에서는 출력하지 말 것.
-- `battle_location`: **전투 개시 씬에서만** 사용. 전투가 발생하는 지명 (예: `"필리베"`). 이후 씬에서는 null.
-- `battle_year`: **전투 개시 씬에서만** 사용. 전투 연도 (예: `"1403년"`). 이후 씬에서는 null.
-- `player_coalition` / `enemy_coalition`: **전투 개시 씬에서만** 사용. 이번 전장에 **물리적으로 존재하는** 연합 세력의 표시명 목록. 외교적으로 동맹이더라도 해당 씬에서 직접 언급·등장하지 않은 세력은 포함하지 않는다.
+- `combat_victor`: **전투 진행 중 응답에서** 전투가 사실상 종결되었다고 판단할 때만 사용. 적군이 붕괴·퇴각하면 `"player"`, 아군이 궤멸·패주하면 `"enemy"`. 진행 중이면 반드시 `null`.
+- `enemy_next_action`: **전투 진행 중 응답에서만** 사용. 적군이 다음 페이즈에 시도할 전술 행동을 1~2문장으로 기술. 전투가 종결된 응답에서는 출력하지 말 것.
+- `battle_location`: **전투 개시 응답에서만** 사용. 전투가 발생하는 지명 (예: `"필리베"`). 이후 응답에서는 null.
+- `battle_year`: **전투 개시 응답에서만** 사용. 전투 연도 (예: `"1403년"`). 이후 응답에서는 null.
+- `player_coalition` / `enemy_coalition`: **전투 개시 응답에서만** 사용. 이번 전장에 **물리적으로 존재하는** 연합 세력의 표시명 목록. 외교적으로 동맹이더라도 해당 응답에서 직접 언급·등장하지 않은 세력은 포함하지 않는다.
 
 ## Meta-Language Prohibition
 
 Never use in narration, dialogue, or choices:
 - "시뮬레이션" (within narration or dialogue)
 - Choice numbers ("선택지 1번은...")
-- "이 선택은...", "이 시나리오에서...", "1장에서..."
+- "이 선택은...", "이 시나리오에서..."
 - Any world-continuity prohibited expressions listed in Section B
 
-Exceptions: SCENE title, chapter close title, summary title and content.
+Exceptions: summary title and content.
 
 ## Pre-Output Checklist
 
@@ -148,10 +120,9 @@ Before generating any output, confirm:
 - Notation consistency maintained; no continuity violations in character relationships.
 - World continuity maintained: unintervened areas follow original trajectory; player-intervened areas use new baseline.
 - Approximate figures only — no overly precise numbers.
-- Output formats not mixed; standard scene and chapter close never in the same response.
-- No unnecessary confirmation scene generated during the ending phase.
-- Scene covers only the outcome of the player's last choice; no arbitrary advancement of unresolved events.
+- Output formats not mixed.
+- Response covers only the outcome of the player's last choice; no arbitrary advancement of unresolved events.
 - No strategically irrelevant dialogue, monologue, or philosophical exchange inserted.
 - Each choice has a distinct implicit trade-off; no option is consequence-free or objectively superior.
-- All player-obtained intelligence has a traceable, plausible prior source established in this or a prior scene.
+- All player-obtained intelligence has a traceable, plausible prior source established in this or prior narration.
 - No new character introduced whose primary function at introduction is to provide a strategic advantage; no defection or internal enemy fracture without two independently established prior conditions.
