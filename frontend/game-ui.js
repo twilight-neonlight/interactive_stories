@@ -178,8 +178,12 @@ function renderFactionBars(state) {
         const ownTroops = f.field_army != null ? f.field_army : Math.round(score * tpp);
         parts.push(`병력: ${window.formatTroops(ownTroops)}`);
       } else {
+        const disp  = f.disposition ?? '';
         const intel = f.intel_level ?? 0;
-        const est   = window.formatStrengthScore(score, tpp, intel, f.id);
+        let effectiveIntel = intel;
+        if (disp === '동맹') effectiveIntel = Math.max(intel, 3);
+        else if (disp === '우호') effectiveIntel = Math.max(intel, 1);
+        const est = window.formatStrengthScore(score, tpp, effectiveIntel, f.id, f.field_army ?? null);
         if (est) parts.push(`병력 추정: ${est}`);
         parts.push(`첩보: ${INTEL_LABEL[intel]}`);
       }

@@ -407,7 +407,7 @@ async def start_quick_battle(battle_id: str):
         "combatState": combat_state,
     }
 
-    resolution = _resolve_phase_dice("", state_json, "military")
+    resolution = _resolve_phase_dice(state_json, "military")
 
     # ── LLM 호출: 전투 개시 장면 생성
     ally_lines       = "".join(f"아군 동맹 — {a['name']}: {a['notes']}\n" for a in allies)
@@ -421,7 +421,7 @@ async def start_quick_battle(battle_id: str):
         f"{enemy_ally_lines}"
         f"배경: {battle['context']}\n"
     )
-    cs_prompt = combat_prep_prompt(combat_state, resolution).replace(
+    cs_prompt = combat_prep_prompt(combat_state).replace(
         "현재 공개 전황만을 바탕으로 전투 개시 장면을 서술하시오.",
         "위 역사적 상황에 맞는 전투 개시 장면을 서술하시오.",
     )

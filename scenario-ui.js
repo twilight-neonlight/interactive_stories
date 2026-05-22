@@ -120,9 +120,9 @@ function _hashStr(s) {
  * intel_level 0–4 → 오차 폭 ±30/25/20/15/10%.
  * 실제값은 범위 내 비대칭 위치(faction id 기반 결정론적 offset) — 단순 중앙값 역산 방지.
  */
-function formatStrengthScore(score, perPoint, intelLevel = 0, factionId = '') {
+function formatStrengthScore(score, perPoint, intelLevel = 0, factionId = '', trueBase = null) {
   if (score == null || perPoint == null) return null;
-  const base      = score * perPoint;
+  const base      = trueBase != null ? trueBase : score * perPoint;
   const halfRange = [0.30, 0.25, 0.20, 0.15, 0.10][Math.max(0, Math.min(4, intelLevel))];
   // p: 실제값이 범위 내에서 차지하는 위치 (0=하단 끝, 1=상단 끝). 0.5 중앙값 배제.
   const pVals = [0.2, 0.25, 0.3, 0.35, 0.4, 0.6, 0.65, 0.7, 0.75, 0.8];

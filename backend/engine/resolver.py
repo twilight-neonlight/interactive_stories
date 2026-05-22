@@ -231,14 +231,15 @@ def _terrain_modifier(state: dict, is_defense: bool) -> list[tuple[str, int]]:
     terrain_v = def_v if is_defense else atk_v
     if label:
         mods.append((f"{label} {'방어' if is_defense else '공략'}", terrain_v))
-    loc_id = combat_state.get("siege_location_id")
-    if not loc_id:
-        loc_id, _ = _find_location_by_name(combat_state.get("battle_location_name"), locations)
-    if loc_id:
-        wall_v = _TIER_WALL_BONUS.get(locations.get(loc_id, {}).get("tier", ""), 0)
-        if wall_v:
-            mods.append(("성벽" if is_defense else "성벽 저항",
-                         wall_v if is_defense else -wall_v))
+    if combat_state.get("is_siege"):
+        loc_id = combat_state.get("siege_location_id")
+        if not loc_id:
+            loc_id, _ = _find_location_by_name(combat_state.get("battle_location_name"), locations)
+        if loc_id:
+            wall_v = _TIER_WALL_BONUS.get(locations.get(loc_id, {}).get("tier", ""), 0)
+            if wall_v:
+                mods.append(("성벽" if is_defense else "성벽 저항",
+                             wall_v if is_defense else -wall_v))
     return mods
 
 

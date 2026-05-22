@@ -268,7 +268,7 @@ class GameState {
   updateFactionStrength(id, delta) {
     const faction = this.factions.get(id);
     if (!faction) return;
-    faction.strength_score = Math.max(0, Math.min(700, (faction.strength_score ?? 350) + delta));
+    faction.strength_score = Math.max(1, Math.min(700, (faction.strength_score ?? 350) + delta));
     this.autoDefeatCollapsedFactions();
   }
 
@@ -283,6 +283,14 @@ class GameState {
     if (!faction) return;
     faction.battle_damage = (faction.battle_damage ?? 0) + Math.abs(damage);
     this.autoDefeatCollapsedFactions();
+  }
+
+  autoDefeatCollapsedFactions() {
+    for (const [, faction] of this.factions) {
+      if (faction.defeated) continue;
+      const effective = (faction.strength_score ?? 0) - (faction.battle_damage ?? 0);
+      if (effective <= 0) faction.defeated = true;
+    }
   }
 
   /**

@@ -75,8 +75,9 @@ function openCombatOverlay(content, resolution, debugData = null) {
 
   const pCoalition = cs.player_coalition || [];
   const eCoalition = cs.enemy_coalition  || [];
-  const pLabel = pCoalition.length ? pCoalition.join(' / ') : pName;
-  const eLabel = eCoalition.length ? eCoalition.join(' / ') : eName;
+  const _resolveName = (idOrName) => _state.factions.get(idOrName)?.name || idOrName;
+  const pLabel = pCoalition.length ? pCoalition.map(_resolveName).join(' / ') : pName;
+  const eLabel = eCoalition.length ? eCoalition.map(_resolveName).join(' / ') : eName;
   const pCommander = _findCommander(cs.player_faction_id, true) || '알 수 없는 지휘관';
   const eCommander = _findCommander(cs.enemy_faction_id,  false) || '알 수 없는 지휘관';
   const pMorale = _combatMoraleStats(cs, 'player_morale');
