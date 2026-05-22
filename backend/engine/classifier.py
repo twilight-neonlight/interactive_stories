@@ -10,15 +10,16 @@ from gemini_client import call_gemini_json
 from engine.resolver import classify_action_type
 
 _ACTION_TYPES = frozenset({
-    "open_field",    # 야전 전투 (성벽 밖)
-    "ambush",        # 기습·매복
-    "defense",       # 야전 방어
-    "siege_attack",  # 공성 (공격측)
-    "siege_defense", # 수성 (방어측)
-    "diplomatic",    # 외교·협상
-    "intrigue",      # 첩보·모략
-    "passive",       # 관찰·대기·이동
-    "general",       # 기타
+    "open_field",          # 야전 전투 (성벽 밖)
+    "ambush",              # 기습·매복
+    "defense",             # 야전 방어
+    "siege_attack",        # 공성 (공격측)
+    "siege_defense",       # 수성 (방어측)
+    "diplomatic",          # 단순 외교 (서한·전령 파견, 일회성 협상)
+    "diplomatic_session",  # 고위급 직접 회담 (전권대사 접견, 군주 간 회담 등)
+    "intrigue",            # 첩보·모략
+    "passive",             # 관찰·대기·이동
+    "general",             # 기타
 })
 
 # 키워드 분류기 결과 → LLM 분류 유형 매핑 (폴백용)
@@ -34,15 +35,16 @@ _KW_TO_CLS: dict[str, str] = {
 
 # LLM 분류 유형 → resolver 내부 action_type 매핑
 CLS_TO_RESOLVER: dict[str, str] = {
-    "open_field":    "military",
-    "ambush":        "surprise",
-    "defense":       "defense",
-    "siege_attack":  "military",
-    "siege_defense": "defense",
-    "diplomatic":    "diplomatic",
-    "intrigue":      "intrigue",
-    "passive":       "passive",
-    "general":       "general",
+    "open_field":         "military",
+    "ambush":             "surprise",
+    "defense":            "defense",
+    "siege_attack":       "military",
+    "siege_defense":      "defense",
+    "diplomatic":         "diplomatic",
+    "diplomatic_session": "diplomatic",
+    "intrigue":           "intrigue",
+    "passive":            "passive",
+    "general":            "general",
 }
 
 _SYSTEM = """\
@@ -54,7 +56,8 @@ _SYSTEM = """\
 - defense: 야전 방어 (진지 구축·후퇴 저지 등 성벽 밖 방어)
 - siege_attack: 공성전 (도시·요새·성채 공격)
 - siege_defense: 수성전 (도시·요새 안에서의 방어)
-- diplomatic: 외교·협상·동맹·설득
+- diplomatic: 단순 외교 (서한·사절 파견, 일회성 협상 제안, 전령을 통한 교섭 등 다수 라운드가 불필요한 경우)
+- diplomatic_session: 고위급 직접 회담 — 전권대사·특사 접견, 군주·대신 간 직접 회담, 공식 평화 협상 테이블 등 수 라운드에 걸친 교섭이 필요한 경우
 - intrigue: 첩보·암살·모략·침투
 - passive: 관찰·대기·이동·보고
 - general: 위 어디에도 해당하지 않는 경우

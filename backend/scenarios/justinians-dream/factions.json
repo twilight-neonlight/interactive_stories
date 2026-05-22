@@ -3,8 +3,9 @@
     "id": "byzantine",
     "name": "동로마 제국",
     "type": "empire",
-    "strength_score": 614,
-    "field_army": 18000,
+    "field_army": 7000,
+    "reserve_manpower": 50000,
+    "mobilization_rate": 0.3,
     "disposition": "동맹",
     "color": "#5E3F8A",
     "notes": "유스티아누스 1세 치하의 동로마 제국. 벨리사리우스에게 원정군과 함대를 제공하지만 황제의 총애는 언제든 거둘 수 있다. 내부 파벌 갈등과 재정 압박이 만성적 제약이다. 동쪽 국경의 사산조 페르시아는 제국의 전력을 서쪽으로 집중할 수 없게 만든다."
@@ -13,8 +14,8 @@
     "id": "vandal-kingdom",
     "name": "반달 왕국",
     "type": "kingdom",
-    "strength_score": 327,
-    "field_army": 12000,
+    "field_army": 3000,
+    "reserve_manpower": 12000,
     "disposition": "적대",
     "color": "#A04030",
     "notes": "겔리메르가 쿠데타로 힐데리크 왕을 폐위시키고 왕좌를 차지했다. 반달 전사들은 강력하지만 한 세기의 아프리카 정착으로 전투력이 예전 같지 않다. 사르데냐 반란과 히스파니아 방면 분쟁이 겔리메르의 발목을 잡고 있다."
@@ -23,8 +24,8 @@
     "id": "ostrogothic-kingdom",
     "name": "동고트 왕국",
     "type": "kingdom",
-    "strength_score": 593,
-    "field_army": 20000,
+    "field_army": 5000,
+    "reserve_manpower": 22000,
     "disposition": "중립",
     "color": "#8B6914",
     "notes": "아말라수인타 섭정 치하의 이탈리아. 유스티아누스와 우호적 외교 관계를 유지하나, 그녀가 암살당한 뒤 상황이 달라진다. 반달 왕국을 무너뜨린 직후가 다음 목표로 삼기 좋은 시점이다."
@@ -33,8 +34,8 @@
     "id": "sassanid-persia",
     "name": "사산조 페르시아",
     "type": "empire",
-    "strength_score": 693,
-    "field_army": 35000,
+    "field_army": 10000,
+    "reserve_manpower": 65000,
     "disposition": "중립",
     "color": "#4050A0",
     "notes": "호스로 1세 아누시르반 치하. 532년 '영원한 평화' 협약을 맺었으나 비잔틴이 서방에 집중하는 틈을 노려 언제든 동쪽 국경을 열 수 있다. 벨리사리우스의 원정이 길어질수록 페르시아가 행동에 나설 가능성이 높아진다."
@@ -43,8 +44,8 @@
     "id": "frankish-kingdom",
     "name": "프랑크 왕국",
     "type": "kingdom",
-    "strength_score": 336,
-    "field_army": 15000,
+    "field_army": 3000,
+    "reserve_manpower": 30000,
     "disposition": "중립",
     "color": "#3A78C8",
     "notes": "클로타르 1세 치하. 동고트 왕국과 국경을 접하며 이탈리아 북부에 개입할 기회를 노린다. 비잔틴의 이탈리아 원정에 편승해 알프스 남쪽으로 세력을 확장하려는 야욕이 있다."
@@ -53,8 +54,8 @@
     "id": "expedition-force",
     "name": "벨리사리우스 원정군",
     "type": "army",
-    "strength_score": 254,
-    "field_army": 15000,
+    "field_army": 7000,
+    "reserve_manpower": 8000,
     "disposition": "동맹",
     "color": "#5A7A4A",
     "notes": "유스티아누스가 파견한 아프리카 원정 병력. 정규 보병·기병 외에 훈족·헤룰리 용병과 벨리사리우스의 부켈라리(개인 친위대)로 구성된다. 수적으로는 열세이나 기동력과 지휘관 개인의 역량이 핵심 전력이다. 병참과 보급이 원정 지속의 핵심 과제다.",
@@ -73,30 +74,30 @@
     "id": "lombards",
     "name": "랑고바르드족",
     "type": "tribal",
-    "strength_score": 150,
     "disposition": "우호",
     "color": "#8A5C32",
     "notes": "판노니아에 거점을 둔 게르만 부족. 현재 비잔틴과 우호 관계를 유지하며 게피드족과 대립 중이다. 이탈리아 원정 시 북방 측면을 안정시키는 외교 카드로 활용할 수 있으나, 장기적으로는 이탈리아를 노리는 잠재적 경쟁자이기도 하다.",
-    "field_army": 8000
+    "field_army": 1500,
+    "reserve_manpower": 8000
   },
   {
     "id": "visigothic-kingdom",
     "name": "서고트 왕국",
     "type": "kingdom",
-    "strength_score": 250,
     "disposition": "중립",
     "color": "#6A3060",
     "notes": "히스파니아를 거점으로 한 게르만 왕국. 본래 반달족을 몰아낸 세력으로 북아프리카 일대에 대한 잔존 이해관계가 있다. 비잔틴의 서방 진출에 경계심을 품고 있다.",
-    "field_army": 10000
+    "field_army": 2500,
+    "reserve_manpower": 18000
   },
   {
     "id": "berber-confederation",
     "name": "베르베르 부족 연합",
     "type": "tribal",
-    "strength_score": 140,
     "disposition": "중립",
     "color": "#C8981A",
     "notes": "북아프리카 내륙의 베르베르 부족들. 반달 왕국에 복속돼 있지 않으며 독자적으로 움직인다. 비잔틴 군이 해안에 상륙한 직후 어느 편을 들지 지켜보다가 승리하는 쪽에 붙는 경향이 있다. 잘 다루면 귀중한 경기병 전력이 된다.",
-    "field_army": 8000
+    "field_army": 2000,
+    "reserve_manpower": 12000
   }
 ]

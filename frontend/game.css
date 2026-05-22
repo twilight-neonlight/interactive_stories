@@ -471,8 +471,9 @@ hr.divider { border: none; border-top: 1px solid var(--border-light); margin: 10
   font-size: 9px; text-transform: uppercase; letter-spacing: 0.10em;
   color: var(--text-tertiary); font-family: sans-serif;
 }
-.combat-fname   { font-size: 14px; font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.combat-vs      { font-size: 12px; color: var(--text-tertiary); font-family: sans-serif; flex-shrink: 0; }
+.combat-fname       { font-size: 14px; font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.combat-commander   { font-size: 10px; color: var(--text-secondary); font-family: sans-serif; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.combat-vs          { font-size: 12px; color: var(--text-tertiary); font-family: sans-serif; flex-shrink: 0; }
 .combat-weather-badge {
   padding: 2px 9px; border: 1px solid; border-radius: var(--radius-md);
   font-size: 11px; font-weight: 600; font-family: sans-serif;
@@ -565,3 +566,114 @@ hr.divider { border: none; border-top: 1px solid var(--border-light); margin: 10
 .combat-return-btn:hover { opacity: 0.82; }
 .combat-end-actions { display: flex; gap: 10px; flex-wrap: wrap; }
 .combat-replay-btn { background: var(--bg-secondary); color: var(--text-primary); border: 1.5px solid var(--border-strong); }
+
+/* ══ 외교 오버레이 ══════════════════════════════════════════════════ */
+#diplomacy-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 900;
+  background: var(--bg-tertiary);
+  padding: 12px;
+}
+#diplomacy-overlay.active { display: flex; flex-direction: column; }
+
+.dipl-shell {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  background: var(--bg-primary);
+  border: 1px solid var(--border-light);
+  border-top: 3px solid #3a5a8a;
+  border-radius: var(--radius-lg);
+  padding: 16px;
+  overflow: hidden;
+}
+
+.dipl-title-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 6px;
+}
+.dipl-close-btn {
+  width: 22px; height: 22px; font-size: 16px; line-height: 22px; text-align: center;
+  background: transparent; color: var(--text-tertiary);
+  border: none; cursor: pointer; flex-shrink: 0; padding: 0;
+  border-radius: var(--radius-sm); transition: color 0.12s, background 0.12s;
+}
+.dipl-close-btn:hover    { color: var(--text-secondary); background: var(--bg-secondary); }
+.dipl-close-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+.dipl-title-text {
+  font-size: 11px; text-transform: uppercase; letter-spacing: 0.12em;
+  color: var(--text-tertiary); font-family: sans-serif; flex-shrink: 0;
+}
+.dipl-matchup     { display: flex; align-items: center; gap: 8px; flex: 1; min-width: 0; }
+.dipl-faction-col { display: flex; flex-direction: column; gap: 1px; min-width: 0; overflow: hidden; }
+.dipl-faction-role {
+  font-size: 9px; text-transform: uppercase; letter-spacing: 0.10em;
+  color: var(--text-tertiary); font-family: sans-serif;
+}
+.dipl-fname { font-size: 14px; font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dipl-vs    { font-size: 14px; color: var(--text-tertiary); font-family: sans-serif; flex-shrink: 0; }
+.dipl-round-info {
+  font-size: 11px; color: var(--text-tertiary);
+  font-family: sans-serif; flex-shrink: 0;
+}
+.dipl-withdraw-btn {
+  padding: 4px 12px; font-size: 11px; font-family: sans-serif;
+  background: transparent; color: #C5932A;
+  border: 1px solid rgba(197,147,42,0.4);
+  border-radius: var(--radius-md); cursor: pointer; flex-shrink: 0;
+  transition: background 0.12s;
+}
+.dipl-withdraw-btn:hover    { background: rgba(197,147,42,0.08); }
+.dipl-withdraw-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+.dipl-body {
+  flex: 1; display: flex; gap: 12px; min-height: 0;
+}
+.dipl-log-col {
+  width: 170px; flex-shrink: 0;
+  display: flex; flex-direction: column; gap: 6px; min-height: 0;
+}
+.dipl-log-label {
+  font-size: 10px; text-transform: uppercase; letter-spacing: 0.10em;
+  color: var(--text-tertiary); font-family: sans-serif; flex-shrink: 0;
+}
+.dipl-log {
+  flex: 1; overflow-y: auto;
+  display: flex; flex-direction: column; gap: 3px;
+  scrollbar-width: thin; scrollbar-color: var(--border-mid) transparent;
+}
+.d-log-item {
+  padding: 4px 7px; border-left: 3px solid;
+  display: flex; align-items: center; gap: 8px;
+  font-size: 12px; font-family: sans-serif;
+  border-radius: 0 3px 3px 0;
+  background: var(--bg-secondary);
+}
+.d-log-round { color: var(--text-tertiary); font-size: 10px; width: 22px; flex-shrink: 0; }
+
+.dipl-scene-col {
+  flex: 1; display: flex; flex-direction: column; gap: 8px;
+  min-height: 0; border-left: 1px solid var(--border-light); padding-left: 14px;
+}
+.dipl-res-badge {
+  display: none; align-self: flex-start;
+  padding: 3px 9px; border: 1px solid; border-radius: var(--radius-md);
+  font-size: 11px; font-weight: 600; font-family: sans-serif; flex-shrink: 0;
+}
+
+.dipl-footer {
+  border-top: 1px solid var(--border-light);
+  padding-top: 10px;
+  display: flex; flex-direction: column; gap: 8px; flex-shrink: 0;
+}
+
+.dipl-end-panel {
+  display: flex; align-items: center; gap: 20px;
+  padding: 4px 0; flex-wrap: wrap;
+}
+.dipl-end-result { font-size: 16px; font-weight: 700; flex-shrink: 0; }

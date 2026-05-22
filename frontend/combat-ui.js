@@ -12,7 +12,42 @@ const _WEATHER_INFO = {
   heat:       { label: '폭염',      color: '#E09060',              effect: '공격 −1 / 수비 −1' },
   fog:        { label: '짙은 안개', color: '#888888',              effect: '공격 −3' },
   storm:      { label: '폭풍',      color: '#C5932A',              effect: '공격 −3' },
+  sandstorm:  { label: '모래폭풍',  color: '#BF8A3A',              effect: '공격 −3 / 수비 −1' },
+  monsoon:    { label: '몬순',      color: '#3a7abf',              effect: '공격 −2' },
+  dust_storm: { label: '황사',      color: '#9A7A3A',              effect: '공격 −2' },
 };
+
+const _TERRAIN_INFO = {
+  highland:   { label: '고지',      color: '#8B6914',              effect: '수비 +2 / 공격 −2' },
+  riverside:  { label: '강변',      color: '#3a7abf',              effect: '수비 +2 / 공격 −2' },
+  jungle:     { label: '정글',      color: '#2D8A4E',              effect: '수비 +2 / 공격 −2' },
+  wetland:    { label: '습지',      color: '#5DBB8B',              effect: '수비 +1 / 공격 −1' },
+  floodplain: { label: '범람원',    color: '#5D9BB5',              effect: '수비 +1 / 공격 −1' },
+  forest:     { label: '삼림',      color: '#4A7A3A',              effect: '수비 +1 / 공격 −1' },
+  tundra:     { label: '툰드라',    color: '#8BC5C5',              effect: '수비 +1 / 공격 −1' },
+  basin:      { label: '분지',      color: '#9A7ABF',              effect: '수비 +1' },
+  river:      { label: '강 (해전)', color: '#3a7abf',              effect: '수비 +1 / 공격 −1' },
+  nearshore:  { label: '연안',      color: '#5D8ABF',              effect: '수비 +1' },
+  icefield:   { label: '빙원',      color: '#A0C8E8',              effect: '공격 −2' },
+  desert:     { label: '사막',      color: '#C5932A',              effect: '효과 없음' },
+  arid:       { label: '건조지',    color: '#BF8A3A',              effect: '효과 없음' },
+  steppe:     { label: '대초원',    color: '#9ABF5D',              effect: '효과 없음' },
+  coastal:    { label: '해안',      color: '#5D8ABF',              effect: '효과 없음' },
+  ocean:      { label: '대양',      color: '#2A5FBF',              effect: '효과 없음' },
+  plain:      { label: '평지',      color: 'var(--text-tertiary)', effect: '효과 없음' },
+};
+
+function _findCommander(factionId, isPlayer = false) {
+  if (!_state) return null;
+  if (isPlayer && _state.protagonist) {
+    const char = _state.characters.get(_state.protagonist);
+    if (char) return char.name;
+  }
+  for (const [, char] of _state.characters) {
+    if (char.faction_id === factionId) return char.name;
+  }
+  return null;
+}
 
 function _combatMoraleStats(cs, moraleKey) {
   const max = 100;
@@ -42,6 +77,8 @@ function openCombatOverlay(content, resolution, debugData = null) {
   const eCoalition = cs.enemy_coalition  || [];
   const pLabel = pCoalition.length ? pCoalition.join(' / ') : pName;
   const eLabel = eCoalition.length ? eCoalition.join(' / ') : eName;
+  const pCommander = _findCommander(cs.player_faction_id, true) || '알 수 없는 지휘관';
+  const eCommander = _findCommander(cs.enemy_faction_id,  false) || '알 수 없는 지휘관';
   const pMorale = _combatMoraleStats(cs, 'player_morale');
   const eMorale = _combatMoraleStats(cs, 'enemy_morale');
   const phaseText = cs.max_phases
@@ -63,6 +100,12 @@ function openCombatOverlay(content, resolution, debugData = null) {
   const wi = _WEATHER_INFO[weather] || _WEATHER_INFO.clear;
   const weatherBadgeHtml = `<span class="combat-weather-badge" style="border-color:${wi.color};color:${wi.color}" title="날씨 효과: ${wi.effect}">${wi.label}</span>`;
 
+  const terrain = cs.battle_terrain || null;
+  const ti = terrain ? (_TERRAIN_INFO[terrain] || null) : null;
+  const terrainBadgeHtml = ti
+    ? `<span class="combat-weather-badge" style="border-color:${ti.color};color:${ti.color}" title="지형 효과: ${ti.effect}">${ti.label}</span>`
+    : '';
+
   const overlay = document.getElementById('combat-overlay');
   overlay.innerHTML = `
     <div class="combat-shell">
@@ -74,14 +117,17 @@ function openCombatOverlay(content, resolution, debugData = null) {
             <div class="combat-faction-col">
               <span class="combat-faction-role">공격 측</span>
               <span class="combat-fname" style="color:${pColor}">${pLabel}</span>
+              <span class="combat-commander">${pCommander}</span>
             </div>
             <span class="combat-vs">vs</span>
             <div class="combat-faction-col">
               <span class="combat-faction-role">수비 측</span>
               <span class="combat-fname" style="color:${eColor}">${eLabel}</span>
+              <span class="combat-commander">${eCommander}</span>
             </div>
           </div>
           ${weatherBadgeHtml}
+          ${terrainBadgeHtml}
           ${locationTitleHtml}
           <span class="combat-phase-info" id="c-phase-info">${phaseText}</span>
           <button class="combat-retreat-btn" id="c-retreat-btn" onclick="combatRetreat()">후퇴</button>
@@ -198,19 +244,22 @@ function _renderCombatScene(content, resolution) {
   const choiceList = document.getElementById('c-choices');
   if (choiceList) {
     choiceList.innerHTML = choices.map(c => {
-      const type = _choiceActionType(c);
-      const cls  = type ? `choice-btn choice-btn--${type}` : 'choice-btn';
-      return `<button class="${cls}" onclick="selectCombatChoice(this)">${c}</button>`;
+      const css = _CHOICE_TYPE_CSS[c.type];
+      const cls = css ? `choice-btn choice-btn--${css}` : 'choice-btn';
+      return `<button class="${cls}" data-action-type="${c.type || ''}" onclick="selectCombatChoice(this)">${c.text}</button>`;
     }).join('');
   }
 }
 
 // ── 선택지 클릭
+let _combatSelectedActionType = null;
+
 function selectCombatChoice(btn) {
   document.querySelectorAll('#c-choices .choice-btn').forEach(b => b.classList.remove('selected'));
   btn.classList.add('selected');
   const cmd = document.getElementById('c-cmd');
   if (cmd) cmd.value = btn.textContent.trim();
+  _combatSelectedActionType = btn.dataset.actionType || null;
 }
 
 // ── 사기 바 + 페이즈 정보 갱신
@@ -343,6 +392,9 @@ async function submitCombatTurn() {
   const cmd = document.getElementById('c-cmd')?.value.trim();
   if (!cmd || !_state) return;
 
+  const actionType = _combatSelectedActionType;
+  _combatSelectedActionType = null;
+
   document.getElementById('c-cmd').value = '';
   document.querySelectorAll('#c-choices .choice-btn').forEach(b => b.classList.remove('selected'));
 
@@ -354,7 +406,7 @@ async function submitCombatTurn() {
 
   try {
     const { content, state_updates: su, resolution, _debug } =
-      await GameAPI.submitTurn(cmd, _state.toJSON(), _state.getHistory());
+      await GameAPI.submitTurn(cmd, _state.toJSON(), _state.getHistory(), false, false, actionType);
 
     _state.pushHistory('user', cmd);
     _state.pushHistory('assistant', content);

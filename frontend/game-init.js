@@ -49,7 +49,9 @@ let _ui      = null;
       renderAll(_state);
       const lastAssistant = [..._state.getHistory()].reverse().find(h => h.role === 'assistant');
       if (lastAssistant) {
-        if (_state.combatState?.active) {
+        if (_state.diplomacyState?.active) {
+          openDiplomacyOverlay(lastAssistant.content, null);
+        } else if (_state.combatState?.active) {
           openCombatOverlay(lastAssistant.content, null);
         } else {
           renderSceneBody(markdownToHtml(extractNarrative(lastAssistant.content)));
@@ -146,7 +148,9 @@ let _ui      = null;
     const lastAssistant = [...hist].reverse().find(h => h.role === 'assistant');
 
     if (lastAssistant) {
-      if (_state.combatState?.active) {
+      if (_state.diplomacyState?.active) {
+        openDiplomacyOverlay(lastAssistant.content, null);
+      } else if (_state.combatState?.active) {
         openCombatOverlay(lastAssistant.content, null);
       } else {
         renderSceneBody(markdownToHtml(extractNarrative(lastAssistant.content)));

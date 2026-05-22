@@ -268,12 +268,25 @@ interactive_stories/
 
 ## 시작하기
 
-### 사전 준비
+### 테스터 (초대받은 경우)
+
+별도 설치 없이 브라우저로 접속합니다.
+
+1. 공유받은 **서버 URL**을 브라우저에서 열기
+2. 초대 코드 입력 후 **게스트로 시작하기**
+
+세이브 데이터는 해당 브라우저에 연결됩니다. 브라우저 데이터를 삭제하면 복구할 수 없습니다.
+
+---
+
+### 로컬 서버 직접 실행
+
+#### 사전 준비
 
 - **Python 3.10 이상** — [python.org/downloads](https://www.python.org/downloads/) (설치 시 "Add Python to PATH" 체크)
 - **Google AI Studio API 키** — [aistudio.google.com](https://aistudio.google.com) 에서 무료 발급
 
-### 실행 방법
+#### 실행 방법
 
 **Windows**
 ```
@@ -291,16 +304,15 @@ chmod +x start.sh
 2. API 키 미설정 시 `.env` 파일 생성 안내
 3. 서버 시작 후 브라우저 자동 오픈 (`http://localhost:8000`)
 
-Windows용 `start.bat`는 실행 시 GitHub 최신 버전 확인과 자동 업데이트 안내도 수행합니다.
-
 > `backend/.env` 파일에 아래 항목을 설정합니다.
 > ```
 > GOOGLE_API_KEY=발급받은_Gemini_키
 > SECRET_KEY=랜덤_문자열_64자_이상        # JWT 서명 키 (미설정 시 재시작마다 로그인 초기화)
-> GOOGLE_CLIENT_ID=OAuth_클라이언트_ID    # Google 로그인 사용 시만 필요 (선택)
+> # INVITE_CODE=                         # 로컬 개발 시 비워두면 초대 코드 검증 없음
+> # GOOGLE_CLIENT_ID=OAuth_클라이언트_ID  # Google 로그인 사용 시만 필요 (선택)
 > ```
 
-### 수동 실행 (개발자용)
+#### 수동 실행
 
 ```bash
 # 최초 1회
@@ -311,7 +323,6 @@ python -m venv .venv
 cd backend
 uvicorn main:app --reload --port 8000
 # 브라우저에서 http://localhost:8000 접속
-# 루트 경로는 /frontend/main_menu.html로 리다이렉트됩니다.
 ```
 
 ### 지도 SVG 추가 (선택)
@@ -327,7 +338,7 @@ uvicorn main:app --reload --port 8000
 
 ## 게임 플레이 흐름
 
-1. **로그인** — 게스트로 시작하거나 Google 계정으로 로그인. 게스트는 브라우저에 UUID를 저장해 재접속 시 동일 계정 유지
+1. **로그인** — 초대 코드(서버 설정 시)를 입력한 뒤 게스트로 시작하거나 Google 계정으로 로그인. 게스트는 브라우저에 UUID를 저장해 재접속 시 동일 계정 유지
 2. **시나리오 선택** — 프리셋 시나리오 선택. 커스텀 입력 UI는 있으나 현재 게임 시작 흐름에는 아직 연결되지 않음
 3. **주인공 선택** — 시나리오에 따라 플레이어블 캐릭터 선택 (선택형 시나리오)
 4. **씬 진행** — AI가 상황을 묘사하고 최대 3개의 선택지를 제시

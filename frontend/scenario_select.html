@@ -137,12 +137,14 @@ async function renderScenarios() {
 }
 
 function buildCard(s, index) {
-  // 이동 목적지 결정
+  // 이동 목적지 결정 — status === 'wip'이 아니면 접근 허용
   let href = '#';
-  if (s.protagonistMode === 'select' && s.characterSelectPage) {
-    href = s.characterSelectPage;
-  } else if (s.protagonistMode === 'fixed' && s.href && s.status === 'ready') {
-    href = s.href;
+  if (s.status !== 'wip') {
+    if (s.protagonistMode === 'select' && s.characterSelectPage) {
+      href = s.characterSelectPage;
+    } else if (s.protagonistMode === 'fixed') {
+      href = 'game.html';
+    }
   }
 
   const wipBadge = s.status === 'wip'     ? '<span class="badge-new">준비 중</span>'

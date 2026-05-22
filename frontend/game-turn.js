@@ -14,10 +14,13 @@ async function saveToServer() {
 }
 
 // ── 선택지
+let _selectedActionType = null;
+
 function selectChoice(btn) {
   document.querySelectorAll('.choice-btn').forEach(b => b.classList.remove('selected'));
   btn.classList.add('selected');
   document.getElementById('cmd').value = btn.textContent.trim();
+  _selectedActionType = btn.dataset.actionType || null;
 }
 
 // ── LLM 생성 NPC 외정 스탯 자동 배정 (정규분포, 중심 C)
@@ -154,6 +157,9 @@ function applyStateUpdates(su) {
   if (su.combat_state !== undefined) {
     _state.combatState = su.combat_state;
   }
+  if (su.diplomacy_state !== undefined) {
+    _state.diplomacyState = su.diplomacy_state;
+  }
   if (typeof su.weather === 'string') {
     _state.weather = su.weather;
   }
@@ -173,12 +179,15 @@ async function submitTurn() {
   const cmd = document.getElementById('cmd').value.trim();
   if (!cmd || !_state || !_manager) return;
 
+  const actionType = _selectedActionType;
+  _selectedActionType = null;
+
   document.getElementById('cmd').value = '';
   document.querySelectorAll('.choice-btn').forEach(b => b.classList.remove('selected'));
   showLoading();
 
   try {
-    const { content, state_updates: su, resolution, _debug } = await GameAPI.submitTurn(cmd, _state.toJSON(), _state.getHistory());
+    const { content, state_updates: su, resolution, _debug } = await GameAPI.submitTurn(cmd, _state.toJSON(), _state.getHistory(), false, false, actionType);
     renderResolution(resolution);
 
     _state.pushHistory('user', cmd);
@@ -191,6 +200,13 @@ async function submitTurn() {
     _manager.save();
 
     renderAll(_state);
+
+    // 외교 회담 돌입 감지 → 외교 오버레이 열기
+    // su.diplomacy_state로 체크: 개회 턴에 LLM이 즉시 outcome을 신호해도 오버레이를 연다
+    if (su.diplomacy_state != null) {
+      openDiplomacyOverlay(content, resolution, _debug);
+      return;
+    }
 
     // 전투 돌입 감지 → 전투 오버레이 열기
     if (_state.combatState?.active) {

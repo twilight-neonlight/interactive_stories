@@ -514,7 +514,7 @@ def build_scenario_context(state: dict, scenario_prompts: dict | None = None) ->
             if pf:
                 fa = pf.get("field_army")
                 if fa is not None:
-                    troops_str = f" / 야전군 {fa:,}명"
+                    troops_str = f" / 상비군 {fa:,}명"
                 elif pf.get("strength_score") is not None and tpp:
                     s_eff = pf["strength_score"] - pf.get("battle_damage", 0)
                     troops_str = f" / 병력 {_troops_range(int(s_eff), tpp)}"
@@ -531,7 +531,7 @@ def build_scenario_context(state: dict, scenario_prompts: dict | None = None) ->
     active_factions = {fid: f for fid, f in factions.items() if not f.get("defeated")}
     if active_factions:
         lines.append("\n등장 세력:")
-        for f in active_factions.values():
+        for fid, f in active_factions.items():
             note       = f.get("notes", "")
             note_short = note[:80] + "…" if len(note) > 80 else note
             dipl       = f.get("diplomacy_score")
@@ -540,16 +540,18 @@ def build_scenario_context(state: dict, scenario_prompts: dict | None = None) ->
             s_dmg      = f.get("battle_damage", 0)
             s_eff      = (s_base - s_dmg) if s_base is not None else None
             field_army = f.get("field_army")
+            reserve    = f.get("reserve_manpower")
             if field_army is not None:
+                reserve_str = f" / 예비 {reserve:,}명" if reserve else ""
                 if s_base is not None and tpp:
-                    str_str = f" [전력 {_troops_range(int(s_base), tpp)} / 야전군 {field_army:,}명]"
+                    str_str = f" [전력 {_troops_range(int(s_base), tpp)} / 상비군 {field_army:,}명{reserve_str}]"
                 else:
-                    str_str = f" [야전군 {field_army:,}명]"
+                    str_str = f" [상비군 {field_army:,}명{reserve_str}]"
             else:
                 str_str = (f" [병력 {_troops_range(int(s_eff), tpp)}]"
                            if s_eff is not None and tpp else "")
             lines.append(
-                f"  - {f.get('name', '?')} | {f.get('disposition', '?')}{dipl_str}{str_str}"
+                f"  - {f.get('name', '?')} (id: {fid}) | {f.get('disposition', '?')}{dipl_str}{str_str}"
                 + (f"\n    {note_short}" if note_short else "")
             )
 

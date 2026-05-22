@@ -32,6 +32,9 @@ SYSTEM_PROMPT = "\n\n".join(
 
 GOOGLE_CLIENT_ID = os.environ.get("GOOGLE_CLIENT_ID", "")
 
+# 초대 코드 — 설정 시 로그인 시 검증, 비어있으면 로컬 개발용으로 검증 스킵
+INVITE_CODE = os.environ.get("INVITE_CODE", "")
+
 MODEL       = "gemini-3-flash-preview"
 MAX_TOKENS  = 9172
 TEMPERATURE = 0.8

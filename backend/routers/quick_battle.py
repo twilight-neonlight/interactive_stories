@@ -45,6 +45,8 @@ QUICK_BATTLES: dict[str, dict] = {
         },
         "player_commander": "발렌스 황제",
         "player_title":     "동방 황제",
+        "enemy_commander":  "프리티게른",
+        "enemy_title":      "서고트 왕",
         "troops_per_point": 20,
     },
     "tours-poitiers-732": {
@@ -73,6 +75,8 @@ QUICK_BATTLES: dict[str, dict] = {
         },
         "player_commander": "카를 마르텔",
         "player_title":     "프랑크 궁재",
+        "enemy_commander":  "압드 알-라흐만",
+        "enemy_title":      "우마이야 총독",
         "troops_per_point": 30,
     },
     "edington-878": {
@@ -108,6 +112,8 @@ QUICK_BATTLES: dict[str, dict] = {
         },
         "player_commander": "앨프레드 대왕",
         "player_title":     "웨식스 왕",
+        "enemy_commander":  "구스럼",
+        "enemy_title":      "바이킹 왕",
         "troops_per_point": 30,
     },
     "las-navas-1212": {
@@ -151,6 +157,8 @@ QUICK_BATTLES: dict[str, dict] = {
         },
         "player_commander": "알폰소 8세",
         "player_title":     "카스티야 왕·연합군 총사령관",
+        "enemy_commander":  "무함마드 알-나시르",
+        "enemy_title":      "알모아드 칼리파",
         "troops_per_point": 45,
     },
     "nicopolis-1396": {
@@ -191,6 +199,8 @@ QUICK_BATTLES: dict[str, dict] = {
         },
         "player_commander": "지기스문트 왕",
         "player_title":     "헝가리 왕·십자군 총사령관",
+        "enemy_commander":  "바야지트 1세",
+        "enemy_title":      "오스만 술탄",
         "troops_per_point": 60,
     },
     "saratoga-1777": {
@@ -220,6 +230,8 @@ QUICK_BATTLES: dict[str, dict] = {
         },
         "player_commander": "호레이쇼 게이츠",
         "player_title":     "북부군 사령관",
+        "enemy_commander":  "존 버고인",
+        "enemy_title":      "영국군 사령관",
         "troops_per_point": 50,
     },
     "austerlitz-1805": {
@@ -255,6 +267,8 @@ QUICK_BATTLES: dict[str, dict] = {
         ],
         "player_commander": "나폴레옹 보나파르트",
         "player_title":     "프랑스 황제",
+        "enemy_commander":  "알렉산드르 1세",
+        "enemy_title":      "러시아·오스트리아 연합군 총사령관",
         "troops_per_point": 200,
     },
     "kursk-1943": {
@@ -284,6 +298,8 @@ QUICK_BATTLES: dict[str, dict] = {
         },
         "player_commander": "게오르기 주코프",
         "player_title":     "소련군 총참모장",
+        "enemy_commander":  "에리히 폰 만슈타인",
+        "enemy_title":      "독일군 남부집단군 사령관",
         "troops_per_point": 1000,
     },
 }
@@ -356,7 +372,8 @@ async def start_quick_battle(battle_id: str):
 
     total_p_army = p["field_army"] + sum(a["field_army"] for a in allies)
 
-    commander_id = "player-commander"
+    commander_id       = "player-commander"
+    enemy_commander_id = "enemy-commander"
     state_json = {
         "scenarioId":    "quick-battle",
         "scenarioTitle": battle["title"],
@@ -374,6 +391,14 @@ async def start_quick_battle(battle_id: str):
                 "faction_id":  p["id"],
                 "disposition": "우호",
                 "troops_count": total_p_army,
+            },
+            enemy_commander_id: {
+                "id":          enemy_commander_id,
+                "name":        battle["enemy_commander"],
+                "title":       battle["enemy_title"],
+                "status":      "alive",
+                "faction_id":  e["id"],
+                "disposition": "적대",
             },
         },
         "factions":    factions_dict,

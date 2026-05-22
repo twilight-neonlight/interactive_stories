@@ -99,6 +99,9 @@ class GameState {
     /** @type {Object|null} 다중 턴 전투 진행 상태 (전투 중일 때만 non-null) */
     this.combatState = null;
 
+    /** @type {Object|null} 다중 라운드 외교 회담 진행 상태 (회담 중일 때만 non-null) */
+    this.diplomacyState = null;
+
     /** @type {Object<string, 'active'|'ended'>} 이벤트 상태 추적 (미발동 = 부재) */
     this.eventStates = {};
 
@@ -335,8 +338,9 @@ class GameState {
       factions:      Object.fromEntries(this.factions),
       locations:     Object.fromEntries(this.locations),
       events:        this.events.slice(),
-      combatState:   this.combatState,
-      weather:       this.weather ?? 'clear',
+      combatState:    this.combatState,
+      diplomacyState: this.diplomacyState,
+      weather:        this.weather ?? 'clear',
       eventStates:   { ...this.eventStates },
       pendingConquestDispositions: this.pendingConquestDispositions.slice(),
       lostBattles:   { ...this.lostBattles },
@@ -361,7 +365,8 @@ class GameState {
     state.factions        = new Map(Object.entries(data.factions));
     state.locations       = new Map(Object.entries(data.locations));
     state.events          = Array.isArray(data.events) ? data.events.slice() : [];
-    state.combatState     = data.combatState ?? null;
+    state.combatState     = data.combatState     ?? null;
+    state.diplomacyState  = data.diplomacyState  ?? null;
     state.weather         = data.weather ?? 'clear';
     state.eventStates     = (data.eventStates && typeof data.eventStates === 'object')
                             ? { ...data.eventStates } : {};

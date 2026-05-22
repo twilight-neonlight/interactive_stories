@@ -19,15 +19,32 @@ GARRISON_POINTS_BY_TIER: dict[str, int] = {
 # 이 유형은 거점 tier 기여분 없이 field_army만으로 strength_score 계산
 _NO_TERRITORY_TYPES: frozenset[str] = frozenset({"rebels", "remnant"})
 
+# 최대 예비 인력 = Σ tier_pts × tpp × _RESERVE_POP_FACTOR
+_RESERVE_POP_FACTOR = 3
 
-def compute_faction_strength(faction: dict, fid: str, locations: list, tpp: int) -> int:
-    """field_army·보유 거점·naval_base에서 strength_score를 계산합니다.
 
-    Args:
-        faction:   세력 데이터 dict (field_army, type, naval_base 포함 가능)
-        fid:       세력 id (controller 매핑에 사용)
-        locations: list[dict] 형태의 거점 목록 (dict of {lid: loc} 도 허용)
-        tpp:       troops_per_strength_point
+def compute_max_reserve(faction: dict, fid: str, locations, tpp: int) -> int:
+    """최대 예비 인력 계산. faction에 max_reserve가 명시되면 그대로, 없으면 도시 tier 기반 자동 계산."""
+    if "max_reserve" in faction:
+        return int(faction["max_reserve"])
+    if faction.get("type", "") in _NO_TERRITORY_TYPES:
+        return 0
+    loc_iter = locations.values() if isinstance(locations, dict) else locations
+    tier_pts = sum(
+        GARRISON_POINTS_BY_TIER.get(loc.get("tier", ""), 0)
+        for loc in loc_iter
+        if loc.get("controller") == fid
+    )
+    return round(tier_pts * tpp * _RESERVE_POP_FACTOR)
+
+
+def compute_faction_strength(faction: dict, fid: str, locations, tpp: int,
+                             reserve_divisor: int = 5) -> int:
+    """field_army·reserve_manpower·보유 거점·naval_base에서 strength_score를 계산합니다.
+
+    - 상비군(field_army): 1pt = tpp명
+    - 예비 인력(reserve_manpower): 1pt = tpp × reserve_divisor명
+    - rebels·remnant: 거점·예비 인력 미적용
     """
     if not tpp:
         return faction.get("strength_score", 0)
@@ -35,6 +52,11 @@ def compute_faction_strength(faction: dict, fid: str, locations: list, tpp: int)
     base  = round((faction.get("field_army") or 0) / tpp)
 
     if ftype not in _NO_TERRITORY_TYPES:
+        reserve   = faction.get("reserve_manpower") or 0
+        mob_rate  = min(1.0, max(0.0, faction.get("mobilization_rate", 1.0)))
+        effective_reserve = round(reserve * mob_rate)
+        base += round(effective_reserve / (tpp * reserve_divisor))
+
         loc_iter = locations.values() if isinstance(locations, dict) else locations
         tier_pts = sum(
             GARRISON_POINTS_BY_TIER.get(loc.get("tier", ""), 0)
@@ -77,23 +99,28 @@ _EAST_ASIA_KW = {
 }
 
 
-def _estimate_troops_per_point(scenario: dict) -> int:
-    """연도·동서양 맥락으로 strength_score 1점당 병력 수를 추정합니다."""
-    eyebrow = scenario.get("eyebrow", "")
-    m = re.search(r"(\d{3,4})년", eyebrow)
-    year = int(m.group(1)) if m else 1200
+def _scenario_year(scenario: dict) -> int:
+    m = re.search(r"(\d{3,4})년", scenario.get("eyebrow", ""))
+    return int(m.group(1)) if m else 1200
 
-    if   year < 500:   base = 20
-    elif year < 1000:  base = 30
-    elif year < 1300:  base = 45
-    elif year < 1500:  base = 60
-    elif year < 1700:  base = 85
-    elif year < 1800:  base = 130
-    elif year < 1900:  base = 220
-    else:              base = 400
+
+def _estimate_troops_per_point(scenario: dict) -> int:
+    """연도·동서양 맥락으로 상비군 strength_score 1점당 병력 수를 추정합니다.
+    기존 혼합군 기준 대비 ×2/5 적용 (상비군 전용 tpp).
+    """
+    year = _scenario_year(scenario)
+
+    if   year < 500:   base = 8
+    elif year < 1000:  base = 12
+    elif year < 1300:  base = 18
+    elif year < 1500:  base = 25
+    elif year < 1700:  base = 35
+    elif year < 1800:  base = 50
+    elif year < 1900:  base = 90
+    else:              base = 160
 
     corpus = " ".join([
-        eyebrow,
+        scenario.get("eyebrow", ""),
         scenario.get("title", ""),
         scenario.get("desc", ""),
         " ".join(scenario.get("tags", [])),
@@ -101,9 +128,19 @@ def _estimate_troops_per_point(scenario: dict) -> int:
     if any(kw in corpus for kw in _EAST_ASIA_KW):
         base = round(base * 2.5)
     elif any(kw in corpus for kw in _MIDEAST_EEUROPE_KW):
-        base = round(base * 1.3)
+        base = round(base * 1.5)
 
     return base
+
+
+def _estimate_reserve_divisor(scenario: dict) -> int:
+    """연도 기반 예비 인력 효율 제수 (상비군 tpp 대비 몇 배의 인원이 1pt를 구성하는지).
+    근대 이전: 5 / 19세기: 3 / 20세기+: 2
+    """
+    year = _scenario_year(scenario)
+    if   year >= 1900: return 2
+    elif year >= 1800: return 3
+    else:              return 5
 
 
 def _resolve_garrison(loc: dict, troops_per_point: int) -> int:
@@ -132,7 +169,10 @@ def load_scenarios() -> list[dict]:
             scenario[key] = json.loads(path.read_text(encoding="utf-8-sig")) if path.exists() else []
         if "troops_per_strength_point" not in scenario:
             scenario["troops_per_strength_point"] = _estimate_troops_per_point(scenario)
+        if "reserve_tpp_divisor" not in scenario:
+            scenario["reserve_tpp_divisor"] = _estimate_reserve_divisor(scenario)
         tpp      = scenario["troops_per_strength_point"]
+        res_div  = scenario["reserve_tpp_divisor"]
         start_ts = scenario.get("start_timestamp", "")
         for loc in scenario["locations"]:
             # conquered_at + conquest_disposition이 있으면 garrison_modifier를 자동 계산
@@ -151,9 +191,9 @@ def load_scenarios() -> list[dict]:
             loc["garrison"] = _resolve_garrison(loc, tpp)
             if "controlling_faction" in loc and "controller" not in loc:
                 loc["controller"] = loc.pop("controlling_faction")
-        # strength_score를 field_army + 거점 + naval_base에서 재계산
+        # strength_score를 field_army + reserve + 거점 + naval_base에서 재계산
         for f in scenario["factions"]:
-            f["strength_score"] = compute_faction_strength(f, f["id"], scenario["locations"], tpp)
+            f["strength_score"] = compute_faction_strength(f, f["id"], scenario["locations"], tpp, res_div)
         char_select_path = scenario_dir / "character-select.json"
         scenario["character_select"] = json.loads(char_select_path.read_text(encoding="utf-8-sig")) if char_select_path.exists() else []
         # 시나리오 프롬프트 지시문 로드 (prompt.md + prompt_{char_id}.md)

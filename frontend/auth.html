@@ -60,6 +60,25 @@
     border: 1.5px solid var(--border-strong);
   }
 
+  /* 초대 코드 입력 */
+  .invite-field {
+    display: flex; flex-direction: column; gap: 6px;
+  }
+  .invite-label {
+    font-family: sans-serif; font-size: 11px; color: var(--text-tertiary);
+    letter-spacing: 0.05em; text-transform: uppercase;
+  }
+  .invite-input {
+    width: 100%; padding: 11px 13px; box-sizing: border-box;
+    background: var(--bg-secondary); border: 1px solid var(--border-mid);
+    border-radius: var(--radius-md);
+    font-family: 'Cinzel', serif; font-size: 13px; color: var(--text-primary);
+    letter-spacing: 0.08em; text-align: center;
+    outline: none; transition: border-color 0.15s;
+  }
+  .invite-input:focus { border-color: var(--text-primary); }
+  .invite-input::placeholder { color: var(--text-tertiary); letter-spacing: 0.05em; }
+
   /* 게스트 안내 메시지 */
   .guest-note {
     font-family: sans-serif; font-size: 11px; color: var(--text-tertiary);
@@ -93,6 +112,14 @@
   </header>
 
   <div class="auth-card">
+    <!-- 초대 코드 (서버에 INVITE_CODE 설정 시 표시) -->
+    <div class="invite-field" id="inviteWrap" style="display:none">
+      <label class="invite-label" for="inviteInput">초대 코드</label>
+      <input class="invite-input" id="inviteInput" type="text"
+        placeholder="초대 코드를 입력하세요"
+        autocomplete="off" spellcheck="false">
+    </div>
+
     <!-- 구글 로그인 (client_id 설정 시에만 표시) -->
     <div id="googleBtnWrap" class="hidden"></div>
     <div id="googleDivider" class="divider hidden">또는</div>
@@ -122,12 +149,15 @@ const BASE = window.API_BASE || '';
     window.location.replace('main_menu.html');
     return;
   }
-  // 구글 client_id 조회
+  // 서버 설정 조회 (google_client_id, invite_required)
   try {
     const r = await fetch(`${BASE}/api/auth/config`);
-    const { google_client_id } = await r.json();
-    if (google_client_id) initGoogleAuth(google_client_id);
-  } catch { /* 서버 미응답 시 구글 버튼 미표시 */ }
+    const data = await r.json();
+    if (data.google_client_id) initGoogleAuth(data.google_client_id);
+    if (data.invite_required) {
+      document.getElementById('inviteWrap').style.display = '';
+    }
+  } catch { /* 서버 미응답 시 버튼만 표시 */ }
 })();
 
 // ── 구글 로그인 ─────────────────────────────────────────────────────────────
@@ -151,13 +181,17 @@ function initGoogleAuth(clientId) {
   document.head.appendChild(script);
 }
 
+function getInviteCode() {
+  return (document.getElementById('inviteInput')?.value || '').trim();
+}
+
 async function handleGoogleCredential(response) {
   showError('');
   try {
     const r = await fetch(`${BASE}/api/auth/google`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id_token: response.credential }),
+      body: JSON.stringify({ id_token: response.credential, invite_code: getInviteCode() }),
     });
     const data = await r.json();
     if (!r.ok) { showError(data.detail || '구글 로그인에 실패했습니다.'); return; }
@@ -176,7 +210,7 @@ async function startAsGuest() {
     const r = await fetch(`${BASE}/api/auth/guest`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ uuid: guestId }),
+      body: JSON.stringify({ uuid: guestId, invite_code: getInviteCode() }),
     });
     const data = await r.json();
     if (!r.ok) { showError(data.detail || '게스트 로그인에 실패했습니다.'); return; }

@@ -1,4 +1,4 @@
-# G. 예시 응답
+# H. 예시 응답
 
 아래 예시는 시스템이 수신하는 LLM 출력 전체를 보여준다. STATE_UPDATE 블록 작성법을 중심으로 확인할 것.
 
@@ -36,34 +36,18 @@
 
 **결정 기로:** 정보 우위를 어떻게 활용할지 결정해야 한다.
 
-1. 후새에게 아히도벨을 더욱 고립시키도록 지시하고, 그사이 본진 방어 태세를 강화한다.
-2. 아말렉 협력을 활용해 남방 보급로를 확보하고, 장기전 대비 물자를 비축한다.
-3. 정보 우위가 유효한 지금, 에브라임 숲 방향으로 선제 이동해 지형적 이점을 선점한다.
+1. [intrigue] 후새에게 아히도벨을 더욱 고립시키도록 지시하고, 그사이 본진 방어 태세를 강화한다.
+2. [passive] 아말렉 협력을 활용해 남방 보급로를 확보하고, 장기전 대비 물자를 비축한다.
+3. [attack] 정보 우위가 유효한 지금, 에브라임 숲 방향으로 선제 이동해 지형적 이점을 선점한다.
 
 위 선택지 중 하나를 고르거나, 직접 명령을 내리십시오.
 
 [STATE_UPDATE]
 {
   "new_characters": [{"id": "hushai", "name": "후새", "epithet": "아렉 사람", "disposition": "동맹", "desc": "다윗의 심복으로 예루살렘에 잠입해 압살롬 진영에서 첩보를 수집하는 밀정."}],
-  "dead_characters": [],
-  "new_factions": [],
-  "defeated_factions": [],
-  "faction_strength_changes": [],
-  "faction_battle_damage": [],
-  "faction_battle_recovery": [],
-  "character_troop_changes": [],
   "faction_diplomacy_changes": [{"id": "amalek", "delta": 30}],
-  "character_disposition_changes": [],
-  "character_title_changes": [],
   "faction_intel_changes": [{"id": "absalom_rebels", "delta": 1}],
-  "new_locations": [],
-  "location_changes": [],
-  "player_location_id": "mahanaim",
-  "player_coalition": [],
-  "enemy_coalition": [],
-  "weather": null,
-  "combat_victor": null,
-  "enemy_next_action": null
+  "player_location_id": "mahanaim"
 }
 
 ---
@@ -97,35 +81,17 @@
 
 **결정 기로:**
 
-1. 능선을 유지하며 방패 진형으로 적 중앙의 소모를 기다린다.
-2. 숲 안에서 기병대를 완전히 격리하기 위해 경보병을 깊숙이 투입한다.
-3. 적 중앙이 이동 중인 지금을 역습 타이밍으로 잡아 전열 붕괴를 노린다.
+1. [defense] 능선을 유지하며 방패 진형으로 적 중앙의 소모를 기다린다.
+2. [surprise] 숲 안에서 기병대를 완전히 격리하기 위해 경보병을 깊숙이 투입한다.
+3. [attack] 적 중앙이 이동 중인 지금을 역습 타이밍으로 잡아 전열 붕괴를 노린다.
 
 위 선택지 중 하나를 고르거나, 직접 명령을 내리십시오.
 
 [STATE_UPDATE]
 {
-  "new_characters": [],
-  "dead_characters": [],
-  "new_factions": [],
-  "defeated_factions": [],
-  "faction_strength_changes": [],
-  "faction_battle_damage": [],
-  "faction_battle_recovery": [],
-  "character_troop_changes": [],
-  "faction_diplomacy_changes": [],
-  "character_disposition_changes": [],
-  "character_title_changes": [],
-  "faction_intel_changes": [],
-  "new_locations": [],
-  "location_changes": [],
   "player_location_id": "ephraim_forest",
   "battle_location": "에브라임 숲",
   "battle_year": "기원전 1025년",
-  "player_coalition": [],
-  "enemy_coalition": [],
-  "weather": null,
-  "combat_victor": null,
   "enemy_next_action": "압살롬 본진 중앙 보병대가 능선을 향해 정면 압박을 가해 아군 전열을 밀어붙이려 한다."
 }
 
@@ -152,25 +118,4 @@
 **현재 가용 병력과 지형 조건으로는 이 명령을 실행할 수 없습니다. 다른 방침을 내려 주십시오.**
 
 [STATE_UPDATE]
-{
-  "new_characters": [],
-  "dead_characters": [],
-  "new_factions": [],
-  "defeated_factions": [],
-  "faction_strength_changes": [],
-  "faction_battle_damage": [],
-  "faction_battle_recovery": [],
-  "character_troop_changes": [],
-  "faction_diplomacy_changes": [],
-  "character_disposition_changes": [],
-  "character_title_changes": [],
-  "faction_intel_changes": [],
-  "new_locations": [],
-  "location_changes": [],
-  "player_location_id": null,
-  "player_coalition": [],
-  "enemy_coalition": [],
-  "weather": null,
-  "combat_victor": null,
-  "enemy_next_action": null
-}
+{}

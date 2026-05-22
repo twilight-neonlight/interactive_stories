@@ -10,12 +10,16 @@ from pydantic import BaseModel
 
 from config          import SYSTEM_PROMPT
 from gemini_client   import call_gemini
-from scenarios_loader import SCENARIOS, GARRISON_POINTS_BY_TIER, compute_faction_strength, _NO_TERRITORY_TYPES
+from scenarios_loader import SCENARIOS, GARRISON_POINTS_BY_TIER, compute_faction_strength, compute_max_reserve, _NO_TERRITORY_TYPES
 from engine.resolver import (
-    resolve_action, resolution_prompt, needs_resolution, classify_action_type,
+    resolve_action, resolution_prompt, classify_action_type,
     init_combat_phase, advance_combat_phase, resolve_retreat,
     combat_prep_prompt, combat_ongoing_prompt, combat_end_prompt,
-    calc_stat_modifier, _MIN_PHASES_BEFORE_VICTOR,
+    init_diplomacy_session, advance_diplomacy_session, resolve_diplomacy_withdrawal,
+    diplomacy_prep_prompt, diplomacy_ongoing_prompt, diplomacy_end_prompt,
+    calc_stat_modifier, calc_diplomacy_relation_modifier, calc_admin_recovery_multiplier,
+    _MIN_PHASES_BEFORE_VICTOR,
+    roll_battle_weather,
 )
 from engine.classifier import classify_action_llm, CLS_TO_RESOLVER
 from engine.quality    import evaluate_action_quality
@@ -49,6 +53,9 @@ _GARRISON_RECOVERY_PER_MONTH = 0.03
 
 # battle_damage 자동 회복량 (전투 중이 아닌 세력, 게임 내 1개월 경과당)
 _BATTLE_DAMAGE_RECOVERY_PER_MONTH = 25
+
+# 예비 인력 월간 회복률 (부족분의 X% / 월)
+_RESERVE_RECOVERY_RATE = 0.08
 
 
 def _classify_conquest_disposition(command: str) -> str | None:
@@ -90,6 +97,12 @@ def _get_scenario_tpp(state: dict) -> int | None:
     scenario_id = state.get("scenarioId", "")
     s = next((s for s in SCENARIOS if s["id"] == scenario_id), None)
     return s.get("troops_per_strength_point") if s else None
+
+
+def _get_scenario_reserve_divisor(state: dict) -> int:
+    scenario_id = state.get("scenarioId", "")
+    s = next((s for s in SCENARIOS if s["id"] == scenario_id), None)
+    return s.get("reserve_tpp_divisor", 5) if s else 5
 
 
 def _get_player_faction_id(state: dict) -> str | None:
@@ -189,15 +202,18 @@ def _project_state_updates_for_defeat(state: dict, updates: dict) -> dict:
 
     # 이번 턴 거점 지배 변경을 반영해야 패퇴 조건(모든 거점 상실)을 정확히 검사할 수 있다
     proj_locs = projected.get("locations", {})
+    proj_facs = projected.get("factions", {})
     for lc in updates.get("location_changes") or []:
-        lid = lc.get("id") if isinstance(lc, dict) else None
-        if lid and lid in proj_locs and lc.get("controller"):
-            proj_locs[lid]["controller"] = lc["controller"]
+        lid  = lc.get("id")  if isinstance(lc, dict) else None
+        ctrl = lc.get("controller") if isinstance(lc, dict) else None
+        if lid and lid in proj_locs and ctrl and (ctrl == "contested" or ctrl in proj_facs):
+            proj_locs[lid]["controller"] = ctrl
 
     return projected
 
 
-def _apply_garrison_updates(state: dict, new_ts: str, tpp: int, loc_change_map: dict) -> list[dict]:
+def _apply_garrison_updates(state: dict, new_ts: str, tpp: int, loc_change_map: dict,
+                            admin_mult: float = 1.0) -> list[dict]:
     """garrison 관련 location_changes를 loc_change_map에 in-place로 병합합니다.
 
     처리 순서:
@@ -245,7 +261,7 @@ def _apply_garrison_updates(state: dict, new_ts: str, tpp: int, loc_change_map: 
             continue
         elapsed  = (new_ym[0] - cym[0]) * 12 + (new_ym[1] - cym[1])
         base     = _CONQUEST_DISPOSITIONS.get(conquest_disposition, {}).get("base", 0.3)
-        new_mod  = min(1.0, base + max(0, elapsed) * _GARRISON_RECOVERY_PER_MONTH)
+        new_mod  = min(1.0, base + max(0, elapsed) * _GARRISON_RECOVERY_PER_MONTH * admin_mult)
         tier     = loc.get("tier", "")
         base_pts = GARRISON_POINTS_BY_TIER.get(tier, 0)
         change: dict = {
@@ -313,6 +329,58 @@ def _auto_battle_damage_recovery(state: dict, state_updates: dict) -> None:
         ]
 
 
+def _auto_reserve_recovery(state: dict, state_updates: dict) -> None:
+    """타임스탬프 경과에 따른 reserve_manpower 자동 회복.
+
+    매월 부족분의 _RESERVE_RECOVERY_RATE만큼 회복 (복리 방식).
+    LLM이 이미 출력한 faction_reserve_changes와 합산해 반환.
+    """
+    prev_ts = state.get("progress", {}).get("timestamp", "")
+    new_ts  = state_updates.get("timestamp") or prev_ts
+
+    prev_ym = _parse_ym(prev_ts)
+    new_ym  = _parse_ym(new_ts)
+    if not prev_ym or not new_ym:
+        return
+
+    elapsed = (new_ym[0] - prev_ym[0]) * 12 + (new_ym[1] - prev_ym[1])
+    if elapsed <= 0:
+        return
+
+    tpp = _get_scenario_tpp(state)
+    if not tpp:
+        return
+
+    factions  = state.get("factions", {})
+    locations = state.get("locations", {})
+
+    existing: dict[str, int] = {
+        r["id"]: r["delta"]
+        for r in (state_updates.get("faction_reserve_changes") or [])
+        if isinstance(r, dict) and r.get("id")
+    }
+
+    admin_mult = calc_admin_recovery_multiplier(state)
+    eff_rate   = min(1.0, _RESERVE_RECOVERY_RATE * admin_mult)
+
+    for fid, faction in factions.items():
+        if not isinstance(faction, dict) or faction.get("defeated"):
+            continue
+        reserve     = faction.get("reserve_manpower") or 0
+        max_reserve = compute_max_reserve(faction, fid, locations, tpp)
+        if max_reserve <= 0 or reserve >= max_reserve:
+            continue
+        deficit  = max_reserve - reserve
+        recovery = round(deficit - deficit * (1 - eff_rate) ** elapsed)
+        if recovery > 0:
+            existing[fid] = existing.get(fid, 0) + recovery
+
+    if existing:
+        state_updates["faction_reserve_changes"] = [
+            {"id": fid, "delta": round(amt)} for fid, amt in existing.items()
+        ]
+
+
 def _recompute_all_strengths(state: dict, state_updates: dict, tpp: int) -> None:
     """이번 턴 field_army 변화·거점 지배 변경을 반영해 strength_score를 전체 재계산합니다.
 
@@ -328,18 +396,29 @@ def _recompute_all_strengths(state: dict, state_updates: dict, tpp: int) -> None
         if fid and fid in factions and fc.get("delta") is not None:
             factions[fid]["field_army"] = max(0, (factions[fid].get("field_army") or 0) + int(fc["delta"]))
 
+    for fc in state_updates.get("faction_reserve_changes") or []:
+        fid = fc.get("id") if isinstance(fc, dict) else None
+        if fid and fid in factions and fc.get("delta") is not None:
+            max_r = compute_max_reserve(factions[fid], fid, state.get("locations", {}), tpp)
+            factions[fid]["reserve_manpower"] = max(0, min(
+                max_r,
+                (factions[fid].get("reserve_manpower") or 0) + int(fc["delta"])
+            ))
+
     # 거점 controller에 이번 턴 변화 반영
     locations: dict[str, dict] = {
         lid: dict(loc) for lid, loc in (state.get("locations") or {}).items()
         if isinstance(loc, dict)
     }
     for lc in state_updates.get("location_changes") or []:
-        lid = lc.get("id") if isinstance(lc, dict) else None
-        if lid and lid in locations and lc.get("controller"):
-            locations[lid]["controller"] = lc["controller"]
+        lid  = lc.get("id")         if isinstance(lc, dict) else None
+        ctrl = lc.get("controller") if isinstance(lc, dict) else None
+        if lid and lid in locations and ctrl and (ctrl == "contested" or ctrl in factions):
+            locations[lid]["controller"] = ctrl
 
+    res_div = _get_scenario_reserve_divisor(state)
     state_updates["faction_strength_overrides"] = {
-        fid: compute_faction_strength(faction, fid, locations, tpp)
+        fid: compute_faction_strength(faction, fid, locations, tpp, res_div)
         for fid, faction in factions.items()
     }
 
@@ -352,11 +431,24 @@ class Message(BaseModel):
     content: str
 
 
+_FRONTEND_TO_RESOLVER: dict[str, str] = {
+    "attack":     "military",
+    "surprise":   "surprise",
+    "defense":    "defense",
+    "siege":      "military",
+    "diplomatic": "diplomatic",
+    "intrigue":   "intrigue",
+    "passive":    "passive",
+}
+
+
 class TurnRequest(BaseModel):
-    command: str
-    state:   dict
-    history: list[Message]
-    retreat: bool = False
+    command:     str
+    state:       dict
+    history:     list[Message]
+    retreat:     bool = False
+    withdraw:    bool = False
+    action_type: str | None = None
 
 
 class OpeningRequest(BaseModel):
@@ -398,9 +490,11 @@ async def process_turn(req: TurnRequest):
     state = copy.deepcopy(req.state)
     auto_defeated_at_start = _auto_mark_defeated_factions(state)
 
-    combat_state_in  = state.get("combatState")
-    quality_mod      = None
-    new_combat_state = None
+    diplomacy_state_in = state.get("diplomacyState")
+    combat_state_in    = state.get("combatState")
+    quality_mod        = None
+    new_combat_state   = None
+    new_diplomacy_state = None
 
     # 점령지 처분 대기 확인 (LLM 호출 전에 command를 분석해야 하므로 최상단에서 처리)
     pending_dispositions: list[dict] = state.get("pendingConquestDispositions") or []
@@ -408,15 +502,37 @@ async def process_turn(req: TurnRequest):
         _classify_conquest_disposition(req.command) if pending_dispositions else None
     )
 
-    if combat_state_in and combat_state_in.get("active"):
+    if diplomacy_state_in and diplomacy_state_in.get("active"):
+        # ── 외교 회담 진행 중 ────────────────────────────────────────────────
+        if req.withdraw:
+            resolution, new_diplomacy_state = resolve_diplomacy_withdrawal(state)
+            sys_prompt_tail = diplomacy_end_prompt(new_diplomacy_state)
+        else:
+            target_fid  = diplomacy_state_in.get("target_faction_id")
+            old_stance  = diplomacy_state_in.get("opponent_next_stance")
+            quality_mod = await evaluate_action_quality(req.command, state, "diplomatic")
+            stat_mod    = calc_stat_modifier(state, "외교", target_fid)
+            dipl_mod    = calc_diplomacy_relation_modifier(state, target_fid)
+            resolution, new_diplomacy_state = advance_diplomacy_session(
+                req.command, state, _build_modifiers(quality_mod, stat_mod, dipl_mod)
+            )
+            sys_prompt_tail = diplomacy_ongoing_prompt(
+                new_diplomacy_state, resolution, old_stance=old_stance
+            )
+
+    elif combat_state_in and combat_state_in.get("active"):
         # ── 전투 진행 중 ──────────────────────────────────────────────────────
         if req.retreat:
             resolution, new_combat_state = resolve_retreat(state)
             sys_prompt_tail = combat_end_prompt(new_combat_state, resolution)
         else:
-            combat_action_type = classify_action_type(req.command)
-            if combat_action_type not in ("military", "surprise", "defense"):
-                combat_action_type = "military"
+            _hint = _FRONTEND_TO_RESOLVER.get(req.action_type or "", "")
+            if _hint in ("military", "surprise", "defense"):
+                combat_action_type = _hint
+            else:
+                combat_action_type = classify_action_type(req.command)
+                if combat_action_type not in ("military", "surprise", "defense"):
+                    combat_action_type = "military"
             quality_mod = await evaluate_action_quality(req.command, state, combat_action_type)
             stat_key    = _ACTION_STAT_KEY.get(combat_action_type, '통솔')
             enemy_fid   = combat_state_in.get("enemy_faction_id")
@@ -431,19 +547,29 @@ async def process_turn(req: TurnRequest):
                 sys_prompt_tail = combat_ongoing_prompt(completed_phase, new_combat_state, resolution)
     else:
         # ── 일반 턴 ───────────────────────────────────────────────────────────
-        kw_type = classify_action_type(req.command)
+        kw_type = _FRONTEND_TO_RESOLVER.get(req.action_type or "", "") or classify_action_type(req.command)
+        _needs_res = kw_type not in ("passive", "general")
 
         cls, quality_mod = await asyncio.gather(
             classify_action_llm(req.command, state),
             evaluate_action_quality(req.command, state, kw_type)
-            if needs_resolution(req.command) else _async_none(),
+            if _needs_res else _async_none(),
         )
 
         cls_type      = cls.get("type", "general")
         resolver_type = CLS_TO_RESOLVER.get(cls_type, "general")
         target_fid    = cls.get("target_faction_id")
 
-        if cls_type in ("open_field", "ambush", "siege_attack"):
+        if cls_type == "diplomatic_session":
+            stat_mod = calc_stat_modifier(state, "외교", target_fid)
+            dipl_mod = calc_diplomacy_relation_modifier(state, target_fid)
+            resolution, new_diplomacy_state = init_diplomacy_session(
+                req.command, state,
+                _build_modifiers(quality_mod, stat_mod, dipl_mod),
+                classification=cls,
+            )
+            sys_prompt_tail = diplomacy_prep_prompt(new_diplomacy_state, resolution)
+        elif cls_type in ("open_field", "ambush", "siege_attack"):
             stat_key = _ACTION_STAT_KEY.get(resolver_type, '통솔')
             stat_mod = calc_stat_modifier(state, stat_key, target_fid)
             resolution, new_combat_state = init_combat_phase(
@@ -452,11 +578,12 @@ async def process_turn(req: TurnRequest):
             )
             sys_prompt_tail = combat_prep_prompt(new_combat_state, resolution)
         else:
-            stat_key = _ACTION_STAT_KEY.get(resolver_type)
-            stat_mod = calc_stat_modifier(state, stat_key, target_fid) if stat_key else None
+            stat_key  = _ACTION_STAT_KEY.get(resolver_type)
+            stat_mod  = calc_stat_modifier(state, stat_key, target_fid) if stat_key else None
+            dipl_mod  = calc_diplomacy_relation_modifier(state, target_fid) if resolver_type == "diplomatic" else None
             resolution = resolve_action(
                 req.command, state,
-                extra_modifiers=_build_modifiers(quality_mod, stat_mod),
+                extra_modifiers=_build_modifiers(quality_mod, stat_mod, dipl_mod),
                 action_type=resolver_type,
             )
             sys_prompt_tail = resolution_prompt(resolution)
@@ -518,7 +645,7 @@ async def process_turn(req: TurnRequest):
 
     in_combat = bool(combat_state_in and combat_state_in.get("active"))
     for key in ("new_characters", "dead_characters", "new_factions", "defeated_factions",
-                "faction_field_army_changes",
+                "faction_field_army_changes", "faction_reserve_changes",
                 "faction_diplomacy_changes",
                 "character_troop_changes", "character_disposition_changes", "character_title_changes",
                 "faction_intel_changes", "new_locations", "location_changes",
@@ -541,7 +668,8 @@ async def process_turn(req: TurnRequest):
         loc_change_map: dict[str, dict] = {
             lc["id"]: lc for lc in (state_updates.get("location_changes") or [])
         }
-        newly_pending = _apply_garrison_updates(state, new_ts, tpp, loc_change_map)
+        admin_mult    = calc_admin_recovery_multiplier(state)
+        newly_pending = _apply_garrison_updates(state, new_ts, tpp, loc_change_map, admin_mult)
         if loc_change_map:
             state_updates["location_changes"] = list(loc_change_map.values())
 
@@ -584,19 +712,40 @@ async def process_turn(req: TurnRequest):
     state_updates["pending_conquest_dispositions"] = unresolved + newly_pending
 
     _auto_battle_damage_recovery(state, state_updates)
+    _auto_reserve_recovery(state, state_updates)
     if tpp:
         _recompute_all_strengths(state, state_updates, tpp)
+
+    if new_diplomacy_state is not None:
+        if isinstance(extra.get("opponent_next_stance"), str):
+            new_diplomacy_state["opponent_next_stance"] = extra["opponent_next_stance"]
+        # LLM이 회담 결과를 신호한 경우
+        if not new_diplomacy_state.get("ended"):
+            outcome = extra.get("diplomacy_outcome")
+            if outcome in ("agreement", "breakdown"):
+                new_diplomacy_state.update({
+                    "active":  False,
+                    "ended":   True,
+                    "outcome": outcome,
+                })
+        state_updates["diplomacy_state"] = new_diplomacy_state
 
     if new_combat_state is not None:
         for key in ("player_coalition", "enemy_coalition"):
             if isinstance(extra.get(key), list):
                 new_combat_state[key] = extra[key]
 
-        # 전투 지명·연도: 개시 씬에서만 LLM이 제공
+        # 전투 지명·연도·지형: 개시 씬에서만 LLM이 제공
         if isinstance(extra.get("battle_location"), str):
             new_combat_state["battle_location_name"] = extra["battle_location"]
         if isinstance(extra.get("battle_year"), str):
             new_combat_state["battle_year"] = extra["battle_year"]
+        if isinstance(extra.get("battle_terrain"), str):
+            terrain = extra["battle_terrain"]
+            new_combat_state["battle_terrain"] = terrain
+            # 전투 개시 첫 페이즈이고 LLM이 날씨를 명시하지 않은 경우 지형 기반 자동 롤
+            if new_combat_state.get("phase_number", 1) == 1 and not isinstance(extra.get("weather"), str):
+                state_updates["weather"] = roll_battle_weather(terrain)
 
         # 적 예고 행동: LLM이 이번 장면에서 제시한 다음 페이즈 적 행동 저장
         if isinstance(extra.get("enemy_next_action"), str):

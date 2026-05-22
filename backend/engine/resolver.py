@@ -5,9 +5,9 @@ LLM 호출 전에 주사위 + 수정치로 결과 등급을 결정합니다.
 결정된 등급은 시스템 프롬프트에 주입되어 LLM의 서술 방향을 조정합니다.
 
 일반 행동 판정 수정치 구성:
-  군사 — 지형(고정) + 날씨 + LLM 품질 평가(최대 ±2) + 능력치 등급차(최대 ±3)
-  외교 — LLM 품질 평가(최대 ±2) + 능력치 등급차(최대 ±3)
-  첩보 — LLM 품질 평가(최대 ±2) + 능력치 등급차(최대 ±3)
+  군사 — 지형(고정) + 날씨 + LLM 품질 평가(최대 ±2) + 능력치 등급차(최대 ±5)
+  외교 — LLM 품질 평가(최대 ±2) + 능력치 등급차(최대 ±5) + 외교 관계 수치(최대 ±3)
+  첩보 — LLM 품질 평가(최대 ±2) + 능력치 등급차(최대 ±5)
 
 전투 시스템 — 2d6 대결 방식:
   각 페이즈: 아군 2d6 vs 적군 2d6. 차이(−10~+10)에 지형·날씨·성벽(tier 기반)·품질 수정치를 더해
@@ -57,6 +57,34 @@ def _diff_to_mod(diff: int) -> int:
     if diff >=-14: return -4
     return -5
 
+def calc_admin_recovery_multiplier(state: dict) -> float:
+    """플레이어 행정 능력치 → 인력·주둔군 회복 가중치 (0.5~2.0).
+
+    E-(0)=0.5 / C(7)=1.0 / S+(17)=2.0. 능력치 미설정 시 1.0.
+    """
+    protagonist = state.get('protagonist')
+    if not protagonist:
+        return 1.0
+    grade = ((state.get('characters') or {}).get(protagonist) or {}).get('stats', {}).get('행정')
+    if grade is None:
+        return 1.0
+    num = _grade_to_num(grade)  # 0~17
+    if num <= 7:
+        return round(0.5 + num * (0.5 / 7), 3)
+    return round(1.0 + (num - 7) * (1.0 / 10), 3)
+
+
+def calc_diplomacy_relation_modifier(state: dict, target_faction_id: str | None) -> tuple[str, int] | None:
+    """현재 외교 수치(−100~+100)를 외교 판정 수정치(±3)로 변환."""
+    if not target_faction_id:
+        return None
+    score = (state.get("factions", {}).get(target_faction_id) or {}).get("diplomacy_score")
+    if score is None:
+        return None
+    mod = max(-3, min(3, round(score / 33)))
+    return ("외교 관계", mod) if mod != 0 else None
+
+
 def calc_stat_modifier(state: dict, stat_key: str,
                        opponent_faction_id: str | None = None) -> tuple[str, int] | None:
     """플레이어-상대 등급차 수정치. 차이 0 또는 양측 stats 없으면 None."""
@@ -95,6 +123,10 @@ _WEATHER_TABLE: dict[str, tuple[int, int, str]] = {
     "heat":       (-1, -1, "폭염"),
     "fog":        (-3,  0, "짙은 안개"),
     "storm":      (-3,  0, "폭풍"),
+    # 지형 특수 날씨
+    "sandstorm":  (-3, -1, "모래폭풍"),   # 사막·건조지·대초원
+    "monsoon":    (-2,  0, "몬순"),        # 정글·범람원·해안
+    "dust_storm": (-2,  0, "황사"),        # 대초원·건조지
 }
 
 
@@ -112,10 +144,23 @@ def _weather_modifier(state: dict, is_defense: bool) -> list[tuple[str, int]]:
 # 지형 유형 → (방어 수정치, 공격 수정치, 레이블)
 # 요새는 tier 기반 성벽 수정치로 처리하므로 지형 테이블에서 제외
 _TERRAIN_TABLE: dict[str, tuple[int, int, str]] = {
-    "highland": (+2, -2, "고지"),
-    "wetland":  (+1, -1, "습지·하천"),
-    "river":    (+2, -2, "강변 방어선"),
-    "plain":    ( 0,  0, "평원"),
+    "highland":   (+2, -2, "고지"),
+    "riverside":  (+2, -2, "강변 방어선"),
+    "jungle":     (+2, -2, "정글"),
+    "wetland":    (+1, -1, "습지·하천"),
+    "floodplain": (+1, -1, "범람원"),
+    "forest":     (+1, -1, "삼림"),
+    "tundra":     (+1, -1, "툰드라"),
+    "basin":      (+1,  0, "분지"),
+    "river":      (+1, -1, "강 (해전)"),
+    "nearshore":  (+1,  0, "연안"),
+    "icefield":   ( 0, -2, "빙원"),
+    "desert":     ( 0, -1, "사막"),
+    "arid":       ( 0, -1, "건조지"),
+    "steppe":     ( 0,  0, "대초원"),
+    "coastal":    ( 0,  0, "해안"),
+    "ocean":      ( 0,  0, "대양"),
+    "plain":      ( 0,  0, "평지"),
 }
 
 # 거점 tier → 성벽 수정치 (방어측 보너스 / 공격측 패널티)
@@ -130,9 +175,19 @@ _TIER_WALL_BONUS: dict[str, int] = {
 
 def _classify_terrain(terrain_text: str) -> str:
     t = terrain_text
-    if any(k in t for k in ["협곡","절벽","산록","언덕","구릉","산"]): return "highland"
-    if any(k in t for k in ["습지","늪","합류","합류부"]):              return "wetland"
-    if any(k in t for k in ["강변","강안","강북","강남","강 합류"]):    return "river"
+    if any(k in t for k in ["협곡","절벽","산록","언덕","구릉","산지","산"]): return "highland"
+    if any(k in t for k in ["습지","늪","합류","합류부"]):                      return "wetland"
+    if any(k in t for k in ["강변","강안","강북","강남","강 합류"]):            return "riverside"
+    if any(k in t for k in ["정글","열대우림"]):                                return "jungle"
+    if any(k in t for k in ["삼림","산림","숲"]):                              return "forest"
+    if any(k in t for k in ["범람원","삼각주"]):                                return "floodplain"
+    if any(k in t for k in ["툰드라"]):                                         return "tundra"
+    if any(k in t for k in ["분지"]):                                           return "basin"
+    if any(k in t for k in ["빙원","빙하"]):                                    return "icefield"
+    if any(k in t for k in ["사막"]):                                           return "desert"
+    if any(k in t for k in ["건조지"]):                                         return "arid"
+    if any(k in t for k in ["대초원","스텝"]):                                  return "steppe"
+    if any(k in t for k in ["해안","연안"]):                                    return "coastal"
     return "plain"
 
 
@@ -164,24 +219,27 @@ def _find_location_by_name(name: str | None, locations: dict) -> tuple[str | Non
     return None, 0
 
 
-def _terrain_modifier(command: str, state: dict, is_defense: bool) -> list[tuple[str, int]]:
+def _terrain_modifier(state: dict, is_defense: bool) -> list[tuple[str, int]]:
+    combat_state = state.get("combatState") or {}
+    if not (combat_state.get("active") and combat_state.get("battle_terrain")):
+        return []
+
     locations = state.get("locations", {})
-    for loc in locations.values():
-        name  = loc.get("name", "")
-        short = name.split("(")[0].strip()
-        if short and len(short) >= 2 and short in command:
-            mods: list[tuple[str, int]] = []
-            terrain_type        = _classify_terrain(loc.get("terrain", ""))
-            def_v, atk_v, label = _TERRAIN_TABLE.get(terrain_type, (0, 0, ""))
-            terrain_v = def_v if is_defense else atk_v
-            if terrain_v and label:
-                mods.append((f"{label} {'방어' if is_defense else '공략'}", terrain_v))
-            wall_v = _TIER_WALL_BONUS.get(loc.get("tier", ""), 0)
-            if wall_v:
-                mods.append(("성벽" if is_defense else "성벽 저항",
-                             wall_v if is_defense else -wall_v))
-            return mods
-    return []
+    terrain_type = combat_state["battle_terrain"]
+    mods: list[tuple[str, int]] = []
+    def_v, atk_v, label = _TERRAIN_TABLE.get(terrain_type, (0, 0, ""))
+    terrain_v = def_v if is_defense else atk_v
+    if label:
+        mods.append((f"{label} {'방어' if is_defense else '공략'}", terrain_v))
+    loc_id = combat_state.get("siege_location_id")
+    if not loc_id:
+        loc_id, _ = _find_location_by_name(combat_state.get("battle_location_name"), locations)
+    if loc_id:
+        wall_v = _TIER_WALL_BONUS.get(locations.get(loc_id, {}).get("tier", ""), 0)
+        if wall_v:
+            mods.append(("성벽" if is_defense else "성벽 저항",
+                         wall_v if is_defense else -wall_v))
+    return mods
 
 
 def classify_action_type(command: str) -> str:
@@ -255,7 +313,7 @@ def _net_to_phase_outcome(net: int) -> str:
     return "critical_fail"                 # ≤ -9
 
 
-def _resolve_phase_dice(command: str, state: dict, action_type: str,
+def _resolve_phase_dice(state: dict, action_type: str,
                         extra_modifiers: list[tuple[str, int]] | None = None) -> dict:
     """전투 페이즈 주사위. (아군 2d6 − 적군 2d6) + 지형 + 날씨 + 수정치 합산 → phase_outcome."""
     a = sum(random.randint(1, 6) for _ in range(2))  # 아군 2d6
@@ -264,7 +322,7 @@ def _resolve_phase_dice(command: str, state: dict, action_type: str,
     modifiers: list[tuple[str, int]] = []
 
     is_defense = action_type == "defense"
-    modifiers.extend(_terrain_modifier(command, state, is_defense))
+    modifiers.extend(_terrain_modifier(state, is_defense))
     modifiers.extend(_weather_modifier(state, is_defense))
     if extra_modifiers:
         modifiers.extend(extra_modifiers)
@@ -471,12 +529,54 @@ def _get_faction_strength(faction_id: str, state: dict) -> int:
 
 
 _SIEGE_TERRAIN_MULT: dict[str, float] = {
-    "fortress": 1.6,
-    "highland": 1.4,
-    "river":    1.3,
-    "wetland":  1.2,
-    "plain":    1.1,
+    "fortress":   1.6,
+    "jungle":     1.5,
+    "icefield":   1.5,
+    "highland":   1.4,
+    "riverside":  1.3,
+    "forest":     1.3,
+    "tundra":     1.3,
+    "desert":     1.3,
+    "wetland":    1.2,
+    "floodplain": 1.2,
+    "basin":      1.2,
+    "arid":       1.2,
+    "river":      1.2,
+    "plain":      1.1,
+    "coastal":    1.1,
+    "nearshore":  1.1,
+    "steppe":     1.0,
+    "ocean":      1.0,
 }
+
+
+# 지형별 날씨 출현 가중치. 합산이 100일 필요는 없음 (random.choices가 정규화)
+_TERRAIN_WEATHER_WEIGHTS: dict[str, dict[str, int]] = {
+    "plain":      {"clear": 50, "rain": 15, "heavy_rain": 8, "snow": 5, "blizzard": 2, "heat": 10, "fog": 5, "storm": 5},
+    "highland":   {"clear": 40, "rain": 15, "heavy_rain": 8, "snow": 12, "blizzard": 8, "heat": 5, "fog": 8, "storm": 4},
+    "riverside":  {"clear": 35, "rain": 18, "heavy_rain": 10, "snow": 5, "blizzard": 2, "heat": 8, "fog": 16, "storm": 6},
+    "wetland":    {"clear": 28, "rain": 20, "heavy_rain": 12, "snow": 3, "blizzard": 1, "heat": 8, "fog": 22, "storm": 6},
+    "floodplain": {"clear": 30, "rain": 20, "heavy_rain": 15, "snow": 3, "blizzard": 1, "heat": 8, "fog": 14, "storm": 4, "monsoon": 5},
+    "coastal":    {"clear": 33, "rain": 15, "heavy_rain": 10, "snow": 3, "blizzard": 1, "heat": 8, "fog": 18, "storm": 12},
+    "jungle":     {"clear": 20, "rain": 20, "heavy_rain": 15, "fog": 10, "heat": 15, "storm": 5, "monsoon": 15},
+    "forest":     {"clear": 40, "rain": 20, "heavy_rain": 10, "snow": 8, "blizzard": 3, "heat": 5, "fog": 12, "storm": 2},
+    "desert":     {"clear": 55, "heat": 25, "sandstorm": 15, "dust_storm": 5},
+    "arid":       {"clear": 48, "heat": 20, "sandstorm": 10, "dust_storm": 15, "rain": 5, "fog": 2},
+    "steppe":     {"clear": 42, "rain": 12, "heat": 10, "fog": 5, "dust_storm": 15, "sandstorm": 6, "snow": 5, "storm": 5},
+    "tundra":     {"clear": 28, "snow": 25, "blizzard": 18, "fog": 14, "rain": 10, "storm": 5},
+    "icefield":   {"clear": 18, "snow": 25, "blizzard": 32, "fog": 15, "storm": 10},
+    "basin":      {"clear": 38, "rain": 15, "heavy_rain": 10, "snow": 8, "fog": 22, "heat": 5, "storm": 2},
+    "river":      {"clear": 35, "rain": 18, "heavy_rain": 10, "snow": 4, "blizzard": 1, "heat": 8, "fog": 18, "storm": 6},
+    "nearshore":  {"clear": 30, "rain": 15, "heavy_rain": 12, "fog": 18, "storm": 18, "heat": 5, "monsoon": 2},
+    "ocean":      {"clear": 25, "rain": 12, "heavy_rain": 10, "fog": 15, "storm": 25, "heat": 5, "monsoon": 8},
+}
+
+
+def roll_battle_weather(terrain_type: str) -> str:
+    """지형 유형에 따른 초기 전투 날씨를 확률 롤로 결정합니다."""
+    weights = _TERRAIN_WEATHER_WEIGHTS.get(terrain_type, _TERRAIN_WEATHER_WEIGHTS["plain"])
+    types, wts = zip(*weights.items())
+    return random.choices(types, weights=wts, k=1)[0]
 
 
 def init_combat_phase(command: str, state: dict,
@@ -550,7 +650,7 @@ def init_combat_phase(command: str, state: dict,
     if enemy_fid:  pending[enemy_fid]  = 0
 
     # 개시 페이즈 주사위 (적 예고 행동 없으므로 quality modifier 없음, stat modifier는 반영)
-    resolution = _resolve_phase_dice(command, state, action_type, extra_modifiers)
+    resolution = _resolve_phase_dice(state, action_type, extra_modifiers)
 
     combat_state = {
         "active":                True,
@@ -581,7 +681,7 @@ def advance_combat_phase(command: str, state: dict,
     if action_type not in ("military", "surprise", "defense"):
         action_type = "military"
 
-    resolution = _resolve_phase_dice(command, state, action_type, extra_modifiers)
+    resolution = _resolve_phase_dice(state, action_type, extra_modifiers)
 
     phase_number    = cs.get("phase_number", 1)
     player_morale   = cs.get("player_morale", 100)
@@ -667,6 +767,163 @@ def advance_combat_phase(command: str, state: dict,
     return resolution, new_cs
 
 
+# ─────────────────────────────────────────────────────────────────────────────
+# 다중 라운드 외교 회담 시스템
+# ─────────────────────────────────────────────────────────────────────────────
+
+def _diplomacy_session_label(command: str) -> str:
+    if any(kw in command for kw in ("군주", "왕", "술탄", "황제", "공")):
+        if any(kw in command for kw in ("회담", "만남", "접견", "협상")):
+            return "군주 회담"
+    if any(kw in command for kw in ("대사", "전권", "특사", "사절")):
+        if any(kw in command for kw in ("접견", "회담", "면담")):
+            return "전권대사 접견"
+    return "외교 협상"
+
+
+def init_diplomacy_session(command: str, state: dict,
+                           extra_modifiers: list[tuple[str, int]] | None = None,
+                           classification: dict | None = None) -> tuple[dict, dict]:
+    """외교 회담 개시: 개회 판정 + diplomacy_state 초기화."""
+    player_fid = _get_player_faction_id(state)
+    target_fid = (classification.get("target_faction_id") if classification else None)
+    label      = _diplomacy_session_label(command)
+    resolution = _resolve_diplomatic_action(extra_modifiers)
+
+    diplomacy_state = {
+        "active":               True,
+        "round_number":         1,
+        "player_faction_id":    player_fid,
+        "target_faction_id":    target_fid,
+        "session_label":        label,
+        "opponent_next_stance": None,
+        "round_results":        [],
+        "ended":                False,
+        "outcome":              None,
+    }
+    return resolution, diplomacy_state
+
+
+def advance_diplomacy_session(command: str, state: dict,
+                              extra_modifiers: list[tuple[str, int]] | None = None) -> tuple[dict, dict]:
+    """외교 회담 한 라운드 진행."""
+    ds           = state.get("diplomacyState", {})
+    resolution   = _resolve_diplomatic_action(extra_modifiers)
+    round_number = ds.get("round_number", 1)
+    round_results = list(ds.get("round_results", []))
+    round_results.append({
+        "round":            round_number,
+        "tier":             resolution["tier"],
+        "tier_en":          resolution["tier_en"],
+        "roll":             resolution["roll"],
+        "net":              resolution["net"],
+        "modifiers":        resolution.get("modifiers", []),
+        "player_action":    command[:80],
+        "opponent_stance":  ds.get("opponent_next_stance") or "",
+    })
+    new_ds = {
+        **ds,
+        "round_number":         round_number + 1,
+        "opponent_next_stance": None,
+        "round_results":        round_results,
+    }
+    return resolution, new_ds
+
+
+def resolve_diplomacy_withdrawal(state: dict) -> tuple[dict, dict]:
+    """회담 중단: 즉시 종결."""
+    ds = state.get("diplomacyState", {})
+    new_ds = {
+        **ds,
+        "active":     False,
+        "ended":      True,
+        "outcome":    "breakdown",
+        "withdrawal": True,
+    }
+    resolution = {"tier": "중단", "tier_en": "withdrawal",
+                  "roll": None, "net": None,
+                  "action_type": "diplomatic", "modifiers": []}
+    return resolution, new_ds
+
+
+def diplomacy_prep_prompt(ds: dict, resolution: dict) -> str:
+    """외교 회담 개회 — LLM 지시 프롬프트."""
+    label   = ds.get("session_label", "외교 협상")
+    mod_str = ""
+    if resolution.get("modifiers"):
+        parts   = [f"{lbl} {'+' if v > 0 else ''}{v}" for lbl, v in resolution["modifiers"]]
+        mod_str = f" ({', '.join(parts)})"
+    return (
+        "\n\n---\n"
+        f"## {label} 개시 — 회담 설정 (엔진 결정 — 반드시 준수)\n"
+        f"개회 판정: {resolution['roll']} → 보정 후 {resolution['net']}{mod_str} → **{resolution['tier']}**\n\n"
+        "**[외교 집중]** 이번 응답은 회담 장면에만 집중하시오. "
+        "전투·세계 사건·타 세력 동향 등 회담과 무관한 내용은 일절 서술하지 말 것.\n"
+        "회담 개막 장면을 서술하시오. 상대방의 태도와 첫 제안·요구를 묘사하라. "
+        "판정 등급에 따라 상대방의 첫 태도를 조율하시오 (대성공: 우호적 개막, 대실패: 냉담한 개막).\n"
+        "장면 말미에 플레이어가 취할 수 있는 **외교적 대응 선택지 3가지**를 제시하시오.\n\n"
+        "STATE_UPDATE 필수 출력:\n"
+        "- `diplomacy_outcome`: 회담이 이미 결론에 도달했다면 \"agreement\" 또는 \"breakdown\", "
+        "진행 중이면 반드시 null\n"
+        "- `opponent_next_stance`: 상대방이 다음 라운드에 취할 태도·요구 — "
+        "1~2문장. STATE_UPDATE에만 기록하고 본문에는 노출하지 마시오.\n"
+    )
+
+
+def diplomacy_ongoing_prompt(ds: dict, resolution: dict,
+                             old_stance: str | None = None) -> str:
+    """외교 회담 진행 중 — LLM 지시 프롬프트.
+
+    ds           : advance_diplomacy_session 반환 새 state (round_number 이미 증가됨)
+    old_stance   : 이번 라운드 시작 전 opponent_next_stance (advance 이전 값)
+    """
+    label            = ds.get("session_label", "외교 협상")
+    round_number     = ds.get("round_number", 2) - 1
+    opponent_stance  = old_stance or "(파악 불명)"
+    mod_str = ""
+    if resolution.get("modifiers"):
+        parts   = [f"{lbl} {'+' if v > 0 else ''}{v}" for lbl, v in resolution["modifiers"]]
+        mod_str = f" ({', '.join(parts)})"
+    return (
+        "\n\n---\n"
+        f"## {label} 진행 — 라운드 {round_number} (엔진 결정 — 반드시 준수)\n"
+        f"판정: {resolution['roll']} → 보정 후 {resolution['net']}{mod_str} → **{resolution['tier']}**\n\n"
+        "**이번 라운드 대결:**\n"
+        f"- 상대방 예고 태도: {opponent_stance}\n"
+        "- 플레이어 발언: (위 user 메시지 참조)\n\n"
+        "**[외교 집중]** 이번 응답은 회담 장면에만 집중하시오. "
+        "전투·세계 사건·타 세력 동향 등 회담과 무관한 내용은 일절 서술하지 말 것.\n"
+        "판정 결과를 바탕으로 이번 라운드의 외교 교환이 어떻게 전개됐는지 서술하시오. "
+        "판정 등급을 반드시 반영하고, 임의로 상향하거나 하향하지 마시오.\n\n"
+        "장면 말미에 다음 외교적 선택지 3가지를 제시하시오.\n\n"
+        "STATE_UPDATE 필수 출력:\n"
+        "- `diplomacy_outcome`: 회담이 결론에 도달했다면 \"agreement\" 또는 \"breakdown\", "
+        "진행 중이면 반드시 null\n"
+        "- `opponent_next_stance`: 상대방이 다음 라운드에 취할 태도·요구 (1~2문장, STATE_UPDATE에만 기록)\n"
+    )
+
+
+def diplomacy_end_prompt(ds: dict) -> str:
+    """외교 회담 종결 — LLM 지시 프롬프트."""
+    label      = ds.get("session_label", "외교 협상")
+    outcome    = ds.get("outcome")
+    withdrawal = ds.get("withdrawal")
+    if withdrawal:
+        result_str = f"**{label} 중단** — 플레이어 측이 회담을 중단함"
+    elif outcome == "agreement":
+        result_str = f"**{label} 합의** — 협약 성립"
+    else:
+        result_str = f"**{label} 결렬** — 합의 도달 실패"
+    return (
+        "\n\n---\n"
+        f"## {label} 종결 (엔진 결정 — 반드시 준수)\n"
+        f"{result_str}\n\n"
+        "회담 결과에 따라 종결 장면을 서술하시오. "
+        "합의·결렬·중단의 여파와 양측의 반응을 묘사하시오.\n"
+        "회담 후 다음 행동 선택지를 제시하시오."
+    )
+
+
 def resolve_retreat(state: dict) -> tuple[dict, dict]:
     """후퇴: 전투 즉시 종결, 아군 전력 3~5% 추가 피해."""
     cs         = state.get("combatState", {})
@@ -735,6 +992,9 @@ def combat_prep_prompt(cs: dict, resolution: dict) -> str:
         "부하가 퇴각을 건의하는 대사는 허용되나, 퇴각 실행 여부는 반드시 플레이어의 다음 입력으로만 결정된다.\n"
         "**[절대 금지]** 전투 개시 직후이므로 적군의 사기 붕괴·패주·자멸 묘사는 금지한다. "
         "피해와 압박은 묘사할 수 있으나, 적이 먼저 무너지거나 도망가는 묘사는 할 수 없다.\n\n"
+        "**[전투 집중]** 이번 응답은 전투 장면에만 집중하시오. "
+        "외교·세계 사건·타 세력 동향 등 전투와 무관한 내용은 일절 서술하지 말 것. "
+        "해당 정보는 전투 종결 후 통상 장면에서 전령·보고 형식으로 전달한다.\n"
         "현재 공개 전황만을 바탕으로 전투 개시 장면을 서술하시오. 전투는 아직 진행 중이다.\n"
         "장면 말미에 플레이어가 취할 수 있는 **전술적 선택지 3가지**를 먼저 제시하시오.\n"
         "(구체적인 전술 행동 — 후퇴는 선택지에 포함하지 말 것)\n\n"
@@ -797,6 +1057,9 @@ def combat_ongoing_prompt(resolved_phase: int, old_cs: dict, resolution: dict) -
         "**이번 페이즈 행동 대결:**\n"
         f"- {enemy_label} 예고 행동: {enemy_action}\n"
         "- 플레이어 행동: (위 user 메시지 참조)\n\n"
+        "**[전투 집중]** 이번 응답은 전투 장면에만 집중하시오. "
+        "외교·세계 사건·타 세력 동향 등 전투와 무관한 내용은 일절 서술하지 말 것. "
+        "해당 정보는 전투 종결 후 통상 장면에서 전령·보고 형식으로 전달한다.\n"
         "주사위 결과(위)를 바탕으로 이번 페이즈가 어떻게 전개됐는지 서술하시오. "
         "두 행동이 전장에서 어떻게 맞물리는지 전술적으로 묘사하되, 판정 등급을 반드시 반영하시오. "
         "판정 등급을 임의로 상향하거나 하향하지 마시오.\n\n"
@@ -850,9 +1113,10 @@ def combat_end_prompt(cs: dict, resolution: dict) -> str:
 
     siege_note = ""
     if is_siege and winner == "player" and siege_lid:
+        player_fid = cs.get("player_faction_id", "")
         siege_note = (
             f"\n공성 성공 시 STATE_UPDATE `location_changes`에 거점 id `{siege_lid}`의 "
-            "controller를 플레이어 세력 id로 반드시 업데이트하시오.\n"
+            f"controller를 반드시 `{player_fid}`로 업데이트하시오 (다른 id 사용 금지).\n"
         )
 
     return (

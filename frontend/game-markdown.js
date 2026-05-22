@@ -58,12 +58,20 @@ function extractNarrative(text) {
   return body;
 }
 
+const _CHOICE_TAG_RE    = /^\[([a-z]+)\]\s*/;
+const _VALID_CHOICE_TYPES = new Set(['attack','surprise','defense','siege','diplomatic','intrigue','passive']);
+
 function extractChoices(text) {
   const match = text.match(CHOICE_SECTION_RE);
   const section = match ? text.slice(match.index + match[0].length) : text;
   return section
     .split('\n')
     .filter(l => /^(-|\d+[.)]) .{4,}/.test(l.trim()))
-    .map(l => l.trim().replace(/^(-|\d+[.)]) /, '').trim())
+    .map(l => {
+      const raw = l.trim().replace(/^(-|\d+[.)]) /, '').trim();
+      const tm  = raw.match(_CHOICE_TAG_RE);
+      const type = (tm && _VALID_CHOICE_TYPES.has(tm[1])) ? tm[1] : null;
+      return { text: type ? raw.slice(tm[0].length) : raw, type };
+    })
     .slice(0, 3);
 }
