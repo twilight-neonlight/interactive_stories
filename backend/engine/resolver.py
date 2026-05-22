@@ -951,59 +951,51 @@ def resolve_retreat(state: dict) -> tuple[dict, dict]:
     return resolution, new_cs
 
 
-def combat_prep_prompt(cs: dict, resolution: dict) -> str:
-    roll_detail = resolution.get("roll_detail", {})
-    ally_roll   = roll_detail.get("ally", "?")
-    enemy_roll  = roll_detail.get("enemy", "?")
-    net         = resolution.get("net", 0)
-    tier        = resolution.get("tier", "?")
-    modifiers   = resolution.get("modifiers", [])
-    p_str       = cs.get("player_strength", 100)
-    e_str       = cs.get("enemy_strength",  100)
-    is_siege    = cs.get("is_siege", False)
-    garrison    = cs.get("siege_garrison", 0)
-
-    mod_str = ""
-    if modifiers:
-        parts   = [f"{lbl} {'+' if v > 0 else ''}{v}" for lbl, v in modifiers]
-        mod_str = f" ({', '.join(parts)})"
+def combat_prep_prompt(cs: dict) -> str:
+    p_str    = cs.get("player_strength", 100)
+    e_str    = cs.get("enemy_strength",  100)
+    is_siege = cs.get("is_siege", False)
+    garrison = cs.get("siege_garrison", 0)
 
     if is_siege:
-        battle_header = "## 공성전 개시 — 전투 상태 설정 (엔진 결정 — 반드시 준수)\n"
+        battle_header = "## 공성전 돌입 — 준비 단계\n"
         strength_line = (
             f"아군 전력: {p_str} | "
             f"수비대 {garrison:,}명 (방어 보너스 포함 실효 전력: {e_str}) — "
             "야전군 미포함, 수비대만 응전\n"
         )
         enemy_label = "수비대"
+        scene_instruction = (
+            "성문 앞에서 병력을 정렬하는 준비 장면을 서술하시오. "
+            "아직 공성은 시작되지 않았다. 성벽 위 수비대의 배치, 지형 조건, "
+            "아군의 현재 포진을 묘사하고, 공성을 어떻게 개시할 것인지 결정을 내려야 하는 상황을 조성하라."
+        )
     else:
-        battle_header = "## 전투 개시 — 전투 상태 설정 (엔진 결정 — 반드시 준수)\n"
+        battle_header = "## 전투 돌입 — 준비 단계\n"
         strength_line = f"아군 전력: {p_str} | 적군 전력: {e_str}\n"
         enemy_label = "적군"
+        scene_instruction = (
+            "양군이 마주한 전투 직전 준비 장면을 서술하시오. "
+            "아직 교전은 시작되지 않았다. 전장 지형, 적군의 포진, "
+            "아군의 현재 배치를 묘사하고, 어떻게 전투를 개시할 것인지 결정을 내려야 하는 긴장감을 조성하라."
+        )
 
     return (
         "\n\n---\n"
         + battle_header
         + strength_line + "\n"
-        f"주사위: 아군 {ally_roll} vs 적군 {enemy_roll} → 차이 {net:+d}{mod_str} → **{tier}**\n\n"
-        "**[절대 금지 — 위반 불가]** 플레이어가 후퇴 명령을 입력하기 전까지, "
-        "상황이 불리하더라도 아군은 전투를 계속한다. "
-        "서술 내에서 아군의 퇴각·철수·후퇴를 실행하거나 기정사실로 묘사하지 말 것. "
-        "부하가 퇴각을 건의하는 대사는 허용되나, 퇴각 실행 여부는 반드시 플레이어의 다음 입력으로만 결정된다.\n"
-        "**[절대 금지]** 전투 개시 직후이므로 적군의 사기 붕괴·패주·자멸 묘사는 금지한다. "
-        "피해와 압박은 묘사할 수 있으나, 적이 먼저 무너지거나 도망가는 묘사는 할 수 없다.\n\n"
         "**[전투 집중]** 이번 응답은 전투 장면에만 집중하시오. "
-        "외교·세계 사건·타 세력 동향 등 전투와 무관한 내용은 일절 서술하지 말 것. "
-        "해당 정보는 전투 종결 후 통상 장면에서 전령·보고 형식으로 전달한다.\n"
-        "현재 공개 전황만을 바탕으로 전투 개시 장면을 서술하시오. 전투는 아직 진행 중이다.\n"
-        "장면 말미에 플레이어가 취할 수 있는 **전술적 선택지 3가지**를 먼저 제시하시오.\n"
-        "(구체적인 전술 행동 — 후퇴는 선택지에 포함하지 말 것)\n\n"
+        "외교·세계 사건·타 세력 동향 등 전투와 무관한 내용은 일절 서술하지 말 것.\n"
+        "**[절대 금지]** 이번 장면에서 전투 결과·피해·사기 변화를 서술하지 말 것. "
+        "전투는 아직 시작되지 않았다.\n\n"
+        + scene_instruction + "\n\n"
+        "장면 말미에 전투를 어떻게 개시할 것인지 **전술적 선택지 3가지**를 제시하시오. "
+        "(후퇴·철수는 선택지에 포함하지 말 것)\n\n"
         "STATE_UPDATE 필수 출력:\n"
-        f"- `enemy_next_action`: {enemy_label}이 다음 페이즈에 시도할 방어·전술 행동 — "
+        f"- `enemy_next_action`: {enemy_label}이 첫 페이즈에 시도할 방어·전술 행동 — "
         "1~2문장. 전술적으로 개연성 있게 작성하시오. "
         "본문 선택지나 서술에 암시하지 말고 STATE_UPDATE에만 기록하시오.\n"
-        "- `combat_victor`: 전투가 이미 사실상 결판났다면 \"player\" 또는 \"enemy\", "
-        "그렇지 않으면 반드시 null\n"
+        "- `combat_victor`: 반드시 null (전투 준비 단계)\n"
     )
 
 

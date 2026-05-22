@@ -58,7 +58,7 @@ function extractNarrative(text) {
   return body;
 }
 
-const _CHOICE_TAG_RE    = /^\[([a-z]+)\]\s*/;
+const _CHOICE_TAG_RE    = /^\*{0,2}\[([a-z]+)\]\*{0,2}\s*/;
 const _VALID_CHOICE_TYPES = new Set(['attack','surprise','defense','siege','diplomatic','intrigue','passive']);
 
 function extractChoices(text) {

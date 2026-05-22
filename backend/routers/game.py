@@ -576,7 +576,7 @@ async def process_turn(req: TurnRequest):
                 req.command, state,
                 _build_modifiers(stat_mod), classification=cls
             )
-            sys_prompt_tail = combat_prep_prompt(new_combat_state, resolution)
+            sys_prompt_tail = combat_prep_prompt(new_combat_state)
         else:
             stat_key  = _ACTION_STAT_KEY.get(resolver_type)
             stat_mod  = calc_stat_modifier(state, stat_key, target_fid) if stat_key else None

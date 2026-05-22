@@ -21,7 +21,7 @@
   },
   {
     "id": "amasya",
-    "x": 77.3, "y": 49,
+    "x": 73.3, "y": 47,
     "name": "아마스야 (Amasya)",
     "region": "폰투스", "continent": "아나톨리아",
     "controller": "mehmed",
@@ -296,5 +296,117 @@
     "tier": "small_city",
     "terrain": "흑해 서안 — 항구 도시",
     "notes": "술레이만이 장악한 흑해 서안의 전략 항구. 카파의 제노바 교역로와 연결되는 흑해 서부의 관문으로, 루멜리아 병력의 해상 이동과 흑해 교역망 통제에 핵심적인 항구 거점."
+  },
+  {
+    "id": "amasra",
+    "x": 63.1, "y": 41.7,
+    "name": "아마스라 (Amasra / Amastris)",
+    "region": "파플라고니아", "continent": "아나톨리아",
+    "controller": "genoa",
+    "tier": "small_city",
+    "terrain": "흑해 남안 반도 — 제노바 식민지 요새 항구",
+    "notes": "제노바가 장악한 흑해 남안의 소형 요새 항구. 카파와 콘스탄티노폴리스를 잇는 흑해 교역로의 중간 기착지로, 잔다르 왕조와 오스만 형제들 모두 교역 중립지로 인정한다."
+  },
+  {
+    "id": "arta",
+    "x": 15.9, "y": 60,
+    "name": "아르타 (Árta)",
+    "region": "에피루스", "continent": "루멜리아",
+    "controller": "contested",
+    "tier": "small_city",
+    "terrain": "에피루스 해안 분지 — 아라흐토스 강 하류 도시",
+    "notes": "에피루스 내륙 분지의 중심 도시. 비잔틴·세르비아·이탈리아계 봉건 영주들의 영향이 교차하는 그리스 서부의 완충 지대로, 아드리아해 연안의 교역 거점."
+  },
+  {
+    "id": "bolu",
+    "x": 61.3, "y": 48.4,
+    "name": "볼루 (Bolu / Claudiopolis)",
+    "region": "파플라고니아", "continent": "아나톨리아",
+    "controller": "isa",
+    "tier": "small_city",
+    "terrain": "폰투스 산맥 서편 산악 분지 — 비티니아와 파플라고니아 경계",
+    "notes": "북서 아나톨리아 내륙의 산악 분지 도시. 앙카라 전투 이후 이사가 부르사를 거점으로 북서 아나톨리아를 장악하는 과정에서 접수한 내륙 거점으로, 아나톨리아 북부로 이어지는 산악 교통로를 통제한다."
+  },
+  {
+    "id": "eskisehir",
+    "x": 54.4, "y": 58.9,
+    "name": "에스키셰히르 (Eskişehir / Dorylaeum)",
+    "region": "서부 아나톨리아", "continent": "아나톨리아",
+    "controller": "germiyanids",
+    "tier": "small_city",
+    "terrain": "프리기아 고원 — 포르쉭 강 중류 내륙 평원",
+    "notes": "아나톨리아 서부 고원의 교통 결절점. 부르사에서 코냐로 이어지는 아나톨리아 횡단로 상에 위치하며, 티무르 이후 게르미얀 왕조가 장악한 서부 아나톨리아의 전략 거점."
+  },
+  {
+    "id": "larissa",
+    "x": 21.9, "y": 57.4,
+    "name": "라리사 (Lárissa)",
+    "region": "테살리아", "continent": "루멜리아",
+    "controller": "suleyman",
+    "tier": "regional_city",
+    "terrain": "테살리아 평원 중심부 — 피니오스 강 유역 농업 중심지",
+    "notes": "테살리아 평원의 중심 도시. 술레이만이 장악한 루멜리아 남부의 거점으로, 아테네 공국과 비잔틴 사이의 전략적 완충 역할을 하는 농업·교통 중심지."
+  },
+  {
+    "id": "nis",
+    "x": 22.2, "y": 26.6,
+    "name": "니슈 (Niš / Naissus)",
+    "region": "세르비아", "continent": "루멜리아",
+    "controller": "serbia",
+    "tier": "regional_city",
+    "terrain": "니샤바 강 유역 — 발칸 내륙 교통 십자로",
+    "notes": "세르비아 전제공국의 내륙 핵심 도시. 니샤바 강이 교차하는 발칸의 십자로로, 에디르네에서 베오그라드로 이어지는 루멜리아 간선도로의 핵심 중계 거점."
+  },
+  {
+    "id": "rhodes",
+    "x": 45.5, "y": 85.8,
+    "name": "로도스 (Rodos / Rhodes)",
+    "region": "에게해", "continent": "지중해",
+    "controller": "hospitallers",
+    "tier": "regional_city",
+    "terrain": "에게해 동부 도서 — 요새 항구 도시",
+    "notes": "성요한 기사단(구호기사단)이 1309년부터 지배하는 에게해의 요새 섬. 아나톨리아 해안에서 불과 17km 거리에 위치해 오스만·맘루크·베네치아 모두와 교역·충돌하는 동지중해의 핵심 전략 거점."
+  },
+  {
+    "id": "samsun",
+    "x": 78.8, "y": 43.3,
+    "name": "삼순 (Samsun / Amisos)",
+    "region": "폰투스", "continent": "아나톨리아",
+    "controller": "mehmed",
+    "tier": "small_city",
+    "terrain": "흑해 남안 — 키질으르막 강 삼각주 항구",
+    "notes": "마흐메트의 아마스야 거점에서 가장 가까운 흑해 출구. 아나톨리아 내륙과 흑해 교역을 연결하는 북방 항구로, 흑해 교역망을 활용하는 마흐메트 전략의 핵심 해양 거점."
+  },
+  {
+    "id": "sivas",
+    "x": 81.3, "y": 55.1,
+    "name": "시바스 (Sivas / Sebasteia)",
+    "region": "동부 아나톨리아", "continent": "아나톨리아",
+    "controller": "mehmed",
+    "conquered_at": "1400년 8월",
+    "conquest_disposition": "초토화",
+    "tier": "regional_city",
+    "terrain": "동부 아나톨리아 고원 — 크질으르막 상류 분지 요충",
+    "notes": "1400년 티무르의 침공으로 혹심하게 파괴된 동부 아나톨리아의 구 대도시. 한때 셀주크·일칸국의 동서 교역 중심지였으나 대학살 이후 도시 기능이 급격히 쇠락했고, 아나톨리아 동부 패권을 노리는 세력들이 각축하고 있다."
+  },
+  {
+    "id": "temesvár",
+    "x": 21.3, "y": 6.9,
+    "name": "테메스바르 (Temesvár / Timișoara)",
+    "region": "헝가리", "continent": "루멜리아",
+    "controller": "hungary",
+    "tier": "regional_city",
+    "terrain": "다뉴브 평원 — 베가 강 연안 헝가리 남부 요새",
+    "notes": "헝가리 왕국 남부의 주요 요새 도시. 오스만·세르비아와의 국경을 방어하는 군사 거점으로, 지기스문트 왕이 왈라키아·세르비아를 견제하며 발칸 세력권을 유지하는 발판."
+  },
+  {
+    "id": "tokat",
+    "x": 78, "y": 49.9,
+    "name": "토카트 (Tokat)",
+    "region": "폰투스", "continent": "아나톨리아",
+    "controller": "mehmed",
+    "tier": "regional_city",
+    "terrain": "예실으르막 강 중류 협곡 — 산악 요새 도시",
+    "notes": "마흐메트의 아마스야 거점과 중앙 아나톨리아를 잇는 교통로의 관문 도시. 예실으르막 강 협곡에 자리한 요새로, 흑해 남안과 아나톨리아 내부를 연결하는 전략적 교차점."
   }
 ]

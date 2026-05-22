@@ -562,6 +562,8 @@ def build_scenario_context(state: dict, scenario_prompts: dict | None = None) ->
             controller = loc.get("controller", "?")
             if controller in factions:
                 controller = factions[controller].get("name", controller)
+            elif controller not in ("contested", "?"):
+                controller = "분쟁 중"
             garrison = loc.get("garrison")
             garrison_str = f" | 수비대 {garrison:,}명" if garrison else ""
             lines.append(f"  - {loc.get('name', '?')} | 지배: {controller}{garrison_str}")
@@ -642,6 +644,9 @@ def build_scenario_context(state: dict, scenario_prompts: dict | None = None) ->
         is_siege    = combat_state.get("is_siege", False)
         garrison    = combat_state.get("siege_garrison", 0)
 
+        p_morale = combat_state.get("player_morale", 100)
+        e_morale = combat_state.get("enemy_morale",  100)
+
         if is_siege:
             siege_lid   = combat_state.get("siege_location_id", "")
             locs        = state.get("locations", {})
@@ -651,6 +656,7 @@ def build_scenario_context(state: dict, scenario_prompts: dict | None = None) ->
                 f"{player_name} → {loc_name} 공성"
                 f" | 다음 페이즈 {phase}"
                 f" | 아군 전력 {p_strength} / 수비대 {garrison:,}명 (실효 전력 {e_strength})"
+                f" | 아군 사기 {p_morale} / 수비대 사기 {e_morale}"
                 f"\n수비대 예고 행동: {enemy_next}"
             )
         else:
@@ -659,6 +665,7 @@ def build_scenario_context(state: dict, scenario_prompts: dict | None = None) ->
                 f"{player_name} vs {enemy_name}"
                 f" | 다음 페이즈 {phase}"
                 f" | 아군 전력 {p_strength} / 적군 전력 {e_strength}"
+                f" | 아군 사기 {p_morale} / 적군 사기 {e_morale}"
                 f"\n적군 예고 행동: {enemy_next}"
             )
 
