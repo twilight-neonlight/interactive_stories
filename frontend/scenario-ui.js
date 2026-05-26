@@ -240,6 +240,39 @@ function defaultMapMarkerStyle(loc, state) {
   return { color, statusText: '중립' };
 }
 
+/**
+ * 인물 관계 배지 — disposition → { cls, label }.
+ * 모든 시나리오에서 동일한 명칭을 사용한다.
+ * faction 소속이 있으면 faction.disposition을 우선하고, 없으면 char.disposition을 사용.
+ */
+function defaultCharRelInfo(char, state) {
+  if (char.id === state.protagonist) return { cls: 'rel-player', label: '플레이어' };
+  const factionId = char.faction_id
+    || (state.factions.has(char.id) ? char.id : null);
+  const faction = factionId ? state.factions.get(factionId) : null;
+  const disp = faction ? faction.disposition : (char.disposition ?? '중립');
+  return (
+    disp === '동맹'   ? { cls: 'rel-ally', label: '동맹' } :
+    disp === '우호'   ? { cls: 'rel-coop', label: '협력' } :
+    disp === '중립'   ? { cls: 'rel-unk',  label: '중립' } :
+    disp === '비우호' ? { cls: 'rel-dist', label: '경쟁' } :
+    disp === '적대'   ? { cls: 'rel-host', label: '적대' } :
+                        { cls: 'rel-dist', label: '불명' }
+  );
+}
+
+/**
+ * 세력 바 태그 텍스트 — disposition → 표시 레이블.
+ * 아군 판별: protagonist === faction.id (오스만 방식) OR protagonist 캐릭터의 faction_id 일치.
+ */
+function defaultFactionBarTag(faction, state) {
+  if (faction.id === state?.protagonist) return '아군';
+  const playerFactionId = state?.protagonist
+    && state.characters.get(state.protagonist)?.faction_id;
+  if (playerFactionId && faction.id === playerFactionId) return '아군';
+  return { 동맹: '동맹', 우호: '우호', 중립: '중립', 비우호: '경쟁', 적대: '적대' }[faction.disposition] || '불명';
+}
+
 // ════════════════════════════════════════════════════════════════
 const CONFIGS = {
 
@@ -259,27 +292,10 @@ const CONFIGS = {
       return state.factions.get(factionId)?.color || DISP_COLOR[char.disposition] || '#888780';
     },
 
-    charRelInfo(char, state) {
-      if (char.id === state.protagonist) return { cls: 'rel-player', label: '플레이어' };
-      const factionId = char.faction_id || (state.factions.has(char.id) ? char.id : null);
-      const faction   = factionId ? state.factions.get(factionId) : null;
-      const disp = faction ? faction.disposition : (char.disposition ?? '중립');
-      return (
-        disp === '동맹'   ? { cls: 'rel-ally', label: '동맹' } :
-        disp === '우호'   ? { cls: 'rel-coop', label: '협력' } :
-        disp === '중립'   ? { cls: 'rel-unk',  label: '중립' } :
-        disp === '비우호' ? { cls: 'rel-dist', label: '경쟁' } :
-        disp === '적대'   ? { cls: 'rel-host', label: '적대' } :
-                            { cls: 'rel-dist', label: '불명' }
-      );
-    },
+    charRelInfo: defaultCharRelInfo,
 
     factionBarColor(faction) { return faction.color || '#888780'; },
-    factionBarTag(faction, state) {
-      const char = state?.characters?.get(state?.protagonist);
-      if (char?.faction_id && faction.id === char.faction_id) return '아군';
-      return { 동맹: '동맹', 우호: '우호', 중립: '중립', 비우호: '경쟁', 적대: '적대' }[faction.disposition] || '불명';
-    },
+    factionBarTag: defaultFactionBarTag,
 
     mapMarkerStyle: defaultMapMarkerStyle,
 
@@ -299,7 +315,7 @@ const CONFIGS = {
 
   // ── 뇌제의 후계자 ─────────────────────────────────────────────
   'ottoman-interregnum': {
-    tagExtras: { '경쟁': ['#faeeda', '#854f0b'], '숙적': ['#fcebeb', '#a32d2d'], '동맹': ['#e6f1fb', '#185fa5'] },
+    tagExtras: { '경쟁': ['#faeeda', '#854f0b'], '동맹': ['#e6f1fb', '#185fa5'] },
 
     commanderInfo: defaultCommanderInfo,
 
@@ -309,29 +325,11 @@ const CONFIGS = {
         || (state.factions.has(char.id) ? char.id : null);
       return state.factions.get(factionId)?.color || '#888780';
     },
-    charRelInfo(char, state) {
-      if (char.id === state.protagonist) return { cls: 'rel-player', label: '플레이어' };
-      // 외부 세력 소속(faction_id 또는 char.id가 세력 ID)이면 해당 세력의 외교 관계를 따름
-      const externalFactionId = char.faction_id
-        || (state.factions.has(char.id) ? char.id : null);
-      const faction = externalFactionId ? state.factions.get(externalFactionId) : null;
-      const disp = faction ? faction.disposition : (char.disposition ?? '중립');
-      return (
-        disp === '동맹'   ? { cls: 'rel-ally', label: '동맹' } :
-        disp === '우호'   ? { cls: 'rel-coop', label: '협력' } :
-        disp === '중립'   ? { cls: 'rel-unk',  label: '중립' } :
-        disp === '비우호' ? { cls: 'rel-dist', label: '경쟁' } :
-        disp === '적대'   ? { cls: 'rel-host', label: '숙적' } :
-                            { cls: 'rel-dist', label: '불명' }
-      );
-    },
+    charRelInfo: defaultCharRelInfo,
 
     /** 세력 데이터의 color 필드 사용 */
     factionBarColor(faction) { return faction.color || '#888780'; },
-    factionBarTag(faction, state) {
-      if (faction.id === state?.protagonist) return '아군';
-      return { 동맹: '동맹', 우호: '우호', 중립: '중립', 비우호: '경쟁', 적대: '숙적' }[faction.disposition] || '불명';
-    },
+    factionBarTag: defaultFactionBarTag,
 
     mapMarkerStyle(loc, state) {
       if (loc.controller === 'contested') return { color: '#EF9F27', statusText: '불안정' };
@@ -377,129 +375,7 @@ const CONFIGS = {
       }
     },
 
-    onTurnEnd(state) {
-      defaultOnTurnEnd(state);
-      const year  = _parseYear(state.progress?.timestamp);
-      const month = _parseMonth(state.progress?.timestamp);
-
-      // 무스타파 세력 동적 등장 (1412년 이후)
-      if (year >= 1412 && !state.factions.has('mustafa')) {
-        state.addFaction({
-          id: 'mustafa', name: '무스타파 왕자파', type: 'faction',
-          strength_score: 180, field_army: Math.round(180 * (state.troopsPerPoint ?? 78)),
-          disposition: '적대', color: '#9B59B6',
-          notes: '티무르 진영에서 귀환한 바야지트의 아들 무스타파. 비잔틴과 루멜리아 일부 귀족의 지원을 받아 정통 계승권을 내세우며 세력을 구축했다. 공위 분쟁을 끝낸 왕자에게도 즉각적인 도전이 된다.',
-        });
-      }
-
-      // 불가리아 대봉기 동적 등장 (1415년 이후, 술레이만 외 주인공)
-      if (year >= 1415 && state.protagonist !== 'suleyman' &&
-          !state.factions.has('bulgarian-rebels')) {
-        state.addFaction({
-          id: 'bulgarian-rebels', name: '불가리아 독립 반군', type: 'rebels',
-          strength_score: 220, field_army: Math.round(220 * (state.troopsPerPoint ?? 78)),
-          disposition: '적대', color: '#7B4F2E',
-          notes: '오스만 내전의 장기화를 틈타 조직화된 트라키아·불가리아 기독교 귀족 연합. 초기 산발적 불만이 전면 봉기로 발전했으며, 루멜리아를 차지한 세력에게는 즉각적인 후방 위협이 된다.',
-        });
-      }
-
-      const protagonist = state.factions.get(state.protagonist);
-      if (!protagonist || protagonist.type === 'sultanate') return;
-      // on_end_boost: 이벤트 시한 만료 시 생존 세력 전력 1회 증폭
-      if (!state.flags) state.flags = {};
-      for (const ev of state.events ?? []) {
-        if (!ev.id || !ev.effects) continue;
-        const flagKey = `${ev.id}_end_boost_applied`;
-        if (state.flags[flagKey]) continue;
-        for (const effect of ev.effects) {
-          if (effect.type !== 'on_end_boost') continue;
-          if (!_evaluateEventCondition(effect.trigger, { year })) continue;
-          state.flags[flagKey] = true;
-          for (const id of effect.targets ?? []) {
-            const f = state.factions.get(id);
-            if (f && !f.defeated) f.field_army = Math.round((f.field_army ?? 0) * (1 + effect.value));
-          }
-        }
-      }
-
-      // 활성 이벤트 목록 — 이하 여러 로직에서 재사용
-      const activeEvents = this.getEvents(state);
-
-      // 무사: 루멜리아 거점 확보 후 3개월 생존 → 술레이만 반대파 흡수
-      if (state.protagonist === 'musa' && !state.flags.musa_rumelia_boost_applied) {
-        const inRumelia = Array.from(state.locations.values())
-          .some(l => l.continent === '루멜리아' && l.controller === 'musa');
-        if (inRumelia) {
-          state.flags.musa_rumelia_arrival_months ??= _totalMonths(year, month);
-        }
-        const am = state.flags.musa_rumelia_arrival_months;
-        const cm = _totalMonths(year, month);
-        if (am != null && cm != null && cm >= am + 3) {
-          state.flags.musa_rumelia_boost_applied = true;
-          const musa = state.factions.get('musa');
-          if (musa) musa.field_army = (musa.field_army ?? 0) + Math.round(100 * (state.troopsPerPoint ?? 78));
-        }
-      }
-
-      // 티무르 경고 6개월 방치 → 원정군 등장
-      if (!state.flags.timur_expedition_triggered) {
-        if (activeEvents.some(ev => ev.id === 'timur_warning')) {
-          state.flags.timur_warning_total_months ??= _totalMonths(year, month);
-        }
-        const wm = state.flags.timur_warning_total_months;
-        const cm = _totalMonths(year, month);
-        if (wm != null && cm != null && cm >= wm + 6 &&
-            !state.factions.has('timur_expedition')) {
-          state.flags.timur_expedition_triggered = true;
-          // 플레이어와 적대하는 원정군 등장; 우호 세력도 진격 경로에서 위협받음
-          const alliedIds = Array.from(state.factions.values())
-            .filter(f => f.disposition === '우호' || f.disposition === '동맹')
-            .map(f => f.id);
-          state.addFaction({
-            id: 'timur_expedition', name: '티무르 원정군', type: 'empire',
-            strength_score: 700, field_army: Math.round(700 * (state.troopsPerPoint ?? 78)),
-            disposition: '적대', color: '#5C2A0A', is_dynamic: true,
-            notes: `경고를 묵살한 왕자를 응징하기 위해 사마르칸트에서 출발한 티무르의 원정군. 아나톨리아 어느 세력보다 압도적인 전력을 보유하며, 진격 경로의 세력(${alliedIds.join('·') || '동맹 없음'})도 위협 대상이다. 정면 대결은 전멸, 외교적 복속 또는 연합 방어만이 생존 가능성을 열어준다.`,
-          });
-          state.flags.pendingCrisis = {
-            scene_override: [
-              '**[긴급] 티무르의 원정군이 아나톨리아 국경을 돌파했다**',
-              '',
-              '경고를 묵살한 대가가 현실이 됐다. 사마르칸트에서 출발한 티무르의 응징군이 동부 국경을 넘었다는 급보가 각지에서 동시에 전해졌다. 전력 700 — 지금의 아나톨리아 어느 세력도 홀로 맞설 수 없는 규모다. 진격 경로에 놓인 우방들도 공포에 떨며 입장 표명을 미루고 있다.',
-              '',
-              '정면 충돌은 전멸과 같다. **지금 이 순간 어떻게 대응할 것인가?**',
-            ].join('\n'),
-            user_prompt_hint: '티무르 원정군에 대한 즉각 대응책을 결정한다.',
-          };
-        }
-      }
-
-      // 활성 이벤트의 faction_growth 효과 적용
-      for (const ev of activeEvents) {
-        for (const effect of ev.effects ?? []) {
-          if (effect.type !== 'faction_growth') continue;
-          // annual: 해당 연도에 이미 적용했으면 스킵
-          if (effect.frequency === 'annual') {
-            const flagKey = `${ev.id}_${effect.target}_growth_year`;
-            if (state.flags[flagKey] === year) continue;
-            state.flags[flagKey] = year;
-          }
-          const f = state.factions.get(effect.target);
-          if (f && !f.defeated) f.field_army = (f.field_army ?? 0) + Math.round(effect.value * (state.troopsPerPoint ?? 78));
-        }
-      }
-
-      // 경쟁 왕자가 남아 있으면 스킵 (공위 분쟁 진행 중)
-      const remainingPrinces = Array.from(state.factions.values())
-        .filter(f => f.type === 'faction' && !f.defeated && f.id !== state.protagonist).length;
-      if (remainingPrinces > 0) return;
-      Object.assign(protagonist, {
-        name:  '오스만 술탄국',
-        type:  'sultanate',
-        color: '#8B1A1A',
-        notes: '공위 분쟁을 종식하고 세워진 통합 오스만 술탄국. 왕좌의 정통성은 확립됐으나, 아나톨리아 재건과 잔존 베이릭 복속이 새로운 과제로 떠오른다.',
-      });
-    },
+    onTurnEnd: defaultOnTurnEnd,
   },
 
   // ── 대홍수 ───────────────────────────────────────────────────────
@@ -519,31 +395,10 @@ const CONFIGS = {
       return state.factions.get(factionId)?.color || '#888780';
     },
 
-    charRelInfo(char, state) {
-      if (char.id === state.protagonist) return { cls: 'rel-player', label: '플레이어' };
-      const factionId = char.faction_id
-        || (state.factions.has(char.id) ? char.id : null);
-      const faction = factionId ? state.factions.get(factionId) : null;
-      const disp = faction ? faction.disposition : (char.disposition ?? '중립');
-      return (
-        disp === '동맹'   ? { cls: 'rel-ally', label: '동맹' } :
-        disp === '우호'   ? { cls: 'rel-coop', label: '협력' } :
-        disp === '중립'   ? { cls: 'rel-unk',  label: '중립' } :
-        disp === '비우호' ? { cls: 'rel-dist', label: '경쟁' } :
-        disp === '적대'   ? { cls: 'rel-host', label: '적대' } :
-                            { cls: 'rel-dist', label: '불명' }
-      );
-    },
+    charRelInfo: defaultCharRelInfo,
 
     factionBarColor(faction) { return faction.color || '#888780'; },
-
-    factionBarTag(faction, state) {
-      if (faction.id === state?.protagonist) return '아군';
-      const factionId = state?.protagonist
-        && state.characters.get(state.protagonist)?.faction_id;
-      if (factionId && faction.id === factionId) return '아군';
-      return { 동맹: '동맹', 우호: '우호', 중립: '중립', 비우호: '경쟁', 적대: '적대' }[faction.disposition] || '불명';
-    },
+    factionBarTag: defaultFactionBarTag,
 
     mapMarkerStyle: defaultMapMarkerStyle,
 
