@@ -72,14 +72,16 @@ def compute_faction_strength(faction: dict, fid: str, locations, tpp: int,
 
     return max(1, base)
 
-# 처분 유형별 garrison_modifier 초기값 (game.py의 _CONQUEST_DISPOSITIONS와 동기화)
-_DISPOSITION_GARRISON_BASE: dict[str, float] = {
-    "초토화":      0.1,
-    "약탈":        0.2,
-    "피해 최소화": 0.3,
+# 점령지 처분 유형별 설정 — 단일 정의, engine/conquest.py 와 공유
+# base: 점령 직후 garrison_modifier 초기값
+# recovery_ratio: base_pts 기준 야전군 battle_damage 회복 비율
+CONQUEST_DISPOSITIONS: dict[str, dict] = {
+    "초토화":      {"base": 0.1, "recovery_ratio": 0.30},
+    "약탈":        {"base": 0.2, "recovery_ratio": 0.15},
+    "피해 최소화": {"base": 0.3, "recovery_ratio": 0.05},
 }
 
-_GARRISON_RECOVERY_PER_MONTH = 0.03
+GARRISON_RECOVERY_PER_MONTH = 0.03
 
 # 동유럽·중동·이슬람 문명권 → base × 1.5
 _MIDEAST_EEUROPE_KW = {
@@ -180,12 +182,12 @@ def load_scenarios() -> list[dict]:
                     and "conquered_at" in loc
                     and "conquest_disposition" in loc
                     and start_ts):
-                base = _DISPOSITION_GARRISON_BASE.get(loc["conquest_disposition"], 0.3)
+                base = CONQUEST_DISPOSITIONS.get(loc["conquest_disposition"], {}).get("base", 0.3)
                 m1 = re.search(r'(\d{3,4})년\s*(\d{1,2})월', loc["conquered_at"])
                 m2 = re.search(r'(\d{3,4})년\s*(\d{1,2})월', start_ts)
                 if m1 and m2:
                     elapsed = (int(m2.group(1)) - int(m1.group(1))) * 12 + (int(m2.group(2)) - int(m1.group(2)))
-                    loc["garrison_modifier"] = round(min(1.0, base + max(0, elapsed) * _GARRISON_RECOVERY_PER_MONTH), 4)
+                    loc["garrison_modifier"] = round(min(1.0, base + max(0, elapsed) * GARRISON_RECOVERY_PER_MONTH), 4)
                 else:
                     loc["garrison_modifier"] = base
             loc["garrison"] = _resolve_garrison(loc, tpp)
@@ -213,3 +215,17 @@ def load_scenarios() -> list[dict]:
 
 
 SCENARIOS: list[dict] = load_scenarios()
+
+
+# ── 시나리오 조회 헬퍼 (state dict에서 시나리오 설정값을 꺼내는 유틸) ──────────
+
+def get_scenario_tpp(state: dict) -> int | None:
+    """state에서 scenarioId를 읽어 해당 시나리오의 troops_per_strength_point를 반환합니다."""
+    s = next((s for s in SCENARIOS if s["id"] == state.get("scenarioId", "")), None)
+    return s.get("troops_per_strength_point") if s else None
+
+
+def get_scenario_reserve_divisor(state: dict) -> int:
+    """state에서 scenarioId를 읽어 해당 시나리오의 reserve_tpp_divisor를 반환합니다."""
+    s = next((s for s in SCENARIOS if s["id"] == state.get("scenarioId", "")), None)
+    return s.get("reserve_tpp_divisor", 5) if s else 5

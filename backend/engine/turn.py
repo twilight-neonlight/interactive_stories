@@ -8,6 +8,18 @@ import re
 import json
 
 
+def parse_ym(ts: str) -> tuple[int, int] | None:
+    """타임스탬프 문자열에서 (year, month) 추출. 월 정보 없으면 None."""
+    m = re.search(r'(\d{3,4})년\s*(\d{1,2})월', ts)
+    return (int(m.group(1)), int(m.group(2))) if m else None
+
+
+def ts_ym_only(ts: str) -> str:
+    """타임스탬프에서 연도·월만 추출합니다. 월이 없으면 원문 반환."""
+    m = re.search(r'(\d{3,4})년\s*(\d{1,2})월', ts)
+    return f"{m.group(1)}년 {m.group(2)}월" if m else ts
+
+
 _SEASON_TO_MONTH = {
     "초봄": "2월", "봄":   "3월", "늦봄":  "4월",
     "초여름": "5월", "여름": "6월", "늦여름": "7월",

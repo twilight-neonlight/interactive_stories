@@ -479,10 +479,10 @@ def _get_player_faction_id(state: dict) -> str | None:
     protagonist = state.get("protagonist")
     if not protagonist:
         return None
-    chars      = state.get("characters", {})
-    char       = chars.get(protagonist, {})
-    faction_id = char.get("faction_id") or protagonist
-    return faction_id if faction_id in state.get("factions", {}) else None
+    chars = state.get("characters", {})
+    char  = chars.get(protagonist, {}) if isinstance(chars, dict) else {}
+    fid   = char.get("faction_id") or protagonist
+    return fid if fid in state.get("factions", {}) else None
 
 
 def _is_hostile(f: dict) -> bool:

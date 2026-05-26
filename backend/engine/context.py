@@ -7,6 +7,7 @@ engine/context.py — LLM 시나리오 컨텍스트 빌더
 
 import re
 from scenarios_loader import GARRISON_POINTS_BY_TIER, SCENARIOS as _SCENARIOS
+from engine.fiscal import compute_player_fiscal
 
 
 OPENING_INSTRUCTION = """
@@ -31,86 +32,6 @@ OPENING_INSTRUCTION = """
 
 ### 분량
 400~700자 내외. 밀도 있게."""
-
-
-def _compute_fiscal_for_context(state: dict) -> dict | None:
-    """LLM 컨텍스트 표시용 플레이어 재정 정보를 계산합니다.
-
-    Returns dict with keys: level, income, expense, balance, treasury_str
-    또는 None (플레이어 세력 없음 / tpp 없음)
-    """
-    protagonist_id = state.get("protagonist", "")
-    factions  = state.get("factions", {})
-    locations = state.get("locations", {})
-    chars     = state.get("characters", {})
-
-    # 플레이어 세력 id 확정
-    pc         = chars.get(protagonist_id, {}) if protagonist_id else {}
-    player_fid = pc.get("faction_id") or (protagonist_id if protagonist_id in factions else None)
-    if not player_fid:
-        return None
-    faction = factions.get(player_fid, {})
-    if not isinstance(faction, dict):
-        return None
-
-    # tpp / res_div 를 로드된 시나리오에서 가져오기
-    scenario_id = state.get("scenarioId", "")
-    scenario    = next((s for s in _SCENARIOS if s["id"] == scenario_id), None)
-    tpp         = scenario.get("troops_per_strength_point") if scenario else None
-    if not tpp:
-        return None
-    res_div = scenario.get("reserve_tpp_divisor", 5) if scenario else 5
-
-    # 영토 수입
-    territorial = sum(
-        GARRISON_POINTS_BY_TIER.get(loc.get("tier", ""), 0)
-        * loc.get("garrison_modifier", 1.0)
-        for loc in locations.values()
-        if isinstance(loc, dict) and loc.get("controller") == player_fid
-    )
-    income_mult  = float(faction.get("income_mult", 1.0) or 1.0)
-    income_flat  = int(faction.get("income_flat", 0)   or 0)
-    income_score = round(territorial * income_mult + income_flat)
-
-    # 지출
-    field_army      = faction.get("field_army", 0) or 0
-    reserve         = faction.get("reserve_manpower", 0) or 0
-    mob_rate        = min(1.0, max(0.0, faction.get("mobilization_rate", 1.0)))
-    effective_res   = round(reserve * mob_rate)
-    standing_pts    = round(field_army / tpp)
-    mob_reserve_pts = round(effective_res / (tpp * res_div)) if res_div else 0
-    expense_score   = standing_pts + round(mob_reserve_pts * 0.2)
-
-    fiscal_balance = income_score - expense_score
-    treasury       = int(faction.get("treasury", 0) or 0)
-
-    # fiscal_level 판정: balance_ratio = fiscal_balance / income_score 기준
-    if income_score > 0:
-        ratio = fiscal_balance / income_score
-        if   ratio >=  0.10: level = "풍요"
-        elif ratio >=  0.00: level = "안정"
-        elif ratio >= -0.05: level = "균형"
-        elif ratio >= -0.15: level = "적자"
-        else:                level = "파산"
-        ratio_str = f"{ratio:+.1%}"
-    else:
-        if   fiscal_balance >= 20:  level = "풍요"
-        elif fiscal_balance >= 0:   level = "안정"
-        elif fiscal_balance >= -20: level = "균형"
-        elif fiscal_balance >= -60: level = "적자"
-        else:                       level = "파산"
-        ratio_str = f"{fiscal_balance:+d}pt"
-
-    treasury_str = f"{treasury:+d}pt"
-
-    return {
-        "level":        level,
-        "income":       income_score,
-        "expense":      expense_score,
-        "balance":      fiscal_balance,
-        "ratio_str":    ratio_str,
-        "treasury_str": treasury_str,
-    }
 
 
 def _troops_range(score: int, per_point: int) -> str:
@@ -610,12 +531,15 @@ def build_scenario_context(state: dict, scenario_prompts: dict | None = None) ->
         )
 
     # 플레이어 재정 상태 표시
-    fiscal = _compute_fiscal_for_context(state)
+    _scenario    = next((s for s in _SCENARIOS if s["id"] == state.get("scenarioId", "")), None)
+    _tpp         = _scenario.get("troops_per_strength_point") if _scenario else None
+    _res_div     = _scenario.get("reserve_tpp_divisor", 5) if _scenario else 5
+    fiscal = compute_player_fiscal(state, _tpp, _res_div) if _tpp else None
     if fiscal:
         lines.append(
-            f"재정: {fiscal['level']} | "
-            f"월수입 {fiscal['income']} / 월지출 {fiscal['expense']} "
-            f"(수지 {fiscal['balance']:+d}, {fiscal['ratio_str']}) | 비축 {fiscal['treasury_str']}"
+            f"재정: {fiscal['fiscal_level']} | "
+            f"월수입 {fiscal['income_score']} / 월지출 {fiscal['expense_score']} "
+            f"(수지 {fiscal['fiscal_balance']:+d}, {fiscal['ratio_str']}) | 비축 {fiscal['treasury_str']}"
         )
 
     active_factions = {fid: f for fid, f in factions.items() if not f.get("defeated")}

@@ -14,92 +14,10 @@ const DISP_COLOR = { '우호': '#378ADD', '적대': '#E24B4A', '중립': '#88878
 
 // ── 공통 헬퍼 ──────────────────────────────────────────────────────
 
-/** 타임스탬프 문자열에서 연도를 추출. "1403년 3월, 에디르네" → 1403. 파싱 불가 시 null. */
-function _parseYear(timestamp) {
-  if (!timestamp) return null;
-  const m = timestamp.match(/(\d{3,4})년/);
-  return m ? parseInt(m[1]) : null;
-}
-
-/** 타임스탬프 문자열에서 월을 추출. "1403년 3월, 에디르네" → 3. 파싱 불가 시 null. */
-function _parseMonth(timestamp) {
-  if (!timestamp) return null;
-  const m = timestamp.match(/(\d{1,2})월/);
-  return m ? parseInt(m[1]) : null;
-}
-
-/** 연·월을 절대 개월 수로 변환. 6개월 경과 판단 등에 사용. */
-function _totalMonths(year, month) {
-  if (year == null || month == null) return null;
-  return year * 12 + month;
-}
-
-function _coerceConditionValue(token, context) {
-  const key = token.trim();
-  if (key in context) return context[key];
-  if (/^-?\d+$/.test(key)) return Number(key);
-  if ((key.startsWith('"') && key.endsWith('"')) || (key.startsWith("'") && key.endsWith("'"))) {
-    return key.slice(1, -1);
-  }
-  if (key.toLowerCase() === 'true') return true;
-  if (key.toLowerCase() === 'false') return false;
-  return undefined;
-}
-
-function _evalConditionAtom(atom, context) {
-  const text = atom.trim();
-  if (!text) return true;
-
-  const match = text.match(/^(.+?)\s*(>=|<=|==|!=|>|<)\s*(.+)$/);
-  if (match) {
-    const left  = _coerceConditionValue(match[1], context);
-    const op    = match[2];
-    const right = _coerceConditionValue(match[3], context);
-    if (left === undefined || right === undefined) return false;
-    if (op === '>=') return left >= right;
-    if (op === '<=') return left <= right;
-    if (op === '==') return left === right;
-    if (op === '!=') return left !== right;
-    if (op === '>')  return left > right;
-    if (op === '<')  return left < right;
-  }
-
-  const value = _coerceConditionValue(text, context);
-  return value === undefined ? false : Boolean(value);
-}
-
-function _evaluateEventCondition(expression, context) {
-  if (expression == null) return true;
-  const expr = expression.trim();
-  if (!expr) return true;
-
-  const orParts = expr.split(/\s*(?:\|\||\bor\b)\s*/i).filter(Boolean);
-  if (orParts.length > 1) return orParts.some(part => _evaluateEventCondition(part, context));
-
-  const andParts = expr.split(/\s*(?:&&|\band\b)\s*/i).filter(Boolean);
-  if (andParts.length > 1) return andParts.every(part => _evaluateEventCondition(part, context));
-
-  return _evalConditionAtom(expr, context);
-}
-
 /** eventStates 항목에서 상태 문자열을 추출합니다 (dict / 구형 string 모두 처리). */
 function _evStateStr(entry) {
   if (typeof entry === 'string') return entry;
   return entry?.state ?? '';
-}
-
-/**
- * field_army가 없는 세력에 대해 strength_score × troopsPerPoint 로 field_army를 초기화한다.
- * 동적으로 추가된 세력(무스타파, 티무르 원정군 등)이 대상이며, 이미 field_army가 있으면 무시.
- */
-function _recomputeStrengthScores(state) {
-  const tpp = state.troopsPerPoint;
-  if (!tpp) return;
-  for (const f of state.factions.values()) {
-    if (f.field_army == null && f.strength_score != null) {
-      f.field_army = Math.round(f.strength_score * tpp);
-    }
-  }
 }
 
 /** troops_count 숫자를 읽기 좋은 문자열로 변환 */
@@ -132,25 +50,6 @@ function formatStrengthScore(score, perPoint, intelLevel = 0, factionId = '', tr
   const hi    = Math.round((base + (1 - p) * W) / 500) * 500;
   const fmt   = n => n >= 10000 ? `${Math.floor(n / 1000)}천` : n.toLocaleString();
   return `약 ${fmt(lo)}~${fmt(hi)}명`;
-}
-
-/** 6개월마다 intel_level > 0인 세력의 첩보 수준을 1 감쇠. 모든 시나리오에서 호출. */
-function defaultOnTurnEnd(state) {
-  const year  = _parseYear(state.progress?.timestamp);
-  const month = _parseMonth(state.progress?.timestamp);
-  const m     = _totalMonths(year, month);
-  if (m == null) return;
-  if (!state.flags) state.flags = {};
-  for (const f of state.factions.values()) {
-    if (f.defeated || (f.intel_level ?? 0) <= 0) continue;
-    const key  = `intel_decay_${f.id}_last`;
-    const last = state.flags[key];
-    if (last == null) { state.flags[key] = m; continue; }
-    if (m - last >= 6) {
-      f.intel_level = Math.max(0, (f.intel_level ?? 1) - 1);
-      state.flags[key] = m;
-    }
-  }
 }
 
 /**
@@ -310,7 +209,6 @@ const CONFIGS = {
     },
 
     initDispositions(_state) { /* factions.json 기본값 사용 */ },
-    onTurnEnd: defaultOnTurnEnd,
   },
 
   // ── 뇌제의 후계자 ─────────────────────────────────────────────
@@ -374,8 +272,6 @@ const CONFIGS = {
         }
       }
     },
-
-    onTurnEnd: defaultOnTurnEnd,
   },
 
   // ── 대홍수 ───────────────────────────────────────────────────────
@@ -473,8 +369,6 @@ const CONFIGS = {
       }
       // jan-kazimierz: factions.json 기본값이 왕 시점 — 별도 조정 없음
     },
-
-    onTurnEnd: defaultOnTurnEnd,
   },
 
 };

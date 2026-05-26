@@ -234,7 +234,7 @@ interactive_stories/
 │   ├── main.py                     # FastAPI 앱 팩토리 (미들웨어, 라우터 등록)
 │   ├── config.py                   # 환경변수·모델 설정 (API 키, Gemini URL, JWT 키 등)
 │   ├── auth.py                     # JWT 발급·검증, 게스트/Google 사용자 관리
-│   ├── scenarios_loader.py         # 시나리오 JSON 로딩 + 병력 규모·수비대 자동 추정
+│   ├── scenarios_loader.py         # 시나리오 JSON 로딩 + 병력 규모·수비대 자동 추정; CONQUEST_DISPOSITIONS 상수, get_scenario_tpp·get_scenario_reserve_divisor 헬퍼 제공
 │   ├── gemini_client.py            # Gemini API 호출 헬퍼
 │   ├── requirements.txt
 │   ├── .env                        # GOOGLE_API_KEY, SECRET_KEY 설정 (직접 생성 필요)
@@ -246,16 +246,21 @@ interactive_stories/
 │   │   └── users.json              # 런타임 생성 사용자 데이터 저장소 (.gitignore 대상)
 │   ├── engine/
 │   │   ├── classifier.py           # LLM 기반 행동 유형 분류 (야전·기습·공성·외교·첩보 등)
+│   │   ├── conquest.py             # 거점 점령 감지·주둔군 정규화 (처분 유형별 garrison_modifier 계산·회복)
+│   │   ├── context.py              # LLM 컨텍스트 빌더 (시나리오 상태·재정·이벤트·오프닝 NPC)
+│   │   ├── defeat.py               # 세력 패퇴 자동 감지 (전력 임계값·거점 보유 조건 기반)
+│   │   ├── fiscal.py               # 재정 계산 (월수입·월지출·비축금 자동 갱신; compute_player_fiscal)
 │   │   ├── quality.py              # 행동 품질 평가용 보조 컨텍스트 구성 및 LLM 평가
 │   │   ├── resolver.py             # 행동·전투·외교 회담 판정 엔진 (4d6, 2d6 페이즈, 품질·지형·날씨·등급 보정)
-│   │   ├── turn.py                 # 턴 파싱 (시각, STATE_UPDATE 블록 추출)
-│   │   └── context.py              # LLM 컨텍스트 빌더 (시나리오 상태·재정·이벤트·오프닝 NPC)
+│   │   ├── tick.py                 # 턴 자동 갱신 (전투 피해 회복·예비 인력 회복·첩보 감쇠·전력 재계산)
+│   │   └── turn.py                 # 턴 파싱 (시각·STATE_UPDATE 블록 추출); parse_ym·ts_ym_only 타임스탬프 유틸
 │   ├── routers/
 │   │   ├── auth.py                 # /api/auth/* 엔드포인트 (게스트·Google 로그인, 설정 조회)
-│   │   ├── scenarios.py            # /api/scenarios 엔드포인트
+│   │   ├── client_config.py        # /api/config 엔드포인트 (등급 스케일·날씨·지형 메타 상수 노출)
+│   │   ├── game.py                 # /api/opening, /api/turn 엔드포인트 (HTTP 레이어만)
+│   │   ├── quick_battle.py         # /api/quick-battles, /api/quick-battle/{id}/start
 │   │   ├── saves.py                # /api/saves CRUD (JWT 인증 필수, 사용자별 격리)
-│   │   ├── game.py                 # /api/opening, /api/turn 엔드포인트
-│   │   └── quick_battle.py         # /api/quick-battles, /api/quick-battle/{id}/start
+│   │   └── scenarios.py            # /api/scenarios 엔드포인트
 │   └── scenarios/
 │       └── {scenario-id}/
 │           ├── meta.json           # 표시 메타데이터 (제목·섹션·troops_per_strength_point 등)

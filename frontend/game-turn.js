@@ -194,6 +194,9 @@ function applyStateUpdates(su) {
   if (su.lost_battles && typeof su.lost_battles === 'object') {
     _state.lostBattles = { ..._state.lostBattles, ...su.lost_battles };
   }
+  if (su.flags_update && typeof su.flags_update === 'object') {
+    _state.flags = { ...(_state.flags || {}), ...su.flags_update };
+  }
 }
 
 // ── 턴 전진

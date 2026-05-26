@@ -14,7 +14,7 @@ from routers.saves        import router as saves_router
 from routers.game         import router as game_router
 from routers.auth         import router as auth_router
 from routers.quick_battle import router as quick_battle_router
-from routers.config       import router as config_router
+from routers.client_config import router as config_router
 
 app = FastAPI(title="Interactive Stories API")
 app.add_middleware(

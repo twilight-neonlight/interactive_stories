@@ -69,7 +69,6 @@ function commitTurn(cmd, content, su) {
   _state.pushHistory('user', cmd);
   _state.pushHistory('assistant', content);
   applyStateUpdates(su);
-  _ui.onTurnEnd?.(_state);
   _manager._state = _state;
   _manager.save();
 }

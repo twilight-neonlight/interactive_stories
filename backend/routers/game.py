@@ -1,16 +1,23 @@
 """
 routers/game.py — 오프닝·턴 처리 API
+
+HTTP 요청 수신 → 엔진 호출 → 응답 반환을 담당합니다.
 """
 
 import asyncio
 import copy
-import re
 from fastapi import APIRouter
 from pydantic import BaseModel
 
 from config          import SYSTEM_PROMPT
 from gemini_client   import call_gemini
-from scenarios_loader import SCENARIOS, GARRISON_POINTS_BY_TIER, compute_faction_strength, compute_max_reserve, _NO_TERRITORY_TYPES
+from scenarios_loader import (
+    SCENARIOS,
+    GARRISON_POINTS_BY_TIER,
+    CONQUEST_DISPOSITIONS,
+    get_scenario_tpp,
+    get_scenario_reserve_divisor,
+)
 from engine.resolver import (
     resolve_action, resolution_prompt, classify_action_type,
     init_combat_phase, advance_combat_phase, resolve_retreat,
@@ -18,6 +25,7 @@ from engine.resolver import (
     init_diplomacy_session, advance_diplomacy_session, resolve_diplomacy_withdrawal,
     diplomacy_prep_prompt, diplomacy_ongoing_prompt, diplomacy_end_prompt,
     calc_stat_modifier, calc_diplomacy_relation_modifier, calc_admin_recovery_multiplier,
+    _get_player_faction_id,
     _MIN_PHASES_BEFORE_VICTOR,
     roll_battle_weather,
 )
@@ -29,7 +37,22 @@ from engine.context    import (
     compute_event_states, detect_event_transitions, build_event_transition_prompt,
     collect_transition_effects, strip_event_states,
 )
+from engine.fiscal  import compute_player_fiscal, auto_treasury_update
+from engine.conquest import classify_conquest_disposition, apply_garrison_updates
+from engine.tick    import (
+    auto_battle_damage_recovery,
+    auto_reserve_recovery,
+    auto_intel_decay,
+    recompute_all_strengths,
+)
+from engine.defeat  import (
+    auto_mark_defeated_factions,
+    merge_defeated_factions_update,
+    project_state_updates_for_defeat,
+)
 
+
+# ── 라우팅 상수 ───────────────────────────────────────────────────────────────
 
 _ACTION_STAT_KEY: dict[str, str] = {
     'military':   '통솔',
@@ -39,166 +62,18 @@ _ACTION_STAT_KEY: dict[str, str] = {
     'intrigue':   '지략',
 }
 
-# 점령지 처분 유형별 효과
-# base: 점령 직후 garrison_modifier 초기값
-# recovery_ratio: base_pts 기준 야전군 battle_damage 회복 비율
-_CONQUEST_DISPOSITIONS: dict[str, dict] = {
-    "초토화":      {"base": 0.1, "recovery_ratio": 0.30},
-    "약탈":        {"base": 0.2, "recovery_ratio": 0.15},
-    "피해 최소화": {"base": 0.3, "recovery_ratio": 0.05},
+_FRONTEND_TO_RESOLVER: dict[str, str] = {
+    "attack":     "military",
+    "surprise":   "surprise",
+    "defense":    "defense",
+    "siege":      "military",
+    "diplomatic": "diplomatic",
+    "intrigue":   "intrigue",
+    "passive":    "passive",
 }
 
-# garrison_modifier 월간 회복량 (처분 확정 후 매 게임 내 월마다 적용)
-_GARRISON_RECOVERY_PER_MONTH = 0.03
 
-# battle_damage 자동 회복량 (전투 중이 아닌 세력, 게임 내 1개월 경과당)
-_BATTLE_DAMAGE_RECOVERY_PER_MONTH = 25
-
-# 예비 인력 월간 회복률 (부족분의 X% / 월)
-_RESERVE_RECOVERY_RATE = 0.08
-
-# ── 재정 시스템 ───────────────────────────────────────────────────────────────
-
-# fiscal_level: balance_ratio = fiscal_balance / income_score 기준
-# income_score > 0이면 비율 판정, income_score == 0이면 절댓값 판정
-_FISCAL_RATIO_THRESHOLDS = [
-    # (ratio_threshold, label, fiscal_mult)
-    ( 0.10, "풍요", 1.5),
-    ( 0.00, "안정", 1.0),
-    (-0.05, "균형", 0.7),
-    (-0.15, "적자", 0.3),
-    ( None, "파산", 0.05),
-]
-# income_score == 0 (영토·지원금 없음)일 때 fiscal_balance 절댓값으로 판정
-_FISCAL_ABS_THRESHOLDS = [
-    ( 20,  "풍요", 1.5),
-    (  0,  "안정", 1.0),
-    (-20,  "균형", 0.7),
-    (-60,  "적자", 0.3),
-    (None, "파산", 0.05),
-]
-
-
-def _fiscal_level(value: float, thresholds: list) -> tuple[str, float]:
-    for thr, label, mult in thresholds:
-        if thr is None or value >= thr:
-            return label, mult
-    return "파산", 0.05
-
-
-def _compute_player_fiscal(state: dict, tpp: int, res_div: int) -> dict | None:
-    """플레이어 세력의 재정 상태를 계산합니다.
-
-    Returns dict with keys:
-      fid, income_score, expense_score, fiscal_balance,
-      fiscal_level, fiscal_mult, treasury
-    또는 None (플레이어 세력 없음 / tpp 없음)
-    """
-    if not tpp:
-        return None
-    player_fid = _get_player_faction_id(state)
-    if not player_fid:
-        return None
-    factions  = state.get("factions",  {})
-    locations = state.get("locations", {})
-    faction   = factions.get(player_fid, {})
-    if not isinstance(faction, dict):
-        return None
-
-    # 영토 수입: Σ tier_pts × garrison_modifier (지배 거점)
-    territorial = sum(
-        GARRISON_POINTS_BY_TIER.get(loc.get("tier", ""), 0)
-        * loc.get("garrison_modifier", 1.0)
-        for loc in locations.values()
-        if isinstance(loc, dict) and loc.get("controller") == player_fid
-    )
-    income_mult  = float(faction.get("income_mult", 1.0) or 1.0)
-    income_flat  = int(faction.get("income_flat", 0)   or 0)
-    income_score = round(territorial * income_mult + income_flat)
-
-    # 지출: 상비군 + 동원 예비군 × 0.2
-    field_army      = faction.get("field_army", 0) or 0
-    reserve         = faction.get("reserve_manpower", 0) or 0
-    mob_rate        = min(1.0, max(0.0, faction.get("mobilization_rate", 1.0)))
-    effective_res   = round(reserve * mob_rate)
-    standing_pts    = round(field_army / tpp)
-    mob_reserve_pts = round(effective_res / (tpp * res_div)) if res_div else 0
-    expense_score   = standing_pts + round(mob_reserve_pts * 0.2)
-
-    fiscal_balance = income_score - expense_score
-    treasury       = int(faction.get("treasury", 0) or 0)
-
-    # fiscal_level 판정: 월간 수지 비율 기준 (즉각 반영)
-    if income_score > 0:
-        ratio = fiscal_balance / income_score
-        f_level, f_mult = _fiscal_level(ratio, _FISCAL_RATIO_THRESHOLDS)
-    else:
-        f_level, f_mult = _fiscal_level(fiscal_balance, _FISCAL_ABS_THRESHOLDS)
-
-    return {
-        "fid":            player_fid,
-        "income_score":   income_score,
-        "expense_score":  expense_score,
-        "fiscal_balance": fiscal_balance,
-        "fiscal_level":   f_level,
-        "fiscal_mult":    f_mult,
-        "treasury":       treasury,
-    }
-
-
-def _auto_treasury_update(state: dict, state_updates: dict,
-                          fiscal_info: dict | None) -> None:
-    """경과 시간에 따라 플레이어 세력의 treasury를 자동 갱신합니다.
-
-    LLM이 출력한 treasury_changes(일회성 수입·지출)도 합산합니다.
-    결과는 state_updates["treasury_update"] = {"id": fid, "value": new_value}.
-    """
-    if not fiscal_info:
-        return
-    prev_ts = state.get("progress", {}).get("timestamp", "")
-    new_ts  = state_updates.get("timestamp") or prev_ts
-    prev_ym = _parse_ym(prev_ts)
-    new_ym  = _parse_ym(new_ts)
-    if not prev_ym or not new_ym:
-        return
-    elapsed = (new_ym[0] - prev_ym[0]) * 12 + (new_ym[1] - prev_ym[1])
-    if elapsed <= 0:
-        return
-
-    fid            = fiscal_info["fid"]
-    income_score   = fiscal_info["income_score"]
-    fiscal_balance = fiscal_info["fiscal_balance"]
-    treasury       = fiscal_info["treasury"]
-
-    # 자동 월간 수지 누적
-    auto_delta = fiscal_balance * elapsed
-
-    # LLM 일회성 treasury_changes — 플레이어 세력분만 합산
-    llm_delta = sum(
-        int(r.get("delta", 0))
-        for r in (state_updates.get("treasury_changes") or [])
-        if isinstance(r, dict) and r.get("id") == fid
-    )
-
-    # 상·하한: income_score 기준 ±6개월치 (일회성 지출 버퍼 역할)
-    ref   = income_score if income_score > 0 else max(abs(fiscal_info["expense_score"]), 100)
-    max_t =  ref * 6
-    min_t = -ref * 6
-
-    new_treasury = max(min_t, min(max_t, treasury + round(auto_delta) + llm_delta))
-    state_updates["treasury_update"] = {"id": fid, "value": int(new_treasury)}
-
-
-def _classify_conquest_disposition(command: str) -> str | None:
-    """명령어에서 점령지 처분 유형을 추출합니다."""
-    if "초토화" in command:
-        return "초토화"
-    if "약탈" in command:
-        return "약탈"
-    if "피해" in command or "최소화" in command or "보호" in command:
-        return "피해 최소화"
-    return None
-
+# ── 유틸 ──────────────────────────────────────────────────────────────────────
 
 def _build_modifiers(*mods) -> list[tuple[str, int]] | None:
     """None 제거 후 수정치 리스트 반환. 빈 경우 None."""
@@ -210,351 +85,12 @@ async def _async_none():
     return None
 
 
-# ── garrison 유틸 ─────────────────────────────────────────────────────────────
-
-def _parse_ym(ts: str) -> tuple[int, int] | None:
-    """타임스탬프 문자열에서 (year, month) 추출. 월 정보 없으면 None."""
-    m = re.search(r'(\d{3,4})년\s*(\d{1,2})월', ts)
-    return (int(m.group(1)), int(m.group(2))) if m else None
+def _get_scenario_prompts(state: dict) -> dict:
+    scenario_data = next((s for s in SCENARIOS if s["id"] == state.get("scenarioId", "")), None)
+    return scenario_data.get("scenario_prompts", {}) if scenario_data else {}
 
 
-def _ts_ym_only(ts: str) -> str:
-    """타임스탬프에서 연도·월만 추출합니다."""
-    m = re.search(r'(\d{3,4})년\s*(\d{1,2})월', ts)
-    return f"{m.group(1)}년 {m.group(2)}월" if m else ts
-
-
-def _get_scenario_tpp(state: dict) -> int | None:
-    scenario_id = state.get("scenarioId", "")
-    s = next((s for s in SCENARIOS if s["id"] == scenario_id), None)
-    return s.get("troops_per_strength_point") if s else None
-
-
-def _get_scenario_reserve_divisor(state: dict) -> int:
-    scenario_id = state.get("scenarioId", "")
-    s = next((s for s in SCENARIOS if s["id"] == scenario_id), None)
-    return s.get("reserve_tpp_divisor", 5) if s else 5
-
-
-def _get_player_faction_id(state: dict) -> str | None:
-    protagonist = state.get("protagonist")
-    if not protagonist:
-        return None
-    factions = state.get("factions", {})
-    chars    = state.get("characters", {})
-    char     = chars.get(protagonist, {}) if isinstance(chars, dict) else {}
-    fid      = char.get("faction_id") or protagonist
-    return fid if fid in factions else None
-
-
-_DEFEAT_STRENGTH_THRESHOLD = 30
-_REMNANT_TYPES = {"rebels", "remnant"}
-
-
-def _auto_mark_defeated_factions(state: dict) -> list[str]:
-    """수치 조건을 충족한 비플레이어 세력을 패퇴 처리합니다.
-
-    - 일반 세력: 모든 거점 상실 + 실효 전력 < 30
-    - rebels/remnant: 거점 조건 면제, 실효 전력 < 30 이면 즉시 패퇴
-
-    세력 객체는 삭제하지 않고 defeated 플래그만 세운다.
-    """
-    factions = state.get("factions", {})
-    locations = state.get("locations", {})
-    if not isinstance(factions, dict):
-        return []
-
-    # 거점을 하나라도 보유한 세력 집합
-    has_location: set[str] = set()
-    for loc in locations.values():
-        ctrl = loc.get("controller")
-        if ctrl and ctrl != "contested":
-            has_location.add(ctrl)
-
-    player_fid = _get_player_faction_id(state)
-    defeated: list[str] = []
-    for fid, faction in factions.items():
-        if fid == player_fid or not isinstance(faction, dict) or faction.get("defeated"):
-            continue
-        effective = (faction.get("strength_score") or 0) - (faction.get("battle_damage") or 0)
-        if effective >= _DEFEAT_STRENGTH_THRESHOLD:
-            continue
-        is_remnant = faction.get("type", "") in _REMNANT_TYPES
-        if is_remnant or fid not in has_location:
-            faction["defeated"] = True
-            defeated.append(fid)
-    return defeated
-
-
-def _merge_defeated_factions_update(updates: dict, defeated_ids: list[str]) -> None:
-    if not defeated_ids:
-        return
-    existing = list(updates.get("defeated_factions") or [])
-    seen = set(existing)
-    for fid in defeated_ids:
-        if fid not in seen:
-            existing.append(fid)
-            seen.add(fid)
-    updates["defeated_factions"] = existing
-
-
-def _project_state_updates_for_defeat(state: dict, updates: dict) -> dict:
-    """이번 응답의 전력 변경을 반영한 임시 state를 만들어 자동 패퇴를 검사합니다."""
-    projected = copy.deepcopy(state)
-    factions = projected.get("factions", {})
-    if not isinstance(factions, dict):
-        return projected
-
-    for f in updates.get("new_factions") or []:
-        fid = f.get("id") if isinstance(f, dict) else None
-        if fid and fid not in factions:
-            factions[fid] = {**f, "battle_damage": f.get("battle_damage", 0)}
-
-    for fid in updates.get("defeated_factions") or []:
-        if fid in factions:
-            factions[fid]["defeated"] = True
-
-    # 재계산된 strength_score 절댓값 반영
-    for fid, new_score in (updates.get("faction_strength_overrides") or {}).items():
-        if fid in factions:
-            factions[fid]["strength_score"] = new_score
-
-    for fc in updates.get("faction_battle_damage") or []:
-        fid = fc.get("id") if isinstance(fc, dict) else None
-        if fid in factions and fc.get("damage") is not None:
-            factions[fid]["battle_damage"] = (factions[fid].get("battle_damage") or 0) + abs(fc["damage"])
-
-    for fc in updates.get("faction_battle_recovery") or []:
-        fid = fc.get("id") if isinstance(fc, dict) else None
-        if fid in factions and fc.get("amount") is not None:
-            factions[fid]["battle_damage"] = max(
-                0, (factions[fid].get("battle_damage") or 0) - abs(fc["amount"])
-            )
-
-    # 이번 턴 거점 지배 변경을 반영해야 패퇴 조건(모든 거점 상실)을 정확히 검사할 수 있다
-    proj_locs = projected.get("locations", {})
-    proj_facs = projected.get("factions", {})
-    for lc in updates.get("location_changes") or []:
-        lid  = lc.get("id")  if isinstance(lc, dict) else None
-        ctrl = lc.get("controller") if isinstance(lc, dict) else None
-        if lid and lid in proj_locs and ctrl and (ctrl == "contested" or ctrl in proj_facs):
-            proj_locs[lid]["controller"] = ctrl
-
-    return projected
-
-
-def _apply_garrison_updates(state: dict, new_ts: str, tpp: int, loc_change_map: dict,
-                            admin_mult: float = 1.0,
-                            fiscal_mult: float = 1.0) -> list[dict]:
-    """garrison 관련 location_changes를 loc_change_map에 in-place로 병합합니다.
-
-    처리 순서:
-    1. 이번 턴 controller 변경 거점 → garrison_modifier=0.3(임시), conquered_at=new_ts 기록
-    2. conquered_at이 있는 미점령 거점 → 경과 시간 기반 모디파이어 재계산
-
-    반환: 새로 점령된 거점 목록 (처분 대기)
-    """
-    old_locations = state.get("locations", {})
-    newly_pending: list[dict] = []
-
-    # 1. 이번 턴 점령 감지 — 양측 모두 명확한 지배 세력인 경우만 처분 대상
-    for lid, lc in loc_change_map.items():
-        new_ctrl = lc.get("controller")
-        old_ctrl = old_locations.get(lid, {}).get("controller")
-        if (new_ctrl and old_ctrl
-                and new_ctrl != old_ctrl
-                and old_ctrl != "contested"
-                and new_ctrl != "contested"):
-            lc["garrison_modifier"] = 0.3  # 처분 확정 전 임시값
-            lc["conquered_at"]      = _ts_ym_only(new_ts)
-            tier     = old_locations.get(lid, {}).get("tier", "")
-            base_pts = GARRISON_POINTS_BY_TIER.get(tier, 0)
-            lc["garrison"] = round(base_pts * 0.3 * tpp)
-            newly_pending.append({
-                "id":          lid,
-                "tier":        tier,
-                "name":        old_locations.get(lid, {}).get("name", lid),
-                "conquered_at": lc["conquered_at"],
-            })
-
-    # 2. 처분이 확정된 점령 거점 회복
-    # garrison_modifier(t) = base + elapsed_months × 0.03
-    # base = 처분 유형(conquest_disposition)에서 결정, _CONQUEST_DISPOSITIONS 참조
-    new_ym = _parse_ym(new_ts)
-    for lid, loc in old_locations.items():
-        if lid in loc_change_map:
-            continue
-        conquered_at        = loc.get("conquered_at")
-        conquest_disposition = loc.get("conquest_disposition")
-        if not conquered_at or not conquest_disposition:
-            continue
-        cym = _parse_ym(conquered_at)
-        if not cym or not new_ym:
-            continue
-        elapsed  = (new_ym[0] - cym[0]) * 12 + (new_ym[1] - cym[1])
-        base     = _CONQUEST_DISPOSITIONS.get(conquest_disposition, {}).get("base", 0.3)
-        new_mod  = min(1.0, base + max(0, elapsed) * _GARRISON_RECOVERY_PER_MONTH * admin_mult * fiscal_mult)
-        tier     = loc.get("tier", "")
-        base_pts = GARRISON_POINTS_BY_TIER.get(tier, 0)
-        change: dict = {
-            "id":               lid,
-            "garrison_modifier": round(new_mod, 4),
-            "garrison":          round(base_pts * new_mod * tpp),
-        }
-        if new_mod >= 1.0:
-            change["conquered_at"]        = None
-            change["conquest_disposition"] = None
-            change["garrison_modifier"]    = 1.0
-        loc_change_map[lid] = change
-
-    return newly_pending
-
-
-def _auto_battle_damage_recovery(state: dict, state_updates: dict) -> None:
-    """타임스탬프 경과에 따른 battle_damage 자동 회복.
-
-    전투 중인 세력(플레이어·적군)은 제외한다.
-    거점 점령 처분으로 이미 추가된 faction_battle_recovery와 합산한다.
-    """
-    prev_ts = state.get("progress", {}).get("timestamp", "")
-    new_ts  = state_updates.get("timestamp") or prev_ts
-
-    prev_ym = _parse_ym(prev_ts)
-    new_ym  = _parse_ym(new_ts)
-    if not prev_ym or not new_ym:
-        return
-
-    elapsed = (new_ym[0] - prev_ym[0]) * 12 + (new_ym[1] - prev_ym[1])
-    if elapsed <= 0:
-        return
-
-    auto_amount = _BATTLE_DAMAGE_RECOVERY_PER_MONTH * elapsed
-
-    excluded: set[str] = set()
-    combat_state = state.get("combatState")
-    if combat_state and combat_state.get("active"):
-        player_fid = _get_player_faction_id(state)
-        if player_fid:
-            excluded.add(player_fid)
-        enemy_fid = combat_state.get("enemy_faction_id")
-        if enemy_fid:
-            excluded.add(enemy_fid)
-
-    factions = state.get("factions", {})
-    existing: dict[str, int] = {
-        r["id"]: r["amount"]
-        for r in (state_updates.get("faction_battle_recovery") or [])
-        if isinstance(r, dict) and r.get("id")
-    }
-
-    for fid, faction in factions.items():
-        if not isinstance(faction, dict) or fid in excluded:
-            continue
-        bd = faction.get("battle_damage") or 0
-        if bd <= 0:
-            continue
-        existing[fid] = existing.get(fid, 0) + min(bd, auto_amount)
-
-    if existing:
-        state_updates["faction_battle_recovery"] = [
-            {"id": fid, "amount": round(amt)} for fid, amt in existing.items()
-        ]
-
-
-def _auto_reserve_recovery(state: dict, state_updates: dict,
-                           fiscal_mult: float = 1.0) -> None:
-    """타임스탬프 경과에 따른 reserve_manpower 자동 회복.
-
-    매월 부족분의 _RESERVE_RECOVERY_RATE만큼 회복 (복리 방식).
-    LLM이 이미 출력한 faction_reserve_changes와 합산해 반환.
-    """
-    prev_ts = state.get("progress", {}).get("timestamp", "")
-    new_ts  = state_updates.get("timestamp") or prev_ts
-
-    prev_ym = _parse_ym(prev_ts)
-    new_ym  = _parse_ym(new_ts)
-    if not prev_ym or not new_ym:
-        return
-
-    elapsed = (new_ym[0] - prev_ym[0]) * 12 + (new_ym[1] - prev_ym[1])
-    if elapsed <= 0:
-        return
-
-    tpp = _get_scenario_tpp(state)
-    if not tpp:
-        return
-
-    factions  = state.get("factions", {})
-    locations = state.get("locations", {})
-
-    existing: dict[str, int] = {
-        r["id"]: r["delta"]
-        for r in (state_updates.get("faction_reserve_changes") or [])
-        if isinstance(r, dict) and r.get("id")
-    }
-
-    admin_mult = calc_admin_recovery_multiplier(state)
-    eff_rate   = min(1.0, _RESERVE_RECOVERY_RATE * admin_mult * fiscal_mult)
-
-    for fid, faction in factions.items():
-        if not isinstance(faction, dict) or faction.get("defeated"):
-            continue
-        reserve     = faction.get("reserve_manpower") or 0
-        max_reserve = compute_max_reserve(faction, fid, locations, tpp)
-        if max_reserve <= 0 or reserve >= max_reserve:
-            continue
-        deficit  = max_reserve - reserve
-        recovery = round(deficit - deficit * (1 - eff_rate) ** elapsed)
-        if recovery > 0:
-            existing[fid] = existing.get(fid, 0) + recovery
-
-    if existing:
-        state_updates["faction_reserve_changes"] = [
-            {"id": fid, "delta": round(amt)} for fid, amt in existing.items()
-        ]
-
-
-def _recompute_all_strengths(state: dict, state_updates: dict, tpp: int) -> None:
-    """이번 턴 field_army 변화·거점 지배 변경을 반영해 strength_score를 전체 재계산합니다.
-
-    결과는 state_updates["faction_strength_overrides"] = {fid: score} 로 저장된다.
-    """
-    # 세력 field_army에 이번 턴 변화 반영
-    factions: dict[str, dict] = {
-        fid: dict(f) for fid, f in (state.get("factions") or {}).items()
-        if isinstance(f, dict)
-    }
-    for fc in state_updates.get("faction_field_army_changes") or []:
-        fid = fc.get("id") if isinstance(fc, dict) else None
-        if fid and fid in factions and fc.get("delta") is not None:
-            factions[fid]["field_army"] = max(0, (factions[fid].get("field_army") or 0) + int(fc["delta"]))
-
-    for fc in state_updates.get("faction_reserve_changes") or []:
-        fid = fc.get("id") if isinstance(fc, dict) else None
-        if fid and fid in factions and fc.get("delta") is not None:
-            max_r = compute_max_reserve(factions[fid], fid, state.get("locations", {}), tpp)
-            factions[fid]["reserve_manpower"] = max(0, min(
-                max_r,
-                (factions[fid].get("reserve_manpower") or 0) + int(fc["delta"])
-            ))
-
-    # 거점 controller에 이번 턴 변화 반영
-    locations: dict[str, dict] = {
-        lid: dict(loc) for lid, loc in (state.get("locations") or {}).items()
-        if isinstance(loc, dict)
-    }
-    for lc in state_updates.get("location_changes") or []:
-        lid  = lc.get("id")         if isinstance(lc, dict) else None
-        ctrl = lc.get("controller") if isinstance(lc, dict) else None
-        if lid and lid in locations and ctrl and (ctrl == "contested" or ctrl in factions):
-            locations[lid]["controller"] = ctrl
-
-    res_div = _get_scenario_reserve_divisor(state)
-    state_updates["faction_strength_overrides"] = {
-        fid: compute_faction_strength(faction, fid, locations, tpp, res_div)
-        for fid, faction in factions.items()
-    }
-
+# ── 요청 모델 ─────────────────────────────────────────────────────────────────
 
 router = APIRouter()
 
@@ -562,17 +98,6 @@ router = APIRouter()
 class Message(BaseModel):
     role: str
     content: str
-
-
-_FRONTEND_TO_RESOLVER: dict[str, str] = {
-    "attack":     "military",
-    "surprise":   "surprise",
-    "defense":    "defense",
-    "siege":      "military",
-    "diplomatic": "diplomatic",
-    "intrigue":   "intrigue",
-    "passive":    "passive",
-}
 
 
 class TurnRequest(BaseModel):
@@ -588,11 +113,7 @@ class OpeningRequest(BaseModel):
     state: dict
 
 
-def _get_scenario_prompts(state: dict) -> dict:
-    scenario_id   = state.get("scenarioId", "")
-    scenario_data = next((s for s in SCENARIOS if s["id"] == scenario_id), None)
-    return scenario_data.get("scenario_prompts", {}) if scenario_data else {}
-
+# ── 엔드포인트 ────────────────────────────────────────────────────────────────
 
 @router.post("/api/opening")
 async def generate_opening(req: OpeningRequest):
@@ -606,7 +127,6 @@ async def generate_opening(req: OpeningRequest):
         {"role": "user",   "content": "[게임 시작] 오프닝 장면을 생성하라."},
     ])
     content, extra = extract_state_update(content)
-    # 오프닝: 이벤트 상태 초기화 (트리거 알림 없이 조용히 active 설정)
     initial_event_states = strip_event_states(compute_event_states(req.state))
     return {
         "content":       content,
@@ -621,18 +141,18 @@ async def generate_opening(req: OpeningRequest):
 @router.post("/api/turn")
 async def process_turn(req: TurnRequest):
     state = copy.deepcopy(req.state)
-    auto_defeated_at_start = _auto_mark_defeated_factions(state)
+    auto_defeated_at_start = auto_mark_defeated_factions(state)
 
-    diplomacy_state_in = state.get("diplomacyState")
-    combat_state_in    = state.get("combatState")
-    quality_mod        = None
-    new_combat_state   = None
+    diplomacy_state_in  = state.get("diplomacyState")
+    combat_state_in     = state.get("combatState")
+    quality_mod         = None
+    new_combat_state    = None
     new_diplomacy_state = None
 
     # 점령지 처분 대기 확인 (LLM 호출 전에 command를 분석해야 하므로 최상단에서 처리)
     pending_dispositions: list[dict] = state.get("pendingConquestDispositions") or []
     disposition_type: str | None = (
-        _classify_conquest_disposition(req.command) if pending_dispositions else None
+        classify_conquest_disposition(req.command) if pending_dispositions else None
     )
 
     if diplomacy_state_in and diplomacy_state_in.get("active"):
@@ -774,7 +294,7 @@ async def process_turn(req: TurnRequest):
     content = await call_gemini(messages)
     content, extra = extract_state_update(content)
     state_updates  = turn_engine(content, state)
-    _merge_defeated_factions_update(state_updates, auto_defeated_at_start)
+    merge_defeated_factions_update(state_updates, auto_defeated_at_start)
 
     in_combat = bool(combat_state_in and combat_state_in.get("active"))
     for key in ("new_characters", "dead_characters", "new_factions", "defeated_factions",
@@ -795,11 +315,11 @@ async def process_turn(req: TurnRequest):
         state_updates["weather"] = extra["weather"]
 
     # 주둔군 갱신 (controller 변경 → conquered_at 기록, 기존 점령지 시간 경과 회복)
-    tpp     = _get_scenario_tpp(state)
-    res_div = _get_scenario_reserve_divisor(state)
+    tpp     = get_scenario_tpp(state)
+    res_div = get_scenario_reserve_divisor(state)
 
     # 재정 상태 계산 (이번 턴 회복·누적에 사용)
-    fiscal_info = _compute_player_fiscal(state, tpp, res_div) if tpp else None
+    fiscal_info = compute_player_fiscal(state, tpp, res_div) if tpp else None
     fiscal_mult = fiscal_info["fiscal_mult"] if fiscal_info else 1.0
 
     newly_pending: list[dict] = []
@@ -809,7 +329,7 @@ async def process_turn(req: TurnRequest):
             lc["id"]: lc for lc in (state_updates.get("location_changes") or [])
         }
         admin_mult    = calc_admin_recovery_multiplier(state)
-        newly_pending = _apply_garrison_updates(
+        newly_pending = apply_garrison_updates(
             state, new_ts, tpp, loc_change_map, admin_mult, fiscal_mult
         )
         if loc_change_map:
@@ -819,14 +339,14 @@ async def process_turn(req: TurnRequest):
     unresolved: list[dict] = []
     if pending_dispositions:
         if disposition_type:
-            info           = _CONQUEST_DISPOSITIONS[disposition_type]
+            info           = CONQUEST_DISPOSITIONS[disposition_type]
             new_mod        = info["base"]
             recovery_ratio = info["recovery_ratio"]
 
             existing_lcs: dict[str, dict] = {
                 lc["id"]: lc for lc in (state_updates.get("location_changes") or [])
             }
-            protagonist_fid = state.get("protagonist")
+            protagonist_fid = _get_player_faction_id(state)
             total_recovery  = 0
 
             for pd in pending_dispositions:
@@ -835,7 +355,6 @@ async def process_turn(req: TurnRequest):
                 base_pts = GARRISON_POINTS_BY_TIER.get(tier, 0)
                 if lid not in existing_lcs:
                     existing_lcs[lid] = {"id": lid}
-                # garrison_modifier: base (점령 직후 0개월 경과)
                 existing_lcs[lid]["garrison_modifier"]    = new_mod
                 existing_lcs[lid]["conquest_disposition"] = disposition_type
                 if tpp:
@@ -853,16 +372,16 @@ async def process_turn(req: TurnRequest):
 
     state_updates["pending_conquest_dispositions"] = unresolved + newly_pending
 
-    _auto_battle_damage_recovery(state, state_updates)
-    _auto_reserve_recovery(state, state_updates, fiscal_mult)
-    _auto_treasury_update(state, state_updates, fiscal_info)
+    auto_battle_damage_recovery(state, state_updates)
+    auto_reserve_recovery(state, state_updates, fiscal_mult)
+    auto_treasury_update(state, state_updates, fiscal_info)
+    auto_intel_decay(state, state_updates)
     if tpp:
-        _recompute_all_strengths(state, state_updates, tpp)
+        recompute_all_strengths(state, state_updates, tpp)
 
     if new_diplomacy_state is not None:
         if isinstance(extra.get("opponent_next_stance"), str):
             new_diplomacy_state["opponent_next_stance"] = extra["opponent_next_stance"]
-        # LLM이 회담 결과를 신호한 경우
         if not new_diplomacy_state.get("ended"):
             outcome = extra.get("diplomacy_outcome")
             if outcome in ("agreement", "breakdown"):
@@ -878,7 +397,6 @@ async def process_turn(req: TurnRequest):
             if isinstance(extra.get(key), list):
                 new_combat_state[key] = extra[key]
 
-        # 전투 지명·연도·지형: 개시 씬에서만 LLM이 제공
         if isinstance(extra.get("battle_location"), str):
             new_combat_state["battle_location_name"] = extra["battle_location"]
         if isinstance(extra.get("battle_year"), str):
@@ -886,15 +404,12 @@ async def process_turn(req: TurnRequest):
         if isinstance(extra.get("battle_terrain"), str):
             terrain = extra["battle_terrain"]
             new_combat_state["battle_terrain"] = terrain
-            # 전투 개시 첫 페이즈이고 LLM이 날씨를 명시하지 않은 경우 지형 기반 자동 롤
             if new_combat_state.get("phase_number", 1) == 1 and not isinstance(extra.get("weather"), str):
                 state_updates["weather"] = roll_battle_weather(terrain)
 
-        # 적 예고 행동: LLM이 이번 장면에서 제시한 다음 페이즈 적 행동 저장
         if isinstance(extra.get("enemy_next_action"), str):
             new_combat_state["enemy_next_action"] = extra["enemy_next_action"]
 
-        # LLM이 서술로 전투 종결을 선언한 경우 (최소 교전 횟수 이후만 수용)
         completed_phase = new_combat_state.get("phase_number", 2) - 1
         if not new_combat_state.get("ended") and not req.retreat:
             victor = extra.get("combat_victor") if completed_phase >= _MIN_PHASES_BEFORE_VICTOR else None
@@ -915,22 +430,21 @@ async def process_turn(req: TurnRequest):
             state_updates["faction_battle_damage"] = [
                 {"id": fid, "damage": dmg} for fid, dmg in pending.items() if dmg > 0
             ]
-            # 전투 패배 이력 누적 — 이벤트 조건 평가에서 lost_to_{fid}로 참조
             if new_combat_state.get("winner") == "enemy":
                 enemy_fid = new_combat_state.get("enemy_faction_id")
                 if enemy_fid:
                     existing = state.get("lostBattles") or {}
                     state_updates["lost_battles"] = {**existing, enemy_fid: True}
 
-    # 시스템 이벤트 효과 (LLM 불필요) — 턴 시작 시 감지된 이벤트 전환만 즉시 적용
+    # 시스템 이벤트 효과 적용
     event_effects = collect_transition_effects(newly_active, newly_ended, state, state.get("protagonist"))
     for key, val in event_effects.items():
         state_updates[key] = state_updates.get(key) or []
         state_updates[key] = state_updates[key] + val
 
-    projected_state = _project_state_updates_for_defeat(state, state_updates)
-    auto_defeated_after_updates = _auto_mark_defeated_factions(projected_state)
-    _merge_defeated_factions_update(state_updates, auto_defeated_after_updates)
+    projected_state = project_state_updates_for_defeat(state, state_updates)
+    auto_defeated_after_updates = auto_mark_defeated_factions(projected_state)
+    merge_defeated_factions_update(state_updates, auto_defeated_after_updates)
     state_updates["event_state_changes"] = strip_event_states(current_event_states)
 
     return {
