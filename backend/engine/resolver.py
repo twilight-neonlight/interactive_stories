@@ -37,10 +37,10 @@ _ACTION_LABELS = {
     "general":    "일반",
 }
 
-# ── 능력치 등급 수치화 (E- = 0 … S+ = 17, 기준 C = 7)
-_GRADE_SCALE = ('E-','E','E+','D-','D','D+','C-','C','C+','B-','B','B+','A-','A','A+','S-','S','S+')
+# ── 능력치 등급 수치화 (F = 0 … S = 16, 기준 C = 8)
+_GRADE_SCALE = ('F','E-','E','E+','D-','D','D+','C-','C','C+','B-','B','B+','A-','A','A+','S')
 _GRADE_IDX   = {g: i for i, g in enumerate(_GRADE_SCALE)}
-_GRADE_BASELINE = 7
+_GRADE_BASELINE = 8
 
 _DIFF_MOD_TIERS: tuple[tuple[int | None, int], ...] = (
     ( 15,  5),
@@ -75,7 +75,7 @@ def _diff_to_mod(diff: int) -> int:
 def calc_admin_recovery_multiplier(state: dict) -> float:
     """플레이어 행정 능력치 → 인력·주둔군 회복 가중치 (0.5~2.0).
 
-    E-(0)=0.5 / C(7)=1.0 / S+(17)=2.0. 능력치 미설정 시 1.0.
+    F(0)=0.5 / C(8)=1.0 / S(16)=2.0. 능력치 미설정 시 1.0.
     """
     protagonist = state.get('protagonist')
     if not protagonist:

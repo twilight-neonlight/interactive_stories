@@ -28,7 +28,7 @@ function showComingSoon(label) {
 // ── 백엔드 /api/config 에서 로드되는 게임 메타데이터 ─────────────────────────
 // 초기화 전에 접근하면 안 되는 값. game-init.js의 loadGameConfig()가 채운다.
 window._gameConfig = {
-  gradeScale:  null,  // string[] — E-…S+ (resolver.py 기준, 18개)
+  gradeScale:  null,  // string[] — F…S (resolver.py 기준, 17단계)
   weatherMeta: null,  // { [key]: { label, atk, def, effect } }
   terrainMeta: null,  // { [key]: { label, def_bonus, atk_penalty, effect } }
 };

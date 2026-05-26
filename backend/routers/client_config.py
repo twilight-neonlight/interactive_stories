@@ -6,7 +6,7 @@ routers/config.py — 클라이언트가 필요로 하는 게임 메타데이터
 
   GET /api/config
   → {
-      grade_scale:   string[],       // E-…S+ (18개)
+      grade_scale:   string[],       // F…S (17단계)
       weather_meta:  { [key]: { label, atk, def } },
       terrain_meta:  { [key]: { label, def_bonus, atk_penalty } },
     }

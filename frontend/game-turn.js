@@ -27,8 +27,8 @@ function selectChoice(btn) {
 const _EXT_STAT_KEYS = ['통솔', '지략', '외교', '무력'];
 // _GRADE_SCALE은 /api/config에서 로드 (resolver.py의 _GRADE_SCALE과 동기).
 // loadGameConfig() 실패 시 fallback으로 내장 값 사용.
-const _GRADE_SCALE_FALLBACK = ['E-','E','E+','D-','D','D+','C-','C','C+','B-','B','B+','A-','A','A+','S-','S','S+'];
-const _GRADE_CENTER = 7; // C 인덱스 (resolver.py: _GRADE_BASELINE = 7)
+const _GRADE_SCALE_FALLBACK = ['F','E-','E','E+','D-','D','D+','C-','C','C+','B-','B','B+','A-','A','A+','S'];
+const _GRADE_CENTER = 8; // C 인덱스 (resolver.py: _GRADE_BASELINE = 8)
 const _GRADE_STD    = 3;
 
 function _getGradeScale() {
