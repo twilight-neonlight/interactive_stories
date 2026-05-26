@@ -19,29 +19,39 @@
 ### AI 내러티브 엔진 (TurnEngine)
 - Google Gemini(`gemini-3-flash-preview`)를 내러티브 생성 모델로 사용
 - 플레이어 입력 → 백엔드 `/api/turn` → AI 응답 → 상태 갱신의 단방향 흐름
+- 선택지는 LLM이 `[attack]`, `[siege]`, `[diplomatic]`, `[intrigue]` 같은 행동 태그를 붙이고, 백엔드는 이 태그와 LLM 행동 분류기(`classifier.py`)를 함께 사용해 판정 유형을 결정
 - 행동 판정 5단계: **대성공 / 성공 / 부분 성공 / 실패 / 대실패**
 - 일반 행동 판정은 **4d6 + 보정치**로 결정하며, 아래 두 보정치가 합산됨:
   - **LLM 품질 평가** (최대 ±2): 체스 기보 기호(!!·!·=·?·??)로 전략적 선택 품질을 평가
-  - **능력치 등급차** (최대 ±3): 플레이어와 상대 지휘관의 해당 능력치 등급 차이 → 행동 유형별 적용 능력치:
+  - **능력치 등급차** (최대 ±5): 플레이어와 상대 지휘관의 해당 능력치 등급 차이 → 행동 유형별 적용 능력치:
 
     | 행동 유형 | 적용 능력치 |
     |-----------|------------|
     | 군사·방어 | 통솔 |
-    | 기습·첩보 | 지략 |
+    | 기습·첩보·모략 | 지략 |
     | 외교      | 외교 |
 
-- 군사 행동은 지형·날씨·성벽(tier 기반) 보정도 추가 반영
+- 전투 페이즈 판정은 전장 지형·날씨·성벽(tier 기반) 보정을 추가 반영
 - 수동적 관찰·대기 등은 별도 주사위 판정 없이 서술형으로 처리
-- 장(Chapter) / 씬(Scene) 구조 자동 추적: LLM 응답 텍스트에서 `## N장, SCENE M` 패턴을 파싱해 진행 위치를 갱신
+- LLM 응답의 `**시각:**` 줄과 `[STATE_UPDATE]` JSON 블록을 파싱해 시각·상태 변화를 갱신
 
 ### 다중 페이즈 전투 시스템
 - 야전·기습·공성 행동은 즉시 단일 결과로 끝나지 않고 전투 오버레이(`combat-ui.js`)로 진입
 - 전투 시작 시 `combatState`를 생성해 양측 전력, 사기, 페이즈 번호, 적 예고 행동, 누적 피해를 추적
 - 각 페이즈는 **아군 2d6 vs 적군 2d6** 대결로 처리되며, 주사위 차이에 지형·날씨·성벽(tier 기반)·품질 수정치를 더해 7단계 `phase_outcome`을 엔진이 직접 결정함 (LLM은 phase_outcome을 출력하지 않음)
 - 결정된 `phase_outcome`은 다음 턴 시작 시 사기와 전투 피해에 적용됨
+- 전투 개시 응답에서 LLM이 `battle_location`, `battle_year`, `battle_terrain`을 구조화 출력하며, `weather`가 없으면 지형별 가중치로 날씨를 자동 롤
 - 사기(`player_morale` / `enemy_morale`)는 0–100 범위이며, 전투 오버레이 상단 막대에 현재 전황 지표로 표시
+- 오버레이는 양측 지휘관 카드, 병력 추정치, 전장 지형·날씨 배지, 교전 기록을 함께 표시
 - `combat_victor`는 최소 교전 페이즈 이후에만 수용하며, 플레이어는 언제든 후퇴를 선택할 수 있음
 - 전투 종료 시 누적 `pending_battle_damage`가 `faction_battle_damage`로 확정되어 세력 전력과 병력 수에 반영
+
+### 다중 라운드 외교 회담
+- 고위급 회담·특사 접견·공식 협상은 단일 외교 판정이 아니라 외교 오버레이(`diplomacy-ui.js`)로 진입
+- `diplomacyState`가 회담 대상 세력, 라운드 번호, 상대의 다음 태도, 라운드 기록을 추적
+- 각 라운드는 4d6 외교 판정 + 품질·능력치·외교 관계 보정을 반영
+- LLM은 회담 진행 중 `opponent_next_stance`와 필요 시 `diplomacy_outcome`(`agreement` / `breakdown`)을 출력
+- 플레이어는 회담 도중 언제든 **회담 중단**을 선택할 수 있음
 
 ### 빠른 역사적 전투
 - 메인 메뉴의 **빠른 역사적 전투**에서 사전 정의된 역사 전투를 바로 시작 가능
@@ -62,27 +72,44 @@
   | 통솔 | 군사·공성·방어 행동 판정 수정치 |
   | 지략 | 기습·첩보 행동 판정 수정치 |
   | 외교 | 외교 행동 판정 수정치 |
-  | 행정 | (UI 표시용) |
+  | 행정 | 예비 인력·주둔군 회복률 보정 |
   | 무력 | (UI 표시용) |
 
   등급 범위: `E-` ~ `S+` (18단계)
 
 - 게임 중 동적 추가된 인물에는 `is_dynamic: true` 플래그
 
-**세력 강도 (`factions` — strength)**
+**세력 강도와 병력 (`factions` — strength / field_army / reserve)**
 
-세력 강도는 두 값의 합산으로 결정됩니다:
+세력 강도는 현재 버전에서 시나리오 로드·턴 처리 시 자동 재계산됩니다:
 
 | 속성 | 설명 |
 |---|---|
-| `strength_score` | 병력·영토·자원을 반영하는 기반 점수 (영구적) |
-| `battle_damage` | 전투 패배로 누적되는 임시 페널티 (시간 경과로 회복) |
+| `field_army` | 즉시 전장에 투입 가능한 상비군 수 |
+| `reserve_manpower` | 예비 인력. 시간 경과와 행정 능력에 따라 회복 |
+| `strength_score` | 상비군·예비 인력·보유 거점 tier·해군 기반을 합산한 기반 점수 |
+| `battle_damage` | 전투 피해로 누적되는 임시 페널티. 시간 경과로 회복 |
 
 실효 강도 = `strength_score − battle_damage`
 
-`meta.json`에 `troops_per_strength_point` 값을 설정하면 강도 점수를 추정 병력 수(±20% 범위)로 변환해 UI와 LLM 컨텍스트에 표시합니다. 미설정 시 시나리오의 연도·동서양 배경에서 자동 추정합니다.
+`meta.json`에 `troops_per_strength_point` 값을 설정하면 강도 점수를 추정 병력 수로 변환해 UI와 LLM 컨텍스트에 표시합니다. 미설정 시 시나리오의 연도·동서양 배경에서 자동 추정합니다.
 
-`field_army`를 별도 지정하면 야전 동원 가능 병력을 `strength_score`와 독립적으로 표시합니다.
+`reserve_tpp_divisor`는 예비 인력이 strength_score로 환산되는 효율을 결정합니다. 미설정 시 연도 기반으로 자동 추정합니다.
+
+**세력 재정 (`factions` — fiscal)**
+
+재정은 플레이어 세력 기준으로 자동 계산되어 LLM 컨텍스트와 회복 속도에 반영됩니다.
+
+| 속성 | 설명 |
+|---|---|
+| `income_mult` / `income_flat` | 거점 tier 기반 월수입에 곱하거나 더하는 세력별 수입 보정 |
+| `treasury` | 누적 비축금. 월간 수지와 `treasury_changes`로 자동 갱신 |
+| `fiscal_level` | 월수입 대비 수지로 산출되는 재정 상태(풍요/안정/균형/적자/파산) |
+
+- 월수입은 보유 거점 tier와 주둔 안정도(`garrison_modifier`)를 기반으로 계산
+- 월지출은 상비군과 동원 가능한 예비 인력을 기반으로 계산
+- 재정 상태는 예비 인력 회복과 점령지 주둔군 회복 속도에 배율로 반영
+- `faction_income_changes`와 `treasury_changes`는 LLM이 출력할 수 있고, 자연 월간 수지는 시스템이 자동 누적
 
 **세력 외교 (`factions` — diplomacy)**
 
@@ -111,10 +138,21 @@
 - `player_strength` / `enemy_strength`: 전투 시작 시점의 실효 전력
 - `player_morale` / `enemy_morale`: 전투 사기(0–100), 오버레이의 주 전황 지표
 - `phase_number`: 다음 페이즈 번호
+- `battle_location_name` / `battle_year` / `battle_terrain`: 전투 표시명·연도·전장 지형
+- `player_coalition` / `enemy_coalition`: 전장에 실제 등장한 연합 세력 표시명 목록
 - `enemy_next_action`: 다음 페이즈 적 예고 행동
 - `pending_phase_outcome`: 직전 장면의 결과. 다음 페이즈 시작 시 사기·피해로 적용
 - `pending_battle_damage`: 전투 중 누적 피해. 전투 종료 시 `faction_battle_damage`로 확정
 - `is_siege`, `siege_location_id`, `siege_garrison`: 공성전 전용 정보
+
+**외교 회담 상태 (`diplomacyState`)**
+- `active`: 회담 진행 여부
+- `player_faction_id` / `target_faction_id`: 회담 양측 세력 id
+- `session_label`: 회담 표시명
+- `round_number`: 다음 라운드 번호
+- `opponent_next_stance`: 다음 라운드 상대 태도·요구
+- `round_results`: 라운드별 판정 기록
+- `ended` / `outcome`: 회담 종료 여부와 결과(`agreement` / `breakdown`)
 
 **대화 히스토리**
 - 전체 턴 히스토리를 `{role, content}[]` 형태로 유지해 맥락 연속성 보장
@@ -128,20 +166,27 @@ LLM이 씬 응답 끝에 `[STATE_UPDATE] { ... }` 형식의 구조화된 블록�
 |---|---|
 | `new_characters` / `dead_characters` | 인물 등장·사망 |
 | `new_factions` / `defeated_factions` | 새 세력 추가 / 세력 패퇴(지도자 사망·전 거점 상실 시) |
-| `faction_strength_changes` | 세력 기반 강도 변경 (delta, 영구적) |
+| `faction_field_army_changes` | 세력 상비군 변화(delta, 명 단위) |
+| `faction_reserve_changes` | 세력 예비 인력 변화(delta, 명 단위). 자연 회복은 시스템 자동 처리 |
+| `faction_strength_overrides` | 상비군·예비 인력·거점 변화 반영 후 재계산된 strength_score |
 | `faction_battle_damage` / `faction_battle_recovery` | 전투 피해 누적·회복 (임시적) |
 | `faction_diplomacy_changes` | 외교 수치 변경 (delta → 태도 자동 재계산) |
 | `faction_disposition_changes` | 외교 태도 직접 설정 |
 | `faction_intel_changes` | 세력 첩보 수준 변경 (0–4 범위로 clamp) |
+| `faction_income_changes` | 세력 수입 배율·고정 수입 변경 |
+| `treasury_changes` / `treasury_update` | 일회성 재정 변화 / 시스템이 계산한 최종 비축금 |
 | `character_troop_changes` | 인물 병력 변경 (delta) |
 | `character_disposition_changes` | 인물 성향 변경 |
 | `character_title_changes` | 인물 직위·칭호 변경 (즉위·승진·폐위 등) |
 | `new_locations` / `location_changes` | 거점 추가·지배 세력 변경 |
 | `player_location_id` | 플레이어의 현재 거점 id (사이드바 위치 표시에 사용) |
-| `weather` | 현재 날씨 설정. 군사 판정의 날씨 보정에 사용 |
+| `weather` | 현재 날씨 설정. 전투 페이즈의 날씨 보정과 UI 배지에 사용 |
+| `battle_location` / `battle_year` / `battle_terrain` | 전투 개시 응답에서 전장 표시 정보와 전장 지형을 지정 |
+| `diplomacy_outcome` / `opponent_next_stance` | 외교 회담 진행 중 결론·다음 라운드 상대 태도 지정 |
 | `combat_state` | 전투 시작·진행·종결 상태 갱신 |
+| `diplomacy_state` | 외교 회담 시작·진행·종결 상태 갱신 |
 
-전투 진행 중에는 일반 `faction_battle_damage`를 즉시 수용하지 않고, 엔진이 `phase_outcome`과 `pending_battle_damage`를 통해 피해를 관리합니다. 전투 관련 LLM 출력에는 `phase_outcome`, `combat_victor`, `enemy_next_action`, `player_coalition`, `enemy_coalition`이 사용됩니다.
+전투 진행 중에는 일반 `faction_battle_damage`를 즉시 수용하지 않고, 엔진이 `phase_outcome`과 `pending_battle_damage`를 통해 피해를 관리합니다. LLM은 `phase_outcome`을 출력하지 않으며, 전투 관련 LLM 출력에는 `combat_victor`, `enemy_next_action`, `player_coalition`, `enemy_coalition`, `battle_terrain` 등이 사용됩니다.
 
 ### 지도 시스템
 - SVG 지도 파일(`map.svg`)을 시나리오 폴더에 배치하면 인라인으로 자동 삽입됨
@@ -154,16 +199,17 @@ LLM이 씬 응답 끝에 `[STATE_UPDATE] { ... }` 형식의 구조화된 블록�
 | 영역 | 내용 |
 |---|---|
 | 좌측 | 지휘관 프로필(1) · 주요 인물 목록(2) · 세력 현황 바(2) — flex 비율 1:2:2 |
-| 중앙 | 씬 본문(마크다운 렌더링), 장·씬 배지, 시각·장소 표시 |
+| 중앙 | 씬 본문(마크다운 렌더링), 판정 배지, 시각·장소 표시 |
 | 우측 | 배경 지도(SVG + CSS 마커), 동시 진행 사건, 선택지 버튼 + 자유 입력창 |
 
 - 지휘관 프로필: 직위·병력(추정 수치 범위)·거점·**능력치 등급**(통솔/지략/외교/행정/무력)을 표시
 - 지도 마커·세력 현황 바 툴팁에 세력 고유 색상 도트 표시
 - 인물·지도 마커·사건 항목에 **호버 툴팁** 제공 (세부 정보 표시)
-- 장 종결 후 요약 테이블·총평·잔불 전용 화면으로 전환
-- 전투 발생 시 전용 오버레이로 전환해 사기 막대, 교전 기록, 판정 배지, 후퇴 버튼, 전술 명령 입력창 표시
+- 전투 발생 시 전용 오버레이로 전환해 사기 막대, 지휘관 카드, 병력 추정, 교전 기록, 판정 배지, 후퇴 버튼, 전술 명령 입력창 표시
+- 고위급 외교 회담 발생 시 외교 오버레이로 전환해 라운드 기록, 상대 태도, 회담 중단 버튼, 외교 명령 입력창 표시
 - 판정 배지는 일반 행동 등급 또는 전투 페이즈 결과를 표시하며, 툴팁에서 주사위 결과(일반: 4d6, 전투: 아군 2d6 vs 적군 2d6)와 보정 정보를 확인 가능
 - URL에 `?debug` 파라미터를 추가하면 판정·STATE_UPDATE·적 예고 행동 디버그 패널을 씬 하단에 표시
+- `frontend/combat-debug.html`에서 전투 UI와 페이즈 결과를 서버 호출 없이 점검 가능
 
 ---
 
@@ -192,14 +238,18 @@ interactive_stories/
 │   ├── gemini_client.py            # Gemini API 호출 헬퍼
 │   ├── requirements.txt
 │   ├── .env                        # GOOGLE_API_KEY, SECRET_KEY 설정 (직접 생성 필요)
+│   ├── prompt/
+│   │   ├── prompt_rules.md         # AI 시스템 프롬프트 — 역할·세계 시뮬레이션·행동 판정·진행 규칙
+│   │   ├── prompt_output_format.md # AI 시스템 프롬프트 — 출력 포맷 및 STATE_UPDATE 명세
+│   │   └── prompt_examples.md      # AI 시스템 프롬프트 — Few-shot 예시 (씬·장 종결·Tier3)
 │   ├── data/
-│   │   └── users.json              # 사용자 데이터 저장소 (게스트·Google 계정)
+│   │   └── users.json              # 런타임 생성 사용자 데이터 저장소 (.gitignore 대상)
 │   ├── engine/
 │   │   ├── classifier.py           # LLM 기반 행동 유형 분류 (야전·기습·공성·외교·첩보 등)
 │   │   ├── quality.py              # 행동 품질 평가용 보조 컨텍스트 구성 및 LLM 평가
-│   │   ├── resolver.py             # 행동·전투 판정 엔진 (4d6, 품질·지형·날씨·수비대·등급 보정, 전투 페이즈)
-│   │   ├── turn.py                 # 턴 파싱 (장/씬 번호, 시각, STATE_UPDATE 블록 추출)
-│   │   └── context.py              # LLM 컨텍스트 빌더 (시나리오 상태 주입, 오프닝 NPC)
+│   │   ├── resolver.py             # 행동·전투·외교 회담 판정 엔진 (4d6, 2d6 페이즈, 품질·지형·날씨·등급 보정)
+│   │   ├── turn.py                 # 턴 파싱 (시각, STATE_UPDATE 블록 추출)
+│   │   └── context.py              # LLM 컨텍스트 빌더 (시나리오 상태·재정·이벤트·오프닝 NPC)
 │   ├── routers/
 │   │   ├── auth.py                 # /api/auth/* 엔드포인트 (게스트·Google 로그인, 설정 조회)
 │   │   ├── scenarios.py            # /api/scenarios 엔드포인트
@@ -217,7 +267,7 @@ interactive_stories/
 │           ├── event_context.json  # 이벤트 조건 평가 확장 변수 (faction_vars·location_vars)
 │           ├── prompt.md           # 시나리오 전역 LLM 지시문 (명령형으로 작성)
 │           ├── prompt_{char_id}.md # 캐릭터별 LLM 지시문 (select 모드, 해당 캐릭터 선택 시에만 주입)
-│           └── map.svg             # 배경 지도 SVG (선택)
+│           └── map.svg             # 배경 지도 SVG (선택, 현재 자동 인라인 로딩 대상)
 ├── frontend/
 │   ├── auth.html                   # 진입 화면 (게스트 시작 / Google 로그인)
 │   ├── main_menu.html              # 메인 메뉴 (새 게임 / 불러오기)
@@ -227,6 +277,8 @@ interactive_stories/
 │   ├── character_select_deluge.html # 대홍수 시나리오 주인공 선택 화면
 │   ├── game.html                   # 메인 게임 화면 (HTML 구조만)
 │   ├── combat-ui.js                # 다중 페이즈 전투 오버레이 렌더링·전술 입력·후퇴 처리
+│   ├── combat-debug.html           # 전투 UI 수동 디버그 페이지
+│   ├── diplomacy-ui.js             # 다중 라운드 외교 회담 오버레이 렌더링·입력·중단 처리
 │   ├── game-tooltip.js             # 툴팁 시스템 + 태그 스타일 정의
 │   ├── game-markdown.js            # 마크다운 → HTML 변환, 응답 텍스트 파싱
 │   ├── game-ui.js                  # 렌더링 함수 (씬·인물·세력·지도·사건·능력치 등급)
@@ -235,21 +287,23 @@ interactive_stories/
 │   ├── common.js                   # 공통 유틸 (showComingSoon 토스트 등)
 │   ├── api.js                      # 중앙화된 API 클라이언트 (fetch 호출 집중 관리)
 │   ├── nav.js                      # 네비게이션·인증 상태 관리 (sessionStorage / localStorage / 쿠키)
+│   ├── scenario-loader.js          # 프론트엔드용 시나리오 로더 (브라우저 스크립트)
+│   ├── scenario-ui.js              # 프론트엔드용 시나리오 UI 렌더러
 │   ├── game.css                    # 게임 UI 스타일
 │   └── styles.css                  # 공통 디자인 시스템 (변수, 카드, 애니메이션 등)
 ├── state/
 │   ├── GameState.js                # 게임 상태 클래스 (인물·세력·거점·히스토리)
 │   └── StateManager.js             # sessionStorage 직렬화·복원
 ├── saves/
-│   └── {user_id}/                  # 사용자별 격리된 세이브 파일 저장소 (JSON)
+│   └── {user_id}/                  # 런타임 생성 사용자별 세이브 저장소 (JSON, .gitignore 대상)
+├── deploy/
+│   ├── setup.sh                    # Oracle Cloud Ubuntu 초기 설정 스크립트
+│   ├── update.sh                   # 서버 코드 업데이트 및 서비스 재시작
+│   ├── nginx.conf                  # nginx reverse proxy 설정
+│   └── interactive-stories.service # systemd 서비스 파일
 ├── tools/
 │   └── map-coord-picker.html       # 지도 이미지 좌표 픽업 도구
 ├── .gitignore
-├── scenario-loader.js              # 백엔드 REST API 클라이언트
-├── scenario-ui.js                  # 시나리오별 UI 렌더링 로직 (색상·마커)
-├── prompt_rules.md                 # AI 시스템 프롬프트 — 역할·세계 시뮬레이션·행동 판정·진행 규칙
-├── prompt_output_format.md         # AI 시스템 프롬프트 — 출력 포맷 및 STATE_UPDATE 명세
-├── prompt_examples.md              # AI 시스템 프롬프트 — Few-shot 예시 (씬·장 종결·Tier3)
 ├── start.bat                       # Windows 실행 스크립트
 └── start.sh                        # Mac/Linux 실행 스크립트
 ```
@@ -262,7 +316,7 @@ interactive_stories/
 |---|---|---|---|
 | `ottoman-interregnum` | 뇌제의 후계자 | 1403년 · 오스만 제국 공위기 (4인 왕자 선택) | 정식 |
 | `the-deluge` | 대홍수 | 1648년 · 폴란드-리투아니아 연방 붕괴 직전 | 정식 |
-| `justinians-dream` | 유스타니우스의 꿈 | 533년 · 동로마 제국 재정복 전쟁 | WIP |
+| `justinians-dream` | 유스타니우스의 꿈 | 533년 · 동로마 제국 재정복 전쟁 | 정식 |
 
 ---
 
@@ -344,8 +398,8 @@ uvicorn main:app --reload --port 8000
 4. **씬 진행** — AI가 상황을 묘사하고 최대 3개의 선택지를 제시
 5. **명령 입력** — 선택지를 고르거나 자유 텍스트로 직접 명령 입력
 6. **전투 진행** — 군사 행동이 전투로 분류되면 전투 오버레이에서 페이즈 단위로 전술 명령 입력
-7. **장 종결** — 핵심 갈등이 새로운 균형에 도달하면 장이 종결되고 요약·총평 제공
-8. **다음 장** — 플레이어 입력을 받아 다음 장으로 이어짐
+7. **외교 회담** — 고위급 협상이 발생하면 외교 오버레이에서 라운드 단위로 교섭 명령 입력
+8. **상태 변화 누적** — 전투 피해, 외교 관계, 재정, 예비 인력, 거점 지배 상태가 턴마다 갱신
 
 빠른 역사적 전투를 선택하면 시나리오·주인공 선택 단계를 건너뛰고 사전 정의된 전장으로 바로 진입합니다.
 

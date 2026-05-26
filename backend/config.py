@@ -26,7 +26,7 @@ if not SECRET_KEY:
 
 _root = Path(__file__).parent.parent
 SYSTEM_PROMPT = "\n\n".join(
-    (_root / name).read_text(encoding="utf-8")
+    (_root / "backend" / "prompt" / name).read_text(encoding="utf-8")
     for name in ("prompt_rules.md", "prompt_output_format.md", "prompt_examples.md")
 )
 

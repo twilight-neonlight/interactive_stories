@@ -38,24 +38,39 @@ _ACTION_LABELS = {
 }
 
 # ── 능력치 등급 수치화 (E- = 0 … S+ = 17, 기준 C = 7)
-_GRADE_SCALE = ['E-','E','E+','D-','D','D+','C-','C','C+','B-','B','B+','A-','A','A+','S-','S','S+']
+_GRADE_SCALE = ('E-','E','E+','D-','D','D+','C-','C','C+','B-','B','B+','A-','A','A+','S-','S','S+')
 _GRADE_IDX   = {g: i for i, g in enumerate(_GRADE_SCALE)}
+_GRADE_BASELINE = 7
+
+_DIFF_MOD_TIERS: tuple[tuple[int | None, int], ...] = (
+    ( 15,  5),
+    ( 12,  4),
+    (  9,  3),
+    (  6,  2),
+    (  3,  1),
+    ( -2,  0),
+    ( -5, -1),
+    ( -8, -2),
+    (-11, -3),
+    (-14, -4),
+    (None, -5),
+)
+
+_ADMIN_RECOVERY_MIN_MULT = 0.5
+_ADMIN_RECOVERY_BASE_MULT = 1.0
+_ADMIN_RECOVERY_MAX_MULT = 2.0
+
 
 def _grade_to_num(grade: str | None) -> int:
-    return _GRADE_IDX.get(grade, 7) if grade else 7
+    return _GRADE_IDX.get(grade, _GRADE_BASELINE) if grade else _GRADE_BASELINE
+
 
 def _diff_to_mod(diff: int) -> int:
-    if diff >= 15: return  5
-    if diff >= 12: return  4
-    if diff >=  9: return  3
-    if diff >=  6: return  2
-    if diff >=  3: return  1
-    if diff >= -2: return  0
-    if diff >= -5: return -1
-    if diff >= -8: return -2
-    if diff >=-11: return -3
-    if diff >=-14: return -4
+    for threshold, mod in _DIFF_MOD_TIERS:
+        if threshold is None or diff >= threshold:
+            return mod
     return -5
+
 
 def calc_admin_recovery_multiplier(state: dict) -> float:
     """플레이어 행정 능력치 → 인력·주둔군 회복 가중치 (0.5~2.0).
@@ -69,9 +84,12 @@ def calc_admin_recovery_multiplier(state: dict) -> float:
     if grade is None:
         return 1.0
     num = _grade_to_num(grade)  # 0~17
-    if num <= 7:
-        return round(0.5 + num * (0.5 / 7), 3)
-    return round(1.0 + (num - 7) * (1.0 / 10), 3)
+    if num <= _GRADE_BASELINE:
+        span = _ADMIN_RECOVERY_BASE_MULT - _ADMIN_RECOVERY_MIN_MULT
+        return round(_ADMIN_RECOVERY_MIN_MULT + num * (span / _GRADE_BASELINE), 3)
+    span = _ADMIN_RECOVERY_MAX_MULT - _ADMIN_RECOVERY_BASE_MULT
+    top_steps = len(_GRADE_SCALE) - 1 - _GRADE_BASELINE
+    return round(_ADMIN_RECOVERY_BASE_MULT + (num - _GRADE_BASELINE) * (span / top_steps), 3)
 
 
 def calc_diplomacy_relation_modifier(state: dict, target_faction_id: str | None) -> tuple[str, int] | None:
@@ -177,7 +195,7 @@ def _classify_terrain(terrain_text: str) -> str:
     t = terrain_text
     if any(k in t for k in ["협곡","절벽","산록","언덕","구릉","산지","산"]): return "highland"
     if any(k in t for k in ["습지","늪","합류","합류부"]):                      return "wetland"
-    if any(k in t for k in ["강변","강안","강북","강남","강 합류"]):            return "riverside"
+    if any(k in t for k in ["강변","강안","강북","강남"]):            return "riverside"
     if any(k in t for k in ["정글","열대우림"]):                                return "jungle"
     if any(k in t for k in ["삼림","산림","숲"]):                              return "forest"
     if any(k in t for k in ["범람원","삼각주"]):                                return "floodplain"
@@ -289,29 +307,26 @@ def _resolve_military_action(action_type: str,
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-# 전투 페이즈 주사위 — 1d12 + 지형 + 날씨 + 전술 품질 → phase_outcome
+# 전투 페이즈 주사위 — 2d6 대결 + 지형 + 날씨 + 전술 품질 → phase_outcome
 # ─────────────────────────────────────────────────────────────────────────────
 
-_PHASE_OUTCOME_KO: dict[str, str] = {
-    "critical_success": "결정적 우세",
-    "major_success":    "전술 우세",
-    "minor_success":    "소폭 우세",
-    "stalemate":        "교착",
-    "minor_fail":       "소폭 열세",
-    "major_fail":       "전술 열세",
-    "critical_fail":    "결정적 열세",
-}
+_PHASE_OUTCOME_TIERS: tuple[tuple[int | None, str, str], ...] = (
+    ( 9,   "결정적 우세", "critical_success"),
+    ( 6,   "전술 우세",   "major_success"),
+    ( 3,   "소폭 우세",   "minor_success"),
+    (-2,   "교착",        "stalemate"),
+    (-5,   "소폭 열세",   "minor_fail"),
+    (-8,   "전술 열세",   "major_fail"),
+    (None, "결정적 열세", "critical_fail"),
+)
 
 
-def _net_to_phase_outcome(net: int) -> str:
-    # 기준: 아군2d6 - 적군2d6 대결 차이(-10~+10) + 수정치
-    if net >= 9:  return "critical_success"
-    if net >= 6:  return "major_success"
-    if net >= 3:  return "minor_success"
-    if net >= -2: return "stalemate"       # -2 ~ +2
-    if net >= -5: return "minor_fail"      # -3 ~ -5
-    if net >= -8: return "major_fail"      # -6 ~ -8
-    return "critical_fail"                 # ≤ -9
+def _phase_outcome_from_net(net: int) -> tuple[str, str]:
+    """net을 (한글 등급, phase_outcome key)로 변환합니다."""
+    for threshold, tier, phase_outcome in _PHASE_OUTCOME_TIERS:
+        if threshold is None or net >= threshold:
+            return tier, phase_outcome
+    return "결정적 열세", "critical_fail"
 
 
 def _resolve_phase_dice(state: dict, action_type: str,
@@ -328,11 +343,11 @@ def _resolve_phase_dice(state: dict, action_type: str,
     if extra_modifiers:
         modifiers.extend(extra_modifiers)
 
-    net           = roll + sum(v for _, v in modifiers)
-    phase_outcome = _net_to_phase_outcome(net)
+    net = roll + sum(v for _, v in modifiers)
+    tier, phase_outcome = _phase_outcome_from_net(net)
 
     return {
-        "tier":          _PHASE_OUTCOME_KO.get(phase_outcome, "?"),
+        "tier":          tier,
         "tier_en":       "phase_dice",
         "roll":          roll,
         "roll_detail":   {"ally": a, "enemy": b},
@@ -404,58 +419,45 @@ def resolution_prompt(res: dict) -> str:
 # 다중 페이즈 전투 시스템 — 적 행동 예고 방식
 # ─────────────────────────────────────────────────────────────────────────────
 
-# 사상자 규모 레이블 → (최소, 최대) 절댓값 battle_damage 포인트 (0–700 스케일 기준)
-# 비율이 아닌 고정 범위 — 전력 크기와 무관하게 1페이즈당 손실을 예측 가능하게 유지
-DAMAGE_LABEL_RATIO: dict[str, tuple[int, int]] = {
-    "경미": (1,  2),
-    "보통": (2,  4),
-    "중대": (4,  7),
-    "심각": (7, 12),
-    "궤멸": (12, 20),
+# phase_outcome → (player_damage_range, enemy_damage_range)
+# 각 범위는 절댓값 battle_damage 포인트입니다. 비율이 아닌 고정 범위로 두어
+# 전력 크기와 무관하게 1페이즈당 손실을 예측 가능하게 유지합니다.
+_PHASE_OUTCOME_DAMAGE: dict[str, tuple[tuple[int, int], tuple[int, int]]] = {
+    "critical_success": ((1,  2), (12, 20)),
+    "major_success":    ((2,  4), (7, 12)),
+    "minor_success":    ((2,  4), (4,  7)),
+    "stalemate":        ((1,  2), (1,  2)),
+    "minor_fail":       ((4,  7), (2,  4)),
+    "major_fail":       ((7, 12), (2,  4)),
+    "critical_fail":    ((12, 20), (1,  2)),
 }
+_DEFAULT_PHASE_DAMAGE = ((1, 2), (1, 2))
 
-# phase_outcome → (player_damage_label, enemy_damage_label)
-_PHASE_OUTCOME_DAMAGE: dict[str, tuple[str, str]] = {
-    "critical_success": ("경미", "궤멸"),
-    "major_success":    ("보통", "심각"),
-    "minor_success":    ("보통", "중대"),
-    "stalemate":        ("경미", "경미"),
-    "minor_fail":       ("중대", "보통"),
-    "major_fail":       ("심각", "보통"),
-    "critical_fail":    ("궤멸", "경미"),
+# phase_outcome → (player_morale_delta_range, enemy_morale_delta_range)
+_PHASE_OUTCOME_MORALE: dict[str, tuple[tuple[int, int], tuple[int, int]]] = {
+    "critical_success": (( 5, 10), (-80, -45)),
+    "major_success":    (( 3,  5), (-44, -21)),
+    "minor_success":    (( 0,  0), (-20, -10)),
+    "stalemate":        ((-9, -5), ( -9,  -5)),
+    "minor_fail":       ((-20, -10), ( 0,   0)),
+    "major_fail":       ((-44, -21), ( 3,   5)),
+    "critical_fail":    ((-80, -45), ( 5,  10)),
 }
+_DEFAULT_PHASE_MORALE = ((0, 0), (0, 0))
 
 
 def _apply_phase_morale(outcome: str,
                         player_morale: int, enemy_morale: int) -> tuple[int, int]:
     """페이즈 결과에 따라 양측 사기를 조정합니다."""
-    if outcome == "critical_success":
-        player_morale += random.randint(5, 10)
-        enemy_morale  -= random.randint(50, 80)
-    elif outcome == "major_success":
-        player_morale += random.randint(3, 5)
-        enemy_morale  -= random.randint(20, 49)
-    elif outcome == "minor_success":
-        enemy_morale  -= random.randint(9, 19)
-    elif outcome == "stalemate":
-        player_morale -= random.randint(5, 8)
-        enemy_morale  -= random.randint(5, 8)
-    elif outcome == "minor_fail":
-        player_morale -= random.randint(9, 19)
-    elif outcome == "major_fail":
-        enemy_morale  += random.randint(3, 5)
-        player_morale -= random.randint(20, 49)
-    elif outcome == "critical_fail":
-        enemy_morale  += random.randint(5, 10)
-        player_morale -= random.randint(50, 80)
+    p_range, e_range = _PHASE_OUTCOME_MORALE.get(outcome, _DEFAULT_PHASE_MORALE)
+    player_morale += random.randint(*p_range)
+    enemy_morale  += random.randint(*e_range)
     return max(0, min(100, player_morale)), max(0, min(100, enemy_morale))
 
 
-
-
-def combat_damage_labels(phase_outcome: str) -> tuple[str, str]:
-    """phase_outcome을 (player_label, enemy_label)로 변환합니다."""
-    return _PHASE_OUTCOME_DAMAGE.get(phase_outcome, ("경미", "경미"))
+def combat_damage_ranges(phase_outcome: str) -> tuple[tuple[int, int], tuple[int, int]]:
+    """phase_outcome을 (player_damage_range, enemy_damage_range)로 변환합니다."""
+    return _PHASE_OUTCOME_DAMAGE.get(phase_outcome, _DEFAULT_PHASE_DAMAGE)
 
 
 # 최대 페이즈 수 (안전 한계 — 초과 시 누적 피해 기준으로 승패 결정)
@@ -465,9 +467,9 @@ _MAX_PHASES = 25
 _MIN_PHASES_BEFORE_VICTOR = 3
 
 
-def calc_phase_damage(label: str, ratio: float = 1.0) -> int:
-    """레이블 × 병력비(소수점 1자리)로 battle_damage 포인트를 반환합니다."""
-    lo, hi = DAMAGE_LABEL_RATIO.get(label, DAMAGE_LABEL_RATIO["경미"])
+def calc_phase_damage(damage_range: tuple[int, int], ratio: float = 1.0) -> int:
+    """손실 범위 × 병력비(소수점 1자리)로 battle_damage 포인트를 반환합니다."""
+    lo, hi = damage_range
     if hi == 0:
         return 0
     return max(0, round(random.randint(lo, hi) * round(ratio, 1)))
@@ -530,7 +532,6 @@ def _get_faction_strength(faction_id: str, state: dict) -> int:
 
 
 _SIEGE_TERRAIN_MULT: dict[str, float] = {
-    "fortress":   1.6,
     "jungle":     1.5,
     "icefield":   1.5,
     "highland":   1.4,
@@ -538,16 +539,14 @@ _SIEGE_TERRAIN_MULT: dict[str, float] = {
     "forest":     1.3,
     "tundra":     1.3,
     "desert":     1.3,
-    "wetland":    1.2,
-    "floodplain": 1.2,
+    "wetland":    0.9,
+    "floodplain": 0.9,
     "basin":      1.2,
     "arid":       1.2,
-    "river":      1.2,
-    "plain":      1.1,
+    "plain":      1.0,
     "coastal":    1.1,
     "nearshore":  1.1,
     "steppe":     1.0,
-    "ocean":      1.0,
 }
 
 
@@ -626,7 +625,7 @@ def init_combat_phase(command: str, state: dict,
         tpp        = state.get("troopsPerPoint", 65)
         base_str   = max(10, round(garrison / tpp))
         terrain_type = _classify_terrain(loc.get("terrain", ""))
-        mult       = _SIEGE_TERRAIN_MULT.get(terrain_type, 1.1)
+        mult       = _SIEGE_TERRAIN_MULT.get(terrain_type, 1.0)
         enemy_str  = max(10, round(base_str * mult))
         loc_name   = loc.get("name", "").split("(")[0].strip() or cls_loc
     else:
@@ -696,11 +695,11 @@ def advance_combat_phase(command: str, state: dict,
 
     # 이전 턴 phase_outcome → 피해 누적 (deferred)
     if pending_outcome:
-        p_label, e_label = combat_damage_labels(pending_outcome)
+        p_damage_range, e_damage_range = combat_damage_ranges(pending_outcome)
         p_ratio = (e_str / max(1, p_str)) ** 0.5
         e_ratio = (p_str / max(1, e_str)) ** 0.5
-        if p_fid: pending[p_fid] = pending.get(p_fid, 0) + calc_phase_damage(p_label, p_ratio)
-        if e_fid: pending[e_fid] = pending.get(e_fid, 0) + calc_phase_damage(e_label, e_ratio)
+        if p_fid: pending[p_fid] = pending.get(p_fid, 0) + calc_phase_damage(p_damage_range, p_ratio)
+        if e_fid: pending[e_fid] = pending.get(e_fid, 0) + calc_phase_damage(e_damage_range, e_ratio)
 
     # 이번 턴 phase_outcome → 사기 즉시 적용
     player_morale, enemy_morale = _apply_phase_morale(
@@ -752,9 +751,9 @@ def advance_combat_phase(command: str, state: dict,
             cur_outcome = resolution["phase_outcome"]
             p_ratio = (e_str / max(1, p_str)) ** 0.5
             e_ratio = (p_str / max(1, e_str)) ** 0.5
-            p_label, e_label = combat_damage_labels(cur_outcome)
-            if p_fid: pending[p_fid] = pending.get(p_fid, 0) + calc_phase_damage(p_label, p_ratio)
-            if e_fid: pending[e_fid] = pending.get(e_fid, 0) + calc_phase_damage(e_label, e_ratio)
+            p_damage_range, e_damage_range = combat_damage_ranges(cur_outcome)
+            if p_fid: pending[p_fid] = pending.get(p_fid, 0) + calc_phase_damage(p_damage_range, p_ratio)
+            if e_fid: pending[e_fid] = pending.get(e_fid, 0) + calc_phase_damage(e_damage_range, e_ratio)
             new_cs["pending_battle_damage"] = pending
             p_dmg  = pending.get(p_fid, 0)
             e_dmg  = pending.get(e_fid, 0)

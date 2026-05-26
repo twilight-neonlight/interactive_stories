@@ -257,6 +257,31 @@ const _MOCK_CHOICES = {
   ],
 };
 
+const _MOCK_MORALE_DELTA = {
+  critical_success: { player: [  5,  10], enemy: [-80, -45] },
+  major_success:    { player: [  3,   5], enemy: [-44, -21] },
+  minor_success:    { player: [  0,   0], enemy: [-20, -10] },
+  stalemate:        { player: [ -9,  -5], enemy: [ -9,  -5] },
+  minor_fail:       { player: [-20, -10], enemy: [  0,   0] },
+  major_fail:       { player: [-44, -21], enemy: [  3,   5] },
+  critical_fail:    { player: [-80, -45], enemy: [  5,  10] },
+};
+
+const _MOCK_DAMAGE_DELTA = {
+  critical_success: { player: 0,  enemy: 20 },
+  major_success:    { player: 2,  enemy: 12 },
+  minor_success:    { player: 4,  enemy: 8  },
+  stalemate:        { player: 5,  enemy: 5  },
+  minor_fail:       { player: 8,  enemy: 4  },
+  major_fail:       { player: 12, enemy: 2  },
+  critical_fail:    { player: 20, enemy: 0  },
+};
+
+function _rollRange(range) {
+  const [lo, hi] = range;
+  return Math.floor(Math.random() * (hi - lo + 1)) + lo;
+}
+
 function _buildMockContent(outcome) {
   const narrative = _MOCK_NARRATIVE[outcome] || _MOCK_NARRATIVE.stalemate;
   const choices = (_MOCK_CHOICES[outcome] || _MOCK_CHOICES.stalemate)
@@ -389,32 +414,18 @@ function dbgNextPhase() {
   const outcome = document.getElementById('dbg-outcome')?.value || 'stalemate';
   const res     = _buildMockResolution(outcome);
 
-  // 사기 변화 시뮬레이션 — resolver.py _apply_phase_morale 와 동일한 범위
-  const _ri = (lo, hi) => Math.floor(Math.random() * (hi - lo + 1)) + lo;
-  const moraleShift = (() => { switch (outcome) {
-    case 'critical_success': return { player: +_ri(5,10),  enemy: -_ri(50,80) };
-    case 'major_success':    return { player: +_ri(3,5),   enemy: -_ri(20,49) };
-    case 'minor_success':    return { player: 0,            enemy: -_ri(9,19)  };
-    case 'stalemate':        return { player: -_ri(5,8),   enemy: -_ri(5,8)   };
-    case 'minor_fail':       return { player: -_ri(9,19),  enemy: 0            };
-    case 'major_fail':       return { player: -_ri(20,49), enemy: +_ri(3,5)   };
-    case 'critical_fail':    return { player: -_ri(50,80), enemy: +_ri(5,10)  };
-    default:                 return { player: 0, enemy: 0 };
-  }})();
+  // 사기 변화 시뮬레이션 — resolver.py _PHASE_OUTCOME_MORALE 와 동일한 범위
+  const moraleRanges = _MOCK_MORALE_DELTA[outcome] || { player: [0, 0], enemy: [0, 0] };
+  const moraleShift = {
+    player: _rollRange(moraleRanges.player),
+    enemy:  _rollRange(moraleRanges.enemy),
+  };
 
   cs.player_morale = Math.max(0, Math.min(100, (cs.player_morale ?? 100) + moraleShift.player));
   cs.enemy_morale  = Math.max(0, Math.min(100, (cs.enemy_morale  ?? 100) + moraleShift.enemy));
 
   // pending_battle_damage 누적 시뮬레이션
-  const dmg = {
-    critical_success: { player: 0,  enemy: 20 },
-    major_success:    { player: 2,  enemy: 12 },
-    minor_success:    { player: 4,  enemy: 8  },
-    stalemate:        { player: 5,  enemy: 5  },
-    minor_fail:       { player: 8,  enemy: 4  },
-    major_fail:       { player: 12, enemy: 2  },
-    critical_fail:    { player: 20, enemy: 0  },
-  }[outcome] || { player: 5, enemy: 5 };
+  const dmg = _MOCK_DAMAGE_DELTA[outcome] || { player: 5, enemy: 5 };
 
   const pFid = cs.player_faction_id;
   const eFid = cs.enemy_faction_id;
