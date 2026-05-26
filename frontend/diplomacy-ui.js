@@ -127,15 +127,13 @@ function _renderDiplomacyScene(content, resolution) {
   const badge = document.getElementById('d-res-badge');
   if (badge) {
     if (resolution && RESOLUTION_STYLE[resolution.tier_en]) {
-      const s = RESOLUTION_STYLE[resolution.tier_en];
+      const s      = RESOLUTION_STYLE[resolution.tier_en];
+      const modStr = formatModifiers(resolution.modifiers);
       badge.style.cssText = `display:inline-block;color:${s.color};border-color:${s.color};`;
-      const modStr = resolution.modifiers?.length
-        ? ' [' + resolution.modifiers.map(([l, v]) => `${l} ${v > 0 ? '+' : ''}${v}`).join(', ') + ']'
-        : '';
       badge.textContent = s.label;
       badge.title = resolution.roll != null
-        ? `주사위 ${resolution.roll} → 보정 후 ${resolution.net}${modStr}`
-        : modStr ? modStr.slice(2) : '';
+        ? `주사위 ${resolution.roll} → 보정 후 ${resolution.net}${modStr ? ' [' + modStr + ']' : ''}`
+        : modStr ?? '';
     } else {
       badge.style.display = 'none';
     }
@@ -144,11 +142,7 @@ function _renderDiplomacyScene(content, resolution) {
   const choices    = extractChoices(content);
   const choiceList = document.getElementById('d-choices');
   if (choiceList) {
-    choiceList.innerHTML = choices.map(c => {
-      const css = _CHOICE_TYPE_CSS[c.type];
-      const cls = css ? `choice-btn choice-btn--${css}` : 'choice-btn';
-      return `<button class="${cls}" data-action-type="${c.type || ''}" onclick="selectDiplomacyChoice(this)">${c.text}</button>`;
-    }).join('');
+    choiceList.innerHTML = renderChoiceButtons(choices, 'selectDiplomacyChoice');
   }
 }
 
@@ -239,14 +233,7 @@ async function submitDiplomacyTurn() {
     const { content, state_updates: su, resolution, _debug } =
       await GameAPI.submitTurn(cmd, _state.toJSON(), _state.getHistory(), false, false, actionType);
 
-    _state.pushHistory('user', cmd);
-    _state.pushHistory('assistant', content);
-
-    applyStateUpdates(su);
-
-    _ui.onTurnEnd?.(_state);
-    _manager._state = _state;
-    _manager.save();
+    commitTurn(cmd, content, su);
 
     const ds = _state.diplomacyState;
     if (ds) {
@@ -286,13 +273,7 @@ async function diplomacyWithdraw() {
     const { content, state_updates: su, resolution } =
       await GameAPI.submitTurn('회담 중단', _state.toJSON(), _state.getHistory(), false, true);
 
-    _state.pushHistory('user', '회담 중단');
-    _state.pushHistory('assistant', content);
-
-    applyStateUpdates(su);
-
-    _manager._state = _state;
-    _manager.save();
+    commitTurn('회담 중단', content, su);
 
     const ds = _state.diplomacyState;
     if (ds) { _renderDiplomacyRoundInfo(ds); _renderDiplomacyLog(ds); }

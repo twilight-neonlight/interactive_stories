@@ -3,9 +3,25 @@ let _manager = null;
 let _state   = null;
 let _ui      = null;
 
+// ── 백엔드 메타 설정 로드 (/api/config)
+// game.html 로드 초기에 한 번만 호출. 실패해도 게임은 동작하나 weather/terrain 배지 fallback 사용.
+async function loadGameConfig() {
+  try {
+    const r = await fetch(`${window.API_BASE}/api/config`);
+    if (!r.ok) return;
+    const data = await r.json();
+    window._gameConfig.gradeScale  = data.grade_scale  ?? null;
+    window._gameConfig.weatherMeta = data.weather_meta ?? null;
+    window._gameConfig.terrainMeta = data.terrain_meta ?? null;
+  } catch (_) {
+    // 서버 미연결 등 — fallback 동작 유지
+  }
+}
+
 // ── 초기화
 (async () => {
   try {
+  await loadGameConfig();
   _manager = new StateManager();
 
   // ── 빠른 역사적 전투 복원 ──────────────────────────────────────────────────

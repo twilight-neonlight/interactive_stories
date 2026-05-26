@@ -113,6 +113,8 @@
 
 <!-- game-markdown.js: markdownToHtml / extractNarrative / extractChoices -->
 <script src="./game-markdown.js"></script>
+<!-- common.js: formatModifiers / extractQualityMark / renderChoiceButtons / commitTurn 등 공통 유틸 -->
+<script src="./common.js"></script>
 <!-- combat-ui.js: openCombatOverlay 등 모든 전투 UI 함수 -->
 <script src="./combat-ui.js"></script>
 
@@ -149,6 +151,14 @@ window.applyStateUpdates = () => {};
 // _manager / _ui — 저장·이벤트 목
 window._manager = { _state: null, save() {} };
 window._ui      = { onTurnEnd: null };
+
+// commitTurn (common.js) 이 _state.pushHistory / getHistory를 호출하므로
+// 디버그 plain-object _state 에 무작동 stub을 추가해 TypeError를 방지한다.
+function _patchStateForDebug(state) {
+  if (!state.pushHistory) state.pushHistory = () => {};
+  if (!state.getHistory)  state.getHistory  = () => [];
+  return state;
+}
 
 // ═══════════════════════════════════════════════════════════════════════════
 //  시나리오 프리셋
@@ -375,7 +385,7 @@ function _getOverrides() {
 // ═══════════════════════════════════════════════════════════════════════════
 
 function dbgReset() {
-  window._state = _buildState(_dbgScenario, _getOverrides());
+  window._state = _patchStateForDebug(_buildState(_dbgScenario, _getOverrides()));
   window._manager._state = window._state;
   const initContent = _buildMockContent('minor_success');
   const initRes     = _buildMockResolution('minor_success');

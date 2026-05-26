@@ -13,15 +13,13 @@ function renderDebugPanel(container, resolution, debugData) {
   let resLines;
   if (res.tier_en === 'phase_dice') {
     const detail = res.roll_detail || {};
-    const modStr2 = res.modifiers?.length
-      ? res.modifiers.map(([l, v]) => `${l} ${v > 0 ? '+' : ''}${v}`).join(', ')
-      : '없음';
+    const modStr = formatModifiers(res.modifiers) ?? '없음';
     resLines = [
       `type      : phase_dice`,
       `roll      : 아군 ${detail.ally ?? '?'} vs 적 ${detail.enemy ?? '?'} → ${res.roll >= 0 ? '+' : ''}${res.roll}`,
       `net       : ${res.net}`,
       `outcome   : ${res.phase_outcome || res.tier || '—'}`,
-      `수정자    : ${modStr2}`,
+      `수정자    : ${modStr}`,
       `품질 보정 : ${qm != null ? qm : '—'}`,
     ];
   } else if (res.tier_en === 'combat_luck') {
@@ -33,9 +31,7 @@ function renderDebugPanel(container, resolution, debugData) {
       `행동 유형 : ${res.action_type || '—'}`,
     ];
   } else if (res.tier_en) {
-    const modStr = res.modifiers?.length
-      ? res.modifiers.map(([l, v]) => `${l} ${v > 0 ? '+' : ''}${v}`).join(', ')
-      : '없음';
+    const modStr = formatModifiers(res.modifiers) ?? '없음';
     resLines = [
       `tier      : ${res.tier_en}`,
       `roll / net: ${res.roll} → ${res.net}`,
@@ -402,17 +398,14 @@ function renderResolution(res) {
   if (!res || res.tier_en === 'narrate') { el.style.display = 'none'; return; }
   const style = RESOLUTION_STYLE[res.tier_en];
   if (!style) { el.style.display = 'none'; return; }
-  const modStr = res.modifiers?.length
-    ? ' · ' + res.modifiers.map(([l, v]) => `${l} ${v > 0 ? '+' : ''}${v}`).join(', ')
-    : '';
-  // 체스 기보 품질 표기 추출 (!! / ! / ? / ??)
-  const qMatch = res.modifiers?.map(([l]) => l?.match(/\([!?=]{1,2}\)/)?.[0]).find(Boolean);
+  const modStr  = formatModifiers(res.modifiers, ' · ');
+  const qMatch  = extractQualityMark(res.modifiers);
   el.style.display = 'inline-flex';
   el.style.color   = style.color;
   el.style.borderColor = style.color;
   el.title = res.roll != null
-    ? `주사위 ${res.roll} → 보정 후 ${res.net}${modStr}`
-    : modStr ? modStr.slice(3) : '';
+    ? `주사위 ${res.roll} → 보정 후 ${res.net}${modStr ? ' · ' + modStr : ''}`
+    : modStr ?? '';
   el.textContent = qMatch ? `${style.label} ${qMatch}` : style.label;
 }
 
@@ -422,23 +415,11 @@ function renderSceneBody(html) {
   if (el) el.innerHTML = html;
 }
 
-const _CHOICE_TYPE_CSS = {
-  attack: 'military', surprise: 'military', defense: 'military', siege: 'military',
-  diplomatic: 'diplomatic',
-  intrigue: 'intrigue',
-};
-
 function renderChoices(choices) {
   const list = document.getElementById('choice-list');
   if (!list) return;
   if (!choices.length) { list.innerHTML = ''; return; }
-  list.innerHTML = choices
-    .map(c => {
-      const css = _CHOICE_TYPE_CSS[c.type];
-      const cls = css ? `choice-btn choice-btn--${css}` : 'choice-btn';
-      return `<button class="${cls}" data-action-type="${c.type || ''}" onclick="selectChoice(this)">${c.text}</button>`;
-    })
-    .join('');
+  list.innerHTML = renderChoiceButtons(choices, 'selectChoice');
 }
 
 function showLoading() {

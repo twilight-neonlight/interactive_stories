@@ -3,39 +3,52 @@
 let _combatEndContent    = null;
 let _combatEndResolution = null;
 
-const _WEATHER_INFO = {
-  clear:      { label: '맑음',      color: 'var(--text-tertiary)', effect: '효과 없음' },
-  rain:       { label: '강우',      color: '#5DBB8B',              effect: '공격 −1' },
-  heavy_rain: { label: '폭우',      color: '#3a7abf',              effect: '공격 −2' },
-  snow:       { label: '강설',      color: '#8BC5A8',              effect: '공격 −2' },
-  blizzard:   { label: '눈보라',    color: '#7F77DD',              effect: '공격 −3 / 수비 +1' },
-  heat:       { label: '폭염',      color: '#E09060',              effect: '공격 −1 / 수비 −1' },
-  fog:        { label: '짙은 안개', color: '#888888',              effect: '공격 −3' },
-  storm:      { label: '폭풍',      color: '#C5932A',              effect: '공격 −3' },
-  sandstorm:  { label: '모래폭풍',  color: '#BF8A3A',              effect: '공격 −3 / 수비 −1' },
-  monsoon:    { label: '몬순',      color: '#3a7abf',              effect: '공격 −2' },
-  dust_storm: { label: '황사',      color: '#9A7A3A',              effect: '공격 −2' },
+// ── 날씨·지형 색상 (UI 전용) — 수치·레이블·effect는 /api/config에서 수신 ─────
+// 백엔드에 없는 color만 여기서 관리한다.
+const _WEATHER_COLOR = {
+  clear:      'var(--text-tertiary)',
+  rain:       '#5DBB8B',
+  heavy_rain: '#3a7abf',
+  snow:       '#8BC5A8',
+  blizzard:   '#7F77DD',
+  heat:       '#E09060',
+  fog:        '#888888',
+  storm:      '#C5932A',
+  sandstorm:  '#BF8A3A',
+  monsoon:    '#3a7abf',
+  dust_storm: '#9A7A3A',
 };
 
-const _TERRAIN_INFO = {
-  highland:   { label: '고지',      color: '#8B6914',              effect: '수비 +2 / 공격 −2' },
-  riverside:  { label: '강변',      color: '#3a7abf',              effect: '수비 +2 / 공격 −2' },
-  jungle:     { label: '정글',      color: '#2D8A4E',              effect: '수비 +2 / 공격 −2' },
-  wetland:    { label: '습지',      color: '#5DBB8B',              effect: '수비 +1 / 공격 −1' },
-  floodplain: { label: '범람원',    color: '#5D9BB5',              effect: '수비 +1 / 공격 −1' },
-  forest:     { label: '삼림',      color: '#4A7A3A',              effect: '수비 +1 / 공격 −1' },
-  tundra:     { label: '툰드라',    color: '#8BC5C5',              effect: '수비 +1 / 공격 −1' },
-  basin:      { label: '분지',      color: '#9A7ABF',              effect: '수비 +1' },
-  river:      { label: '강 (해전)', color: '#3a7abf',              effect: '수비 +1 / 공격 −1' },
-  nearshore:  { label: '연안',      color: '#5D8ABF',              effect: '수비 +1' },
-  icefield:   { label: '빙원',      color: '#A0C8E8',              effect: '공격 −2' },
-  desert:     { label: '사막',      color: '#C5932A',              effect: '효과 없음' },
-  arid:       { label: '건조지',    color: '#BF8A3A',              effect: '효과 없음' },
-  steppe:     { label: '대초원',    color: '#9ABF5D',              effect: '효과 없음' },
-  coastal:    { label: '해안',      color: '#5D8ABF',              effect: '효과 없음' },
-  ocean:      { label: '대양',      color: '#2A5FBF',              effect: '효과 없음' },
-  plain:      { label: '평지',      color: 'var(--text-tertiary)', effect: '효과 없음' },
+const _TERRAIN_COLOR = {
+  highland:   '#8B6914',
+  riverside:  '#3a7abf',
+  jungle:     '#2D8A4E',
+  wetland:    '#5DBB8B',
+  floodplain: '#5D9BB5',
+  forest:     '#4A7A3A',
+  tundra:     '#8BC5C5',
+  basin:      '#9A7ABF',
+  river:      '#3a7abf',
+  nearshore:  '#5D8ABF',
+  icefield:   '#A0C8E8',
+  desert:     '#C5932A',
+  arid:       '#BF8A3A',
+  steppe:     '#9ABF5D',
+  coastal:    '#5D8ABF',
+  ocean:      '#2A5FBF',
+  plain:      'var(--text-tertiary)',
 };
+
+// _gameConfig.weatherMeta / terrainMeta 에서 메타를 가져오는 헬퍼.
+// 아직 로드되지 않았을 때를 대비한 fallback 포함.
+function _weatherMeta(key) {
+  const m = window._gameConfig?.weatherMeta?.[key];
+  return m ?? { label: key, effect: '—', color: _WEATHER_COLOR[key] ?? '#888' };
+}
+function _terrainMeta(key) {
+  const m = window._gameConfig?.terrainMeta?.[key];
+  return m ?? { label: key, effect: '—', color: _TERRAIN_COLOR[key] ?? '#888' };
+}
 
 function _findCommander(factionId, isPlayer = false) {
   if (!_state) return null;
@@ -168,13 +181,15 @@ function openCombatOverlay(content, resolution, debugData = null) {
     : '';
 
   const weather = _state.weather || 'clear';
-  const wi = _WEATHER_INFO[weather] || _WEATHER_INFO.clear;
-  const weatherBadgeHtml = `<span class="combat-weather-badge" style="border-color:${wi.color};color:${wi.color}" title="날씨 효과: ${wi.effect}">${wi.label}</span>`;
+  const wi      = _weatherMeta(weather);
+  const wiColor = _WEATHER_COLOR[weather] ?? 'var(--text-tertiary)';
+  const weatherBadgeHtml = `<span class="combat-weather-badge" style="border-color:${wiColor};color:${wiColor}" title="날씨 효과: ${wi.effect}">${wi.label}</span>`;
 
   const terrain = cs.battle_terrain || null;
-  const ti = terrain ? (_TERRAIN_INFO[terrain] || null) : null;
+  const ti      = terrain ? _terrainMeta(terrain) : null;
+  const tiColor = terrain ? (_TERRAIN_COLOR[terrain] ?? '#888') : null;
   const terrainBadgeHtml = ti
-    ? `<span class="combat-weather-badge" style="border-color:${ti.color};color:${ti.color}" title="지형 효과: ${ti.effect}">${ti.label}</span>`
+    ? `<span class="combat-weather-badge" style="border-color:${tiColor};color:${tiColor}" title="지형 효과: ${ti.effect}">${ti.label}</span>`
     : '';
 
   const overlay = document.getElementById('combat-overlay');
@@ -334,23 +349,19 @@ function _renderCombatScene(content, resolution) {
       const color   = _LOG_COLOR[outcome] || '#7F77DD';
       badge.style.cssText = `display:inline-block;color:${color};border-color:${color};`;
       const net    = resolution.net ?? 0;
-      const qMatch = resolution.modifiers?.map(([l]) => l?.match(/\([!?=]{1,2}\)/)?.[0]).find(Boolean);
+      const qMatch = extractQualityMark(resolution.modifiers);
       badge.textContent = `${resolution.tier}${qMatch ? ' ' + qMatch : ''} (${net >= 0 ? '+' : ''}${net})`;
       const detail = resolution.roll_detail || {};
-      const modStr = resolution.modifiers?.length
-        ? ' [' + resolution.modifiers.map(([l, v]) => `${l} ${v > 0 ? '+' : ''}${v}`).join(', ') + ']'
-        : '';
-      badge.title = `아군 ${detail.ally ?? '?'} vs 적 ${detail.enemy ?? '?'}${modStr}`;
+      const modStr = formatModifiers(resolution.modifiers);
+      badge.title = `아군 ${detail.ally ?? '?'} vs 적 ${detail.enemy ?? '?'}${modStr ? ' [' + modStr + ']' : ''}`;
     } else if (resolution && RESOLUTION_STYLE[resolution.tier_en]) {
-      const s = RESOLUTION_STYLE[resolution.tier_en];
+      const s      = RESOLUTION_STYLE[resolution.tier_en];
+      const modStr = formatModifiers(resolution.modifiers);
       badge.style.cssText = `display:inline-block;color:${s.color};border-color:${s.color};`;
-      const modStr = resolution.modifiers?.length
-        ? ' [' + resolution.modifiers.map(([l, v]) => `${l} ${v > 0 ? '+' : ''}${v}`).join(', ') + ']'
-        : '';
       badge.textContent = s.label;
       badge.title = resolution.roll != null
-        ? `주사위 ${resolution.roll} → 보정 후 ${resolution.net}${modStr}`
-        : modStr ? modStr.slice(2) : '';
+        ? `주사위 ${resolution.roll} → 보정 후 ${resolution.net}${modStr ? ' [' + modStr + ']' : ''}`
+        : modStr ?? '';
     } else {
       badge.style.display = 'none';
     }
@@ -359,11 +370,7 @@ function _renderCombatScene(content, resolution) {
   const choices    = extractChoices(content);
   const choiceList = document.getElementById('c-choices');
   if (choiceList) {
-    choiceList.innerHTML = choices.map(c => {
-      const css = _CHOICE_TYPE_CSS[c.type];
-      const cls = css ? `choice-btn choice-btn--${css}` : 'choice-btn';
-      return `<button class="${cls}" data-action-type="${c.type || ''}" onclick="selectCombatChoice(this)">${c.text}</button>`;
-    }).join('');
+    choiceList.innerHTML = renderChoiceButtons(choices, 'selectCombatChoice');
   }
 }
 
@@ -530,14 +537,7 @@ async function submitCombatTurn() {
     const { content, state_updates: su, resolution, _debug } =
       await GameAPI.submitTurn(cmd, _state.toJSON(), _state.getHistory(), false, false, actionType);
 
-    _state.pushHistory('user', cmd);
-    _state.pushHistory('assistant', content);
-
-    applyStateUpdates(su);
-
-    _ui.onTurnEnd?.(_state);
-    _manager._state = _state;
-    _manager.save();
+    commitTurn(cmd, content, su);
 
     const cs = _state.combatState;
     if (cs) {
@@ -579,13 +579,7 @@ async function combatRetreat() {
     const { content, state_updates: su, resolution, _debug } =
       await GameAPI.submitTurn('후퇴', _state.toJSON(), _state.getHistory(), true);
 
-    _state.pushHistory('user', '후퇴');
-    _state.pushHistory('assistant', content);
-
-    applyStateUpdates(su);
-
-    _manager._state = _state;
-    _manager.save();
+    commitTurn('후퇴', content, su);
 
     const cs = _state.combatState;
     if (cs) { _renderCombatMomentum(cs); _renderCombatLog(cs); }

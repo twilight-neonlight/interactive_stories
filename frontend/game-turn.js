@@ -25,9 +25,15 @@ function selectChoice(btn) {
 
 // ── LLM 생성 NPC 외정 스탯 자동 배정 (정규분포, 중심 C)
 const _EXT_STAT_KEYS = ['통솔', '지략', '외교', '무력'];
-const _GRADE_SCALE   = ['E-','E','E+','D-','D','D+','C-','C','C+','B-','B','B+','A-','A','A+','S-','S','S+'];
-const _GRADE_CENTER  = 7; // C 인덱스
-const _GRADE_STD     = 3;
+// _GRADE_SCALE은 /api/config에서 로드 (resolver.py의 _GRADE_SCALE과 동기).
+// loadGameConfig() 실패 시 fallback으로 내장 값 사용.
+const _GRADE_SCALE_FALLBACK = ['E-','E','E+','D-','D','D+','C-','C','C+','B-','B','B+','A-','A','A+','S-','S','S+'];
+const _GRADE_CENTER = 7; // C 인덱스 (resolver.py: _GRADE_BASELINE = 7)
+const _GRADE_STD    = 3;
+
+function _getGradeScale() {
+  return window._gameConfig?.gradeScale ?? _GRADE_SCALE_FALLBACK;
+}
 
 function _gauss() {
   let u, v;
@@ -37,8 +43,9 @@ function _gauss() {
 }
 
 function _randomGrade() {
-  const idx = Math.round(_GRADE_CENTER + _GRADE_STD * _gauss());
-  return _GRADE_SCALE[Math.max(0, Math.min(_GRADE_SCALE.length - 1, idx))];
+  const scale = _getGradeScale();
+  const idx   = Math.round(_GRADE_CENTER + _GRADE_STD * _gauss());
+  return scale[Math.max(0, Math.min(scale.length - 1, idx))];
 }
 
 function _assignExternalStats(char) {
@@ -205,14 +212,7 @@ async function submitTurn() {
     const { content, state_updates: su, resolution, _debug } = await GameAPI.submitTurn(cmd, _state.toJSON(), _state.getHistory(), false, false, actionType);
     renderResolution(resolution);
 
-    _state.pushHistory('user', cmd);
-    _state.pushHistory('assistant', content);
-
-    applyStateUpdates(su);
-
-    _ui.onTurnEnd?.(_state);
-    _manager._state = _state;
-    _manager.save();
+    commitTurn(cmd, content, su);
 
     renderAll(_state);
 
