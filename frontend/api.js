@@ -11,7 +11,7 @@ const GameAPI = {
   // 401 응답 시 토큰 삭제 후 로그인 페이지로 이동
   _handle401() {
     NavState.clearAuth();
-    window.location.href = '/frontend/auth.html';
+    window.location.href = 'auth.html';
   },
 
   async getSaves() {

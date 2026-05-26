@@ -58,6 +58,7 @@ new_characters / dead_characters / new_factions / defeated_factions /
 faction_field_army_changes / faction_reserve_changes / faction_battle_damage / faction_battle_recovery / character_troop_changes /
 faction_diplomacy_changes / character_disposition_changes / character_title_changes /
 faction_intel_changes / new_locations / location_changes /
+faction_income_changes / treasury_changes /
 player_location_id / battle_location / battle_year / battle_terrain /
 player_coalition / enemy_coalition / weather /
 combat_victor / enemy_next_action / diplomacy_outcome / opponent_next_stance
@@ -91,6 +92,8 @@ combat_victor / enemy_next_action / diplomacy_outcome / opponent_next_stance
 - `character_disposition_changes`: 이번 응답에서 인물의 플레이어에 대한 태도가 바뀐 경우.
 - `character_title_changes`: 인물의 직위·칭호가 바뀐 경우 (예: 왕위 주장자 → 술탄, 장군 → 총사령관). 즉위·승진·폐위 등 서사적으로 명확한 전환점에서만 사용.
 - `faction_intel_changes`: 플레이어의 해당 세력에 대한 첩보 수준 변화. `delta`: +1(침투 부분 성공·성공), +2(대성공), -1(대실패).
+- `faction_income_changes`: 세력의 수입 수정치 변경. `income_mult_delta`(비율 수정 — 교역 조약 +0.1, 봉쇄 -0.2 등) 또는 `income_flat_delta`(절대 수입 증감 — 보조금 삭감 등) 중 하나 또는 둘 다 포함. `{"id": "faction-id", "income_mult_delta": 0.1}` 형식.
+- `treasury_changes`: 플레이어 세력의 일회성 재정 수입·지출. `delta` 양수 = 수입(약탈·몸값·배상금), 음수 = 지출(용병 고용·뇌물·배상 지급). `{"id": "faction-id", "delta": 120, "reason": "카르타고 창고 약탈"}` 형식. 자연적 월간 수지 누적은 시스템이 자동 처리하므로 별도 출력 불필요.
 - `new_locations`: 이번 응답에서 새롭게 등장하는 거점. 이미 등록된 거점은 생략.
 - `location_changes`: 이번 응답에서 지배 세력이 바뀐 거점. `id`는 기존 locations의 id를 사용. `controller`는 반드시 현재 등록된 **factions의 id** 중 하나여야 하며, 인물 id·세력명·임의 문자열을 사용하면 안 된다.
 - `player_location_id`: 이번 응답에서 플레이어의 현재 거점이 바뀌거나 처음 확정된 경우. 반드시 현재 등록된 **locations의 id** 중 하나여야 한다. 변화 없으면 null.

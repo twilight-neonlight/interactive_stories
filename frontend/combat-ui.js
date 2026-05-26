@@ -49,6 +49,68 @@ function _findCommander(factionId, isPlayer = false) {
   return null;
 }
 
+function _findCommanderObj(factionId, isPlayer = false) {
+  if (!_state) return null;
+  if (isPlayer && _state.protagonist) {
+    const char = _state.characters.get(_state.protagonist);
+    if (char) return char;
+  }
+  for (const [, char] of _state.characters) {
+    if (char.faction_id === factionId) return char;
+  }
+  return null;
+}
+
+// ── 아군 병력 (정확한 수치)
+function _calcPlayerTroops(factionId, cs) {
+  if (!_state) return '—';
+  const faction = _state.factions.get(factionId) || {};
+  const initial = faction.field_army || 0;
+  if (!initial) return '—';
+  const tpp = _state.troopsPerPoint || 0;
+  const pending = (cs?.pending_battle_damage || {})[factionId] || 0;
+  const lost = tpp ? Math.round(pending * tpp) : 0;
+  const remaining = Math.max(0, initial - lost);
+  return `${remaining.toLocaleString()} / ${initial.toLocaleString()}`;
+}
+
+// ── 적군 병력 (첩보 수준에 따른 추정치)
+function _calcEnemyTroops(factionId, cs) {
+  if (!_state) return '—';
+  const faction = _state.factions.get(factionId) || {};
+  const initial = faction.field_army || 0;
+  if (!initial) return '—';
+  const tpp = _state.troopsPerPoint || 0;
+  const pending = (cs?.pending_battle_damage || {})[factionId] || 0;
+  const lost = tpp ? Math.round(pending * tpp) : 0;
+  const remaining = Math.max(0, initial - lost);
+  const intelLevel = cs?.enemy_intel_level || 'medium';
+  switch (intelLevel) {
+    case 'low': {
+      if (remaining > 20000) return '대군 (2만 이상)';
+      if (remaining > 10000) return '중군 (1~2만)';
+      if (remaining > 5000)  return '소군 (5천~1만)';
+      return '소부대 (5천 이하)';
+    }
+    case 'high': {
+      // 200명 단위 반올림 — 고급 첩보: 비교적 정밀한 추정
+      const r = Math.round(remaining / 200) * 200;
+      const i = Math.round(initial  / 200) * 200;
+      return `약 ${r.toLocaleString()} / ${i.toLocaleString()}`;
+    }
+    default: { // medium
+      // 500명 단위 반올림 — 보통 첩보: 페이즈당 300~800명 손실도 반영 가능
+      const r = Math.round(remaining / 500) * 500;
+      const i = Math.round(initial  / 500) * 500;
+      return `약 ${r.toLocaleString()} / ${i.toLocaleString()}`;
+    }
+  }
+}
+
+function _intelLevelLabel(level) {
+  return { low: '저급 첩보', medium: '첩보 보통', high: '고급 첩보' }[level] || '첩보 보통';
+}
+
 function _combatMoraleStats(cs, moraleKey) {
   const max = 100;
   const current = Math.max(0, Math.min(max, Number(cs?.[moraleKey] ?? max)));
@@ -80,6 +142,14 @@ function openCombatOverlay(content, resolution, debugData = null) {
   const eLabel = eCoalition.length ? eCoalition.map(_resolveName).join(' / ') : eName;
   const pCommander = _findCommander(cs.player_faction_id, true) || '알 수 없는 지휘관';
   const eCommander = _findCommander(cs.enemy_faction_id,  false) || '알 수 없는 지휘관';
+  const pCharObj = _findCommanderObj(cs.player_faction_id, true);
+  const eCharObj = _findCommanderObj(cs.enemy_faction_id, false);
+  const pCommanderEpithet = pCharObj?.epithet || pCharObj?.title || '';
+  const eCommanderEpithet = eCharObj?.epithet || eCharObj?.title || '';
+  const intelLevel = cs.enemy_intel_level || 'medium';
+  const intelLabel = _intelLevelLabel(intelLevel);
+  const pTroopsHtml = _calcPlayerTroops(cs.player_faction_id, cs);
+  const eTroopsHtml = _calcEnemyTroops(cs.enemy_faction_id, cs);
   const pMorale = _combatMoraleStats(cs, 'player_morale');
   const eMorale = _combatMoraleStats(cs, 'enemy_morale');
   const phaseText = cs.max_phases
@@ -108,6 +178,13 @@ function openCombatOverlay(content, resolution, debugData = null) {
     : '';
 
   const overlay = document.getElementById('combat-overlay');
+  // 적군 epithet 공개 여부 (첩보 수준)
+  const eEpithetHtml = intelLevel === 'high' && eCommanderEpithet
+    ? `<span class="combat-side-epithet">${eCommanderEpithet} <span style="font-size:9px;opacity:0.55">(추정)</span></span>`
+    : intelLevel === 'medium' && eCommanderEpithet
+      ? `<span class="combat-side-epithet" style="opacity:0.6">${eCommanderEpithet}</span>`
+      : '';
+
   overlay.innerHTML = `
     <div class="combat-shell">
       <div>
@@ -118,13 +195,11 @@ function openCombatOverlay(content, resolution, debugData = null) {
             <div class="combat-faction-col">
               <span class="combat-faction-role">공격 측</span>
               <span class="combat-fname" style="color:${pColor}">${pLabel}</span>
-              <span class="combat-commander">${pCommander}</span>
             </div>
             <span class="combat-vs">vs</span>
             <div class="combat-faction-col">
               <span class="combat-faction-role">수비 측</span>
               <span class="combat-fname" style="color:${eColor}">${eLabel}</span>
-              <span class="combat-commander">${eCommander}</span>
             </div>
           </div>
           ${weatherBadgeHtml}
@@ -152,16 +227,56 @@ function openCombatOverlay(content, resolution, debugData = null) {
       </div>
 
       <div class="combat-body">
-        <div class="combat-log-col">
-          <div class="combat-log-label">교전 기록</div>
-          <div class="combat-log" id="c-log">
-            <div style="color:var(--text-tertiary);font-size:11px;font-family:sans-serif;padding:4px 0">준비 단계</div>
+
+        <!-- ── 아군 지휘관 카드 ── -->
+        <div class="combat-side-card" style="border-top-color:${pColor}">
+          <div class="combat-side-header">
+            <span class="combat-side-role" style="color:${pColor}">아군 지휘관</span>
+          </div>
+          <div class="combat-side-commander">
+            <span class="combat-side-name">${pCommander}</span>
+            ${pCommanderEpithet ? `<span class="combat-side-epithet">${pCommanderEpithet}</span>` : ''}
+          </div>
+          <div class="combat-side-troops-wrap">
+            <span class="combat-side-troops-label">병력</span>
+            <span class="combat-side-troops-val" id="c-player-troops">${pTroopsHtml}</span>
+          </div>
+          <div class="combat-side-box">
+            <div class="combat-side-box-label">교전 기록</div>
+            <div id="c-log" class="combat-side-log">
+              <div style="color:var(--text-tertiary);font-size:11px;font-family:sans-serif;padding:4px 0">준비 단계</div>
+            </div>
           </div>
         </div>
+
+        <!-- ── 씬 텍스트 (중앙) ── -->
         <div class="combat-scene-col">
           <div class="combat-res-badge" id="c-res-badge"></div>
           <div class="scene-body" id="c-scene" style="flex:1;min-height:0;overflow-y:auto;"></div>
         </div>
+
+        <!-- ── 적군 지휘관 카드 ── -->
+        <div class="combat-side-card" style="border-top-color:${eColor}">
+          <div class="combat-side-header">
+            <span class="combat-side-role" style="color:${eColor}">적군 지휘관</span>
+            <span class="combat-intel-badge combat-intel-badge--${intelLevel}">${intelLabel}</span>
+          </div>
+          <div class="combat-side-commander">
+            <span class="combat-side-name">${eCommander}</span>
+            ${eEpithetHtml}
+          </div>
+          <div class="combat-side-troops-wrap">
+            <span class="combat-side-troops-label">병력 <span class="combat-intel-est">추정</span></span>
+            <span class="combat-side-troops-val" id="c-enemy-troops">${eTroopsHtml}</span>
+          </div>
+          <div class="combat-side-box">
+            <div class="combat-side-box-label">배치</div>
+            <div id="c-enemy-box" class="combat-side-log">
+              <!-- 병종 구성 / 전투 배치 표시 예정 -->
+            </div>
+          </div>
+        </div>
+
       </div>
 
       <div class="combat-footer" id="c-footer">
@@ -263,7 +378,7 @@ function selectCombatChoice(btn) {
   _combatSelectedActionType = btn.dataset.actionType || null;
 }
 
-// ── 사기 바 + 페이즈 정보 갱신
+// ── 사기 바 + 페이즈 정보 + 병력 수 갱신
 function _renderCombatMomentum(cs) {
   const pMorale = _combatMoraleStats(cs, 'player_morale');
   const eMorale = _combatMoraleStats(cs, 'enemy_morale');
@@ -277,6 +392,12 @@ function _renderCombatMomentum(cs) {
   const eVal = document.getElementById('c-enemy-val');
   if (pVal) pVal.textContent = `${pMorale.current}/${pMorale.max}`;
   if (eVal) eVal.textContent = `${eMorale.current}/${eMorale.max}`;
+
+  // 병력 수 갱신 (페이즈마다 pending_battle_damage 증가)
+  const pTroopsEl = document.getElementById('c-player-troops');
+  const eTroopsEl = document.getElementById('c-enemy-troops');
+  if (pTroopsEl) pTroopsEl.textContent = _calcPlayerTroops(cs.player_faction_id, cs);
+  if (eTroopsEl) eTroopsEl.textContent = _calcEnemyTroops(cs.enemy_faction_id, cs);
 
   const phaseInfo = document.getElementById('c-phase-info');
   if (phaseInfo) {

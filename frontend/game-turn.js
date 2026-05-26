@@ -151,6 +151,21 @@ function applyStateUpdates(su) {
       if (ic.id && ic.delta != null) _state.updateFactionIntel(ic.id, ic.delta);
     }
   }
+  if (Array.isArray(su.faction_income_changes)) {
+    for (const ic of su.faction_income_changes) {
+      const faction = _state.factions.get(ic.id);
+      if (!faction) continue;
+      if (ic.income_mult_delta != null)
+        faction.income_mult = Math.max(0, (faction.income_mult ?? 1.0) + ic.income_mult_delta);
+      if (ic.income_flat_delta != null)
+        faction.income_flat = (faction.income_flat ?? 0) + ic.income_flat_delta;
+    }
+  }
+  if (su.treasury_update && typeof su.treasury_update === 'object') {
+    const faction = _state.factions.get(su.treasury_update.id);
+    if (faction && su.treasury_update.value != null)
+      faction.treasury = su.treasury_update.value;
+  }
   if (typeof su.player_location_id === 'string' && _state.locations.has(su.player_location_id)) {
     _state.progress.playerLocationId = su.player_location_id;
   }

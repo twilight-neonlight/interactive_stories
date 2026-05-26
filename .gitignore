@@ -13,6 +13,10 @@ env/
 # Node (혹시 나중에 추가될 경우)
 node_modules/
 
+# 런타임 사용자 데이터 (개인정보 포함 가능)
+backend/data/users.json
+saves/*/
+
 # Local tool settings
 .claude/
 
@@ -20,6 +24,5 @@ node_modules/
 .DS_Store
 Thumbs.db
 
-# 개인 메모
-TBD.txt
+# 개발용 프롬프트
 CLAUDE.md

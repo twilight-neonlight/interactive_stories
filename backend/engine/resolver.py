@@ -431,23 +431,23 @@ def _apply_phase_morale(outcome: str,
     """페이즈 결과에 따라 양측 사기를 조정합니다."""
     if outcome == "critical_success":
         player_morale += random.randint(5, 10)
-        enemy_morale  -= random.randint(35, 70)
+        enemy_morale  -= random.randint(50, 80)
     elif outcome == "major_success":
         player_morale += random.randint(3, 5)
-        enemy_morale  -= random.randint(15, 35)
+        enemy_morale  -= random.randint(20, 49)
     elif outcome == "minor_success":
-        enemy_morale  -= random.randint(7, 15)
+        enemy_morale  -= random.randint(9, 19)
     elif outcome == "stalemate":
-        player_morale -= random.randint(3, 7)
-        enemy_morale  -= random.randint(3, 7)
+        player_morale -= random.randint(5, 8)
+        enemy_morale  -= random.randint(5, 8)
     elif outcome == "minor_fail":
-        player_morale -= random.randint(7, 15)
+        player_morale -= random.randint(9, 19)
     elif outcome == "major_fail":
         enemy_morale  += random.randint(3, 5)
-        player_morale -= random.randint(15, 35)
+        player_morale -= random.randint(20, 49)
     elif outcome == "critical_fail":
         enemy_morale  += random.randint(5, 10)
-        player_morale -= random.randint(35, 70)
+        player_morale -= random.randint(50, 80)
     return max(0, min(100, player_morale)), max(0, min(100, enemy_morale))
 
 

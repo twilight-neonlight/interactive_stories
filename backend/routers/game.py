@@ -57,6 +57,137 @@ _BATTLE_DAMAGE_RECOVERY_PER_MONTH = 25
 # 예비 인력 월간 회복률 (부족분의 X% / 월)
 _RESERVE_RECOVERY_RATE = 0.08
 
+# ── 재정 시스템 ───────────────────────────────────────────────────────────────
+
+# fiscal_level: balance_ratio = fiscal_balance / income_score 기준
+# income_score > 0이면 비율 판정, income_score == 0이면 절댓값 판정
+_FISCAL_RATIO_THRESHOLDS = [
+    # (ratio_threshold, label, fiscal_mult)
+    ( 0.10, "풍요", 1.5),
+    ( 0.00, "안정", 1.0),
+    (-0.05, "균형", 0.7),
+    (-0.15, "적자", 0.3),
+    ( None, "파산", 0.05),
+]
+# income_score == 0 (영토·지원금 없음)일 때 fiscal_balance 절댓값으로 판정
+_FISCAL_ABS_THRESHOLDS = [
+    ( 20,  "풍요", 1.5),
+    (  0,  "안정", 1.0),
+    (-20,  "균형", 0.7),
+    (-60,  "적자", 0.3),
+    (None, "파산", 0.05),
+]
+
+
+def _fiscal_level(value: float, thresholds: list) -> tuple[str, float]:
+    for thr, label, mult in thresholds:
+        if thr is None or value >= thr:
+            return label, mult
+    return "파산", 0.05
+
+
+def _compute_player_fiscal(state: dict, tpp: int, res_div: int) -> dict | None:
+    """플레이어 세력의 재정 상태를 계산합니다.
+
+    Returns dict with keys:
+      fid, income_score, expense_score, fiscal_balance,
+      fiscal_level, fiscal_mult, treasury
+    또는 None (플레이어 세력 없음 / tpp 없음)
+    """
+    if not tpp:
+        return None
+    player_fid = _get_player_faction_id(state)
+    if not player_fid:
+        return None
+    factions  = state.get("factions",  {})
+    locations = state.get("locations", {})
+    faction   = factions.get(player_fid, {})
+    if not isinstance(faction, dict):
+        return None
+
+    # 영토 수입: Σ tier_pts × garrison_modifier (지배 거점)
+    territorial = sum(
+        GARRISON_POINTS_BY_TIER.get(loc.get("tier", ""), 0)
+        * loc.get("garrison_modifier", 1.0)
+        for loc in locations.values()
+        if isinstance(loc, dict) and loc.get("controller") == player_fid
+    )
+    income_mult  = float(faction.get("income_mult", 1.0) or 1.0)
+    income_flat  = int(faction.get("income_flat", 0)   or 0)
+    income_score = round(territorial * income_mult + income_flat)
+
+    # 지출: 상비군 + 동원 예비군 × 0.2
+    field_army      = faction.get("field_army", 0) or 0
+    reserve         = faction.get("reserve_manpower", 0) or 0
+    mob_rate        = min(1.0, max(0.0, faction.get("mobilization_rate", 1.0)))
+    effective_res   = round(reserve * mob_rate)
+    standing_pts    = round(field_army / tpp)
+    mob_reserve_pts = round(effective_res / (tpp * res_div)) if res_div else 0
+    expense_score   = standing_pts + round(mob_reserve_pts * 0.2)
+
+    fiscal_balance = income_score - expense_score
+    treasury       = int(faction.get("treasury", 0) or 0)
+
+    # fiscal_level 판정: 월간 수지 비율 기준 (즉각 반영)
+    if income_score > 0:
+        ratio = fiscal_balance / income_score
+        f_level, f_mult = _fiscal_level(ratio, _FISCAL_RATIO_THRESHOLDS)
+    else:
+        f_level, f_mult = _fiscal_level(fiscal_balance, _FISCAL_ABS_THRESHOLDS)
+
+    return {
+        "fid":            player_fid,
+        "income_score":   income_score,
+        "expense_score":  expense_score,
+        "fiscal_balance": fiscal_balance,
+        "fiscal_level":   f_level,
+        "fiscal_mult":    f_mult,
+        "treasury":       treasury,
+    }
+
+
+def _auto_treasury_update(state: dict, state_updates: dict,
+                          fiscal_info: dict | None) -> None:
+    """경과 시간에 따라 플레이어 세력의 treasury를 자동 갱신합니다.
+
+    LLM이 출력한 treasury_changes(일회성 수입·지출)도 합산합니다.
+    결과는 state_updates["treasury_update"] = {"id": fid, "value": new_value}.
+    """
+    if not fiscal_info:
+        return
+    prev_ts = state.get("progress", {}).get("timestamp", "")
+    new_ts  = state_updates.get("timestamp") or prev_ts
+    prev_ym = _parse_ym(prev_ts)
+    new_ym  = _parse_ym(new_ts)
+    if not prev_ym or not new_ym:
+        return
+    elapsed = (new_ym[0] - prev_ym[0]) * 12 + (new_ym[1] - prev_ym[1])
+    if elapsed <= 0:
+        return
+
+    fid            = fiscal_info["fid"]
+    income_score   = fiscal_info["income_score"]
+    fiscal_balance = fiscal_info["fiscal_balance"]
+    treasury       = fiscal_info["treasury"]
+
+    # 자동 월간 수지 누적
+    auto_delta = fiscal_balance * elapsed
+
+    # LLM 일회성 treasury_changes — 플레이어 세력분만 합산
+    llm_delta = sum(
+        int(r.get("delta", 0))
+        for r in (state_updates.get("treasury_changes") or [])
+        if isinstance(r, dict) and r.get("id") == fid
+    )
+
+    # 상·하한: income_score 기준 ±6개월치 (일회성 지출 버퍼 역할)
+    ref   = income_score if income_score > 0 else max(abs(fiscal_info["expense_score"]), 100)
+    max_t =  ref * 6
+    min_t = -ref * 6
+
+    new_treasury = max(min_t, min(max_t, treasury + round(auto_delta) + llm_delta))
+    state_updates["treasury_update"] = {"id": fid, "value": int(new_treasury)}
+
 
 def _classify_conquest_disposition(command: str) -> str | None:
     """명령어에서 점령지 처분 유형을 추출합니다."""
@@ -213,7 +344,8 @@ def _project_state_updates_for_defeat(state: dict, updates: dict) -> dict:
 
 
 def _apply_garrison_updates(state: dict, new_ts: str, tpp: int, loc_change_map: dict,
-                            admin_mult: float = 1.0) -> list[dict]:
+                            admin_mult: float = 1.0,
+                            fiscal_mult: float = 1.0) -> list[dict]:
     """garrison 관련 location_changes를 loc_change_map에 in-place로 병합합니다.
 
     처리 순서:
@@ -261,7 +393,7 @@ def _apply_garrison_updates(state: dict, new_ts: str, tpp: int, loc_change_map: 
             continue
         elapsed  = (new_ym[0] - cym[0]) * 12 + (new_ym[1] - cym[1])
         base     = _CONQUEST_DISPOSITIONS.get(conquest_disposition, {}).get("base", 0.3)
-        new_mod  = min(1.0, base + max(0, elapsed) * _GARRISON_RECOVERY_PER_MONTH * admin_mult)
+        new_mod  = min(1.0, base + max(0, elapsed) * _GARRISON_RECOVERY_PER_MONTH * admin_mult * fiscal_mult)
         tier     = loc.get("tier", "")
         base_pts = GARRISON_POINTS_BY_TIER.get(tier, 0)
         change: dict = {
@@ -329,7 +461,8 @@ def _auto_battle_damage_recovery(state: dict, state_updates: dict) -> None:
         ]
 
 
-def _auto_reserve_recovery(state: dict, state_updates: dict) -> None:
+def _auto_reserve_recovery(state: dict, state_updates: dict,
+                           fiscal_mult: float = 1.0) -> None:
     """타임스탬프 경과에 따른 reserve_manpower 자동 회복.
 
     매월 부족분의 _RESERVE_RECOVERY_RATE만큼 회복 (복리 방식).
@@ -361,7 +494,7 @@ def _auto_reserve_recovery(state: dict, state_updates: dict) -> None:
     }
 
     admin_mult = calc_admin_recovery_multiplier(state)
-    eff_rate   = min(1.0, _RESERVE_RECOVERY_RATE * admin_mult)
+    eff_rate   = min(1.0, _RESERVE_RECOVERY_RATE * admin_mult * fiscal_mult)
 
     for fid, faction in factions.items():
         if not isinstance(faction, dict) or faction.get("defeated"):
@@ -649,7 +782,8 @@ async def process_turn(req: TurnRequest):
                 "faction_diplomacy_changes",
                 "character_troop_changes", "character_disposition_changes", "character_title_changes",
                 "faction_intel_changes", "new_locations", "location_changes",
-                "player_location_id"):
+                "player_location_id",
+                "faction_income_changes", "treasury_changes"):
         if extra.get(key):
             state_updates[key] = extra[key]
 
@@ -661,7 +795,13 @@ async def process_turn(req: TurnRequest):
         state_updates["weather"] = extra["weather"]
 
     # 주둔군 갱신 (controller 변경 → conquered_at 기록, 기존 점령지 시간 경과 회복)
-    tpp = _get_scenario_tpp(state)
+    tpp     = _get_scenario_tpp(state)
+    res_div = _get_scenario_reserve_divisor(state)
+
+    # 재정 상태 계산 (이번 턴 회복·누적에 사용)
+    fiscal_info = _compute_player_fiscal(state, tpp, res_div) if tpp else None
+    fiscal_mult = fiscal_info["fiscal_mult"] if fiscal_info else 1.0
+
     newly_pending: list[dict] = []
     if tpp:
         new_ts = state_updates.get("timestamp") or state.get("progress", {}).get("timestamp", "")
@@ -669,7 +809,9 @@ async def process_turn(req: TurnRequest):
             lc["id"]: lc for lc in (state_updates.get("location_changes") or [])
         }
         admin_mult    = calc_admin_recovery_multiplier(state)
-        newly_pending = _apply_garrison_updates(state, new_ts, tpp, loc_change_map, admin_mult)
+        newly_pending = _apply_garrison_updates(
+            state, new_ts, tpp, loc_change_map, admin_mult, fiscal_mult
+        )
         if loc_change_map:
             state_updates["location_changes"] = list(loc_change_map.values())
 
@@ -712,7 +854,8 @@ async def process_turn(req: TurnRequest):
     state_updates["pending_conquest_dispositions"] = unresolved + newly_pending
 
     _auto_battle_damage_recovery(state, state_updates)
-    _auto_reserve_recovery(state, state_updates)
+    _auto_reserve_recovery(state, state_updates, fiscal_mult)
+    _auto_treasury_update(state, state_updates, fiscal_info)
     if tpp:
         _recompute_all_strengths(state, state_updates, tpp)
 

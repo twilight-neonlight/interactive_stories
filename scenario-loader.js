@@ -10,7 +10,15 @@
 // ─────────────────────────────────────────────
 // 백엔드 URL
 // ─────────────────────────────────────────────
-const API_BASE = 'http://localhost:8000';
+// file://  → 클라우드 서버 직접 지정
+// localhost → 로컬 개발 서버
+// 그 외(클라우드) → 상대 경로(same-origin)
+const _h = window.location.hostname;
+const API_BASE = window.location.protocol === 'file:'
+  ? 'http://168.110.107.16'
+  : (_h === 'localhost' || _h === '127.0.0.1')
+    ? 'http://localhost:8000'
+    : '';
 window.API_BASE = API_BASE;
 
 // ─────────────────────────────────────────────

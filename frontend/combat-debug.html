@@ -1,0 +1,465 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>⚔ 전투 UI 디버그</title>
+<link rel="stylesheet" href="./game.css">
+<style>
+  body { margin: 0; background: var(--bg-tertiary); }
+
+  /* ── 디버그 컨트롤 패널 (z-index 1000, 오버레이 위) ── */
+  #dbg-panel {
+    position: fixed; top: 10px; left: 50%; transform: translateX(-50%);
+    z-index: 1000;
+    background: rgba(12, 12, 14, 0.92);
+    border: 1px solid #333; border-radius: 8px;
+    padding: 8px 14px;
+    display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+    font-family: sans-serif; font-size: 11px; color: #aaa;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.6);
+    backdrop-filter: blur(4px);
+    user-select: none;
+  }
+  #dbg-panel label  { color: #666; font-size: 10px; letter-spacing: 0.05em; }
+  #dbg-panel select {
+    background: #1c1c1e; color: #ccc; border: 1px solid #3a3a3a;
+    border-radius: 4px; padding: 3px 6px; font-size: 11px; cursor: pointer;
+  }
+  #dbg-panel button {
+    background: #2a2a2e; color: #ccc; border: 1px solid #3a3a3a;
+    border-radius: 4px; padding: 4px 10px; font-size: 11px; cursor: pointer;
+    white-space: nowrap; transition: background 0.1s;
+  }
+  #dbg-panel button:hover { background: #3a3a3e; }
+  #dbg-panel button.btn-win  { border-color: rgba(93,187,139,0.5); color: #5DBB8B; }
+  #dbg-panel button.btn-loss { border-color: rgba(226,75,74,0.5);  color: #E24B4A; }
+  #dbg-panel .sep { color: #333; }
+  #dbg-panel .dbg-title { color: #666; font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; }
+</style>
+</head>
+<body>
+
+<!-- 툴팁 (combat-ui.js 내 hover 시스템용 placeholder) -->
+<div class="tooltip" id="tooltip">
+  <div class="tt-name" id="tt-name"></div>
+  <div class="tt-sub"  id="tt-sub"></div>
+  <div class="tt-body" id="tt-body"></div>
+  <hr class="tt-divider" id="tt-div" style="display:none">
+  <div id="tt-rows"></div>
+  <div id="tt-tags"></div>
+</div>
+
+<div id="combat-overlay"></div>
+
+<!-- ── 디버그 컨트롤 ── -->
+<div id="dbg-panel">
+  <span class="dbg-title">⚔ 전투 디버그</span>
+  <span class="sep">|</span>
+
+  <label>시나리오</label>
+  <select id="dbg-scenario" onchange="dbgChangeScenario(this.value)">
+    <option value="rome">동로마 vs 서고트 (378)</option>
+    <option value="ottoman">오스만 vs 비잔틴 (1402)</option>
+    <option value="deluge">폴란드 vs 스웨덴 (1656)</option>
+    <option value="custom">커스텀</option>
+  </select>
+
+  <span class="sep">|</span>
+  <label>첩보</label>
+  <select id="dbg-intel" onchange="dbgSetIntel(this.value)">
+    <option value="medium">보통</option>
+    <option value="low">저급</option>
+    <option value="high">고급</option>
+  </select>
+
+  <label>날씨</label>
+  <select id="dbg-weather" onchange="dbgSetWeather(this.value)">
+    <option value="clear">맑음</option>
+    <option value="rain">강우</option>
+    <option value="heat">폭염</option>
+    <option value="fog">짙은 안개</option>
+    <option value="snow">강설</option>
+    <option value="sandstorm">모래폭풍</option>
+  </select>
+
+  <label>지형</label>
+  <select id="dbg-terrain" onchange="dbgSetTerrain(this.value)">
+    <option value="plain">평지</option>
+    <option value="highland">고지</option>
+    <option value="forest">삼림</option>
+    <option value="riverside">강변</option>
+    <option value="desert">사막</option>
+  </select>
+
+  <span class="sep">|</span>
+  <label>페이즈 결과</label>
+  <select id="dbg-outcome">
+    <option value="minor_success">소폭 우세</option>
+    <option value="major_success">전술 우세</option>
+    <option value="critical_success">결정적 우세</option>
+    <option value="stalemate">교착</option>
+    <option value="minor_fail">소폭 열세</option>
+    <option value="major_fail">전술 열세</option>
+    <option value="critical_fail">결정적 열세</option>
+  </select>
+  <button onclick="dbgNextPhase()">▶ 다음 페이즈</button>
+
+  <span class="sep">|</span>
+  <button class="btn-win"  onclick="dbgEndCombat('player')">✓ 승리 종결</button>
+  <button class="btn-loss" onclick="dbgEndCombat('enemy')">✗ 패배 종결</button>
+  <button onclick="dbgReset()">↺ 초기화</button>
+</div>
+
+<!-- game-markdown.js: markdownToHtml / extractNarrative / extractChoices -->
+<script src="./game-markdown.js"></script>
+<!-- combat-ui.js: openCombatOverlay 등 모든 전투 UI 함수 -->
+<script src="./combat-ui.js"></script>
+
+<script>
+// ═══════════════════════════════════════════════════════════════════════════
+//  combat-ui.js 가 참조하는 외부 글로벌 목 (window.* 으로 확실하게 노출)
+// ═══════════════════════════════════════════════════════════════════════════
+
+window.RESOLUTION_STYLE = {
+  critical_success: { label: '대성공',   color: '#C5932A' },
+  major_success:    { label: '성공',     color: '#5DBB8B' },
+  success:          { label: '성공',     color: '#5DBB8B' },
+  minor_success:    { label: '소성공',   color: '#8BC5A8' },
+  stalemate:        { label: '교착',     color: '#7F77DD' },
+  minor_fail:       { label: '소실패',   color: '#E09060' },
+  fail:             { label: '실패',     color: '#E24B4A' },
+  critical_fail:    { label: '대실패',   color: '#8B2020' },
+};
+
+window._CHOICE_TYPE_CSS = {
+  attack: 'military', surprise: 'military', defense: 'military', siege: 'military',
+  diplomatic: 'diplomatic',
+  intrigue: 'intrigue',
+};
+
+// closeCombatOverlay 에서 호출하는 메인 게임 렌더 함수들 — 디버그에선 무작동
+window.renderAll       = () => {};
+window.renderResolution= () => {};
+window.renderSceneBody = () => {};
+window.renderChoices   = () => {};
+// submitCombatTurn 에서 호출 — 디버그에선 무작동
+window.applyStateUpdates = () => {};
+
+// _manager / _ui — 저장·이벤트 목
+window._manager = { _state: null, save() {} };
+window._ui      = { onTurnEnd: null };
+
+// ═══════════════════════════════════════════════════════════════════════════
+//  시나리오 프리셋
+// ═══════════════════════════════════════════════════════════════════════════
+
+const _SCENARIOS = {
+  rome: {
+    playerFaction: { id: 'eastern_rome', name: '동로마 제국',  color: '#9B2020', field_army: 15000 },
+    enemyFaction:  { id: 'visigoths',    name: '서고트 연합',  color: '#8B7355', field_army: 20000 },
+    playerChar:    { id: 'valens',    name: '발렌스 황제',  epithet: '동로마의 아우구스투스', faction_id: 'eastern_rome' },
+    enemyChar:     { id: 'fritigern', name: '프리티게른',   epithet: '서고트의 대족장',       faction_id: 'visigoths'    },
+    location: '아드리아노플', year: '378년', terrain: 'plain', weather: 'heat', tpp: 60,
+  },
+  ottoman: {
+    playerFaction: { id: 'ottoman',   name: '오스만 제국',     color: '#C5932A', field_army: 45000 },
+    enemyFaction:  { id: 'byzantine', name: '비잔틴 제국',     color: '#7F77DD', field_army: 12000 },
+    playerChar:    { id: 'suleyman',     name: '쉴레이만',       epithet: '오스만의 황자',    faction_id: 'ottoman'   },
+    enemyChar:     { id: 'constantine', name: '콘스탄티노스 11세', epithet: '비잔티움의 황제', faction_id: 'byzantine' },
+    location: '아드리아노플 교외', year: '1402년', terrain: 'plain', weather: 'clear', tpp: 65,
+  },
+  deluge: {
+    playerFaction: { id: 'poland', name: '폴란드-리투아니아 연방', color: '#DC143C', field_army: 28000 },
+    enemyFaction:  { id: 'sweden', name: '스웨덴 제국',            color: '#006AA7', field_army: 18000 },
+    playerChar:    { id: 'jan',  name: '얀 카지미에시', epithet: '폴란드의 왕',  faction_id: 'poland' },
+    enemyChar:     { id: 'karl', name: '카를 10세',    epithet: '스웨덴의 왕', faction_id: 'sweden' },
+    location: '바르샤바 평원', year: '1656년', terrain: 'plain', weather: 'snow', tpp: 80,
+  },
+  custom: {
+    playerFaction: { id: 'p_faction', name: '아군 세력', color: '#5DBB8B', field_army: 20000 },
+    enemyFaction:  { id: 'e_faction', name: '적군 세력', color: '#E24B4A', field_army: 20000 },
+    playerChar:    { id: 'p_char', name: '아군 지휘관', epithet: '주인공의 별칭', faction_id: 'p_faction' },
+    enemyChar:     { id: 'e_char', name: '적군 지휘관', epithet: '적 지휘관의 별칭', faction_id: 'e_faction' },
+    location: '전투 장소', year: '1400년', terrain: 'plain', weather: 'clear', tpp: 65,
+  },
+};
+
+// ═══════════════════════════════════════════════════════════════════════════
+//  목 콘텐츠 (결정 시점: 섹션 포함해야 extractChoices 가 선택지 파싱)
+// ═══════════════════════════════════════════════════════════════════════════
+
+const _MOCK_NARRATIVE = {
+  minor_success: `**소폭 우세**  아군 기병대가 적 우익을 효과적으로 압박하며 소폭의 전술적 우위를 점했다.
+
+**상황 전개:** 전장 중앙에서 밀고 밀리는 격전이 계속됐다. 아군 좌익 기병이 적 우측 측면을 압박하며 적진의 대형이 일부 흐트러지는 것이 보였다. 아직 결정적인 돌파는 이루지 못했지만 기세는 아군에 있었다. 지휘관은 말 위에서 진열을 살피며 다음 수를 구상했다.`,
+
+  major_success: `**전술 우세**  아군의 협공 기동이 적 중앙을 강타하며 명백한 전술적 우위를 확보했다.
+
+**상황 전개:** 계획대로였다. 좌우 양 기병대가 동시에 적 측면을 타격하는 순간, 중앙 보병대가 전진하며 적 진형에 쐐기를 박아 넣었다. 적 지휘관의 호령이 허공에 흩어지고, 일부 부대에서 혼란의 기색이 역력했다. 이 흐름을 이어가야 한다.`,
+
+  critical_success: `**결정적 우세**  적 진형이 붕괴 직전이다. 아군의 포위 기동이 완벽하게 맞아 떨어졌다.
+
+**상황 전개:** 예상치 못한 방향에서 아군 기병대가 쏟아져 나오는 순간, 적군의 진형은 삽시간에 무너지기 시작했다. 비명과 함성이 뒤섞인 전장 위로 아군의 기세가 하늘을 찌를 듯 치솟았다. 지금이 결정타를 날릴 순간이다.`,
+
+  stalemate: `**교착**  양측이 팽팽히 맞서며 전선이 고착되었다. 어느 쪽도 결정적 우위를 점하지 못했다.
+
+**상황 전개:** 수 시간의 격전이 계속됐지만 전선은 요동치지 않았다. 양측 병사들의 얼굴에 피로와 긴장이 역력했다. 지휘관들은 서로의 수를 읽으려 했으나, 상대 역시 같은 생각이었다. 이 교착을 깰 묘수가 필요하다.`,
+
+  minor_fail: `**소폭 열세**  적의 반격이 아군 우익에 타격을 입혔다.
+
+**상황 전개:** 적의 기병대가 아군 허점을 파고들었다. 우익 부대가 일부 밀려났고, 중앙 방어선에도 압박이 가해지기 시작했다. 아직 회복할 여지가 있다. 냉정하게 상황을 판단해야 한다.`,
+
+  major_fail: `**전술 열세**  적의 협공으로 아군 좌익이 붕괴 위기에 처했다.
+
+**상황 전개:** 예상치 못한 방향에서 적 기병대가 쏟아져 나왔다. 좌익 보병들이 뒤로 물러서기 시작했고, 그 틈을 타 적의 보병대가 쇄도해 왔다. 이대로 가면 포위당할 수 있다. 즉각 결단을 내려야 한다.`,
+
+  critical_fail: `**결정적 열세**  아군 진형이 돌파당했다. 질서 있는 후퇴가 필요하다.
+
+**상황 전개:** 적의 공세가 아군 중앙을 완전히 관통했다. 사방에서 혼란의 함성이 들렸고, 일부 부대는 이미 도주하기 시작했다. 이 전투에서 승리는 불가능하다. 최대한 피해를 줄이며 후퇴하는 것이 현명하다.`,
+};
+
+const _MOCK_CHOICES = {
+  minor_success: [
+    { text: '**측면 포위 강화**: 우위를 살려 적 우익을 완전히 포위한다.', type: 'attack' },
+    { text: '**중앙 돌파**: 기세를 몰아 적 중앙에 전력을 집중한다.', type: 'attack' },
+    { text: '**현 진형 유지**: 적의 반격을 기다리며 방어 우위를 굳힌다.', type: 'defense' },
+  ],
+  major_success: [
+    { text: '**추격 명령**: 혼란에 빠진 적을 전면 추격하여 섬멸한다.', type: 'attack' },
+    { text: '**포위 완성**: 퇴로를 차단하여 적을 포위망 안에 가둔다.', type: 'attack' },
+    { text: '**진형 정비**: 승세를 굳히며 적의 반격에 대비한다.', type: 'defense' },
+  ],
+  critical_success: [
+    { text: '**전면 섬멸**: 모든 병력을 투입해 적을 완전히 궤멸시킨다.', type: 'attack' },
+    { text: '**적장 포획 시도**: 기병대를 보내 적 지휘관을 생포한다.', type: 'surprise' },
+    { text: '**항복 권유**: 사자를 보내 적 지휘관에게 항복을 요청한다.', type: 'diplomatic' },
+  ],
+  stalemate: [
+    { text: '**측면 기습**: 예비 기병대를 은밀히 우회시켜 적 후방을 타격한다.', type: 'surprise' },
+    { text: '**방어 진형 구축**: 현 위치를 공고히 하며 반격 기회를 노린다.', type: 'defense' },
+    { text: '**전면 압박**: 모든 전선에서 동시에 압박을 가해 적을 소진시킨다.', type: 'attack' },
+  ],
+  minor_fail: [
+    { text: '**반격 명령**: 흔들리는 우익에 예비대를 투입해 반격한다.', type: 'attack' },
+    { text: '**방어 진형으로 전환**: 부대를 후방으로 물리며 방어 대형을 형성한다.', type: 'defense' },
+    { text: '**후퇴 준비**: 질서정연한 후퇴를 준비하며 피해를 최소화한다.', type: 'defense' },
+  ],
+  major_fail: [
+    { text: '**결사 반격**: 친위대를 투입해 마지막 반격을 시도한다.', type: 'attack' },
+    { text: '**방어 진형 구축**: 중앙을 중심으로 방어 진형을 재편한다.', type: 'defense' },
+    { text: '**질서 있는 후퇴**: 전군에 후퇴 명령을 내려 피해를 최소화한다.', type: 'defense' },
+  ],
+  critical_fail: [
+    { text: '**결사 항전**: 마지막까지 싸워 최대한 많은 적을 끌어들인다.', type: 'attack' },
+    { text: '**질서 있는 후퇴**: 방패막이를 세워 후방을 엄호하며 후퇴한다.', type: 'defense' },
+    { text: '**전략적 후퇴**: 즉시 후퇴 명령을 내려 병력을 보존한다.', type: 'defense' },
+  ],
+};
+
+function _buildMockContent(outcome) {
+  const narrative = _MOCK_NARRATIVE[outcome] || _MOCK_NARRATIVE.stalemate;
+  const choices = (_MOCK_CHOICES[outcome] || _MOCK_CHOICES.stalemate)
+    .map(c => `- [${c.type}] ${c.text}`)
+    .join('\n');
+  return `${narrative}\n\n**결정 시점:**\n${choices}`;
+}
+
+function _buildMockResolution(outcome) {
+  const base = {
+    tier_en: 'phase_dice',
+    phase_outcome: outcome,
+    modifiers: [],
+    roll_detail: { ally: 0, enemy: 0 },
+  };
+  const outcomes = {
+    critical_success: { tier: '결정적 우세', net:  8, roll_detail: { ally: 15, enemy: 7  }, modifiers: [['지형 우세',    3], ['전술 판단 (!)', 2]] },
+    major_success:    { tier: '전술 우세',   net:  5, roll_detail: { ally: 12, enemy: 7  }, modifiers: [['전술 판단 (!)', 2]] },
+    minor_success:    { tier: '소폭 우세',   net:  2, roll_detail: { ally: 10, enemy: 8  }, modifiers: [['소속 우세 (?!)',1]] },
+    stalemate:        { tier: '교착',         net:  0, roll_detail: { ally: 9,  enemy: 9  }, modifiers: [] },
+    minor_fail:       { tier: '소폭 열세',   net: -2, roll_detail: { ally: 7,  enemy: 9  }, modifiers: [['지형 불리 (=)', -2]] },
+    major_fail:       { tier: '전술 열세',   net: -5, roll_detail: { ally: 5,  enemy: 10 }, modifiers: [] },
+    critical_fail:    { tier: '결정적 열세', net: -8, roll_detail: { ally: 3,  enemy: 11 }, modifiers: [] },
+  };
+  return { ...base, ...(outcomes[outcome] || outcomes.stalemate) };
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+//  _state 빌더
+// ═══════════════════════════════════════════════════════════════════════════
+
+function _buildState(scenarioKey, overrides) {
+  const sc = _SCENARIOS[scenarioKey] || _SCENARIOS.rome;
+  const tpp = sc.tpp;
+  const factions = new Map([
+    [sc.playerFaction.id, {
+      ...sc.playerFaction,
+      strength_score: Math.round(sc.playerFaction.field_army / tpp) + 50,
+    }],
+    [sc.enemyFaction.id, {
+      ...sc.enemyFaction,
+      strength_score: Math.round(sc.enemyFaction.field_army / tpp) + 30,
+    }],
+  ]);
+  const characters = new Map([
+    [sc.playerChar.id, sc.playerChar],
+    [sc.enemyChar.id,  sc.enemyChar],
+  ]);
+  return {
+    factions,
+    characters,
+    protagonist:     sc.playerChar.id,
+    troopsPerPoint:  tpp,
+    weather:         overrides.weather  || sc.weather,
+    scenarioId:      'debug',
+    combatState: {
+      active:               true,
+      phase_number:         1,
+      max_phases:           6,
+      player_faction_id:    sc.playerFaction.id,
+      enemy_faction_id:     sc.enemyFaction.id,
+      player_morale:        100,
+      enemy_morale:         100,
+      battle_location_name: sc.location,
+      battle_year:          sc.year,
+      battle_terrain:       overrides.terrain || sc.terrain,
+      is_siege:             false,
+      pending_battle_damage:{},
+      phase_results:        [],
+      enemy_intel_level:    overrides.intel  || 'medium',
+    },
+  };
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+//  현재 디버그 상태
+// ═══════════════════════════════════════════════════════════════════════════
+
+let _dbgScenario = 'rome';
+
+function _getOverrides() {
+  return {
+    intel:   document.getElementById('dbg-intel')?.value   || 'medium',
+    weather: document.getElementById('dbg-weather')?.value || 'clear',
+    terrain: document.getElementById('dbg-terrain')?.value || 'plain',
+  };
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+//  디버그 액션 함수 (컨트롤 패널 버튼에서 호출)
+// ═══════════════════════════════════════════════════════════════════════════
+
+function dbgReset() {
+  window._state = _buildState(_dbgScenario, _getOverrides());
+  window._manager._state = window._state;
+  const initContent = _buildMockContent('minor_success');
+  const initRes     = _buildMockResolution('minor_success');
+  openCombatOverlay(initContent, initRes);
+}
+
+function dbgChangeScenario(key) {
+  _dbgScenario = key;
+  dbgReset();
+}
+
+function dbgSetIntel(level) {
+  if (window._state?.combatState) {
+    window._state.combatState.enemy_intel_level = level;
+    dbgReset();
+  }
+}
+
+function dbgSetWeather(w) {
+  if (window._state) {
+    window._state.weather = w;
+    dbgReset();
+  }
+}
+
+function dbgSetTerrain(t) {
+  if (window._state?.combatState) {
+    window._state.combatState.battle_terrain = t;
+    dbgReset();
+  }
+}
+
+function dbgNextPhase() {
+  if (!window._state?.combatState) return;
+  const cs      = window._state.combatState;
+  const outcome = document.getElementById('dbg-outcome')?.value || 'stalemate';
+  const res     = _buildMockResolution(outcome);
+
+  // 사기 변화 시뮬레이션 — resolver.py _apply_phase_morale 와 동일한 범위
+  const _ri = (lo, hi) => Math.floor(Math.random() * (hi - lo + 1)) + lo;
+  const moraleShift = (() => { switch (outcome) {
+    case 'critical_success': return { player: +_ri(5,10),  enemy: -_ri(50,80) };
+    case 'major_success':    return { player: +_ri(3,5),   enemy: -_ri(20,49) };
+    case 'minor_success':    return { player: 0,            enemy: -_ri(9,19)  };
+    case 'stalemate':        return { player: -_ri(5,8),   enemy: -_ri(5,8)   };
+    case 'minor_fail':       return { player: -_ri(9,19),  enemy: 0            };
+    case 'major_fail':       return { player: -_ri(20,49), enemy: +_ri(3,5)   };
+    case 'critical_fail':    return { player: -_ri(50,80), enemy: +_ri(5,10)  };
+    default:                 return { player: 0, enemy: 0 };
+  }})();
+
+  cs.player_morale = Math.max(0, Math.min(100, (cs.player_morale ?? 100) + moraleShift.player));
+  cs.enemy_morale  = Math.max(0, Math.min(100, (cs.enemy_morale  ?? 100) + moraleShift.enemy));
+
+  // pending_battle_damage 누적 시뮬레이션
+  const dmg = {
+    critical_success: { player: 0,  enemy: 20 },
+    major_success:    { player: 2,  enemy: 12 },
+    minor_success:    { player: 4,  enemy: 8  },
+    stalemate:        { player: 5,  enemy: 5  },
+    minor_fail:       { player: 8,  enemy: 4  },
+    major_fail:       { player: 12, enemy: 2  },
+    critical_fail:    { player: 20, enemy: 0  },
+  }[outcome] || { player: 5, enemy: 5 };
+
+  const pFid = cs.player_faction_id;
+  const eFid = cs.enemy_faction_id;
+  cs.pending_battle_damage = cs.pending_battle_damage || {};
+  cs.pending_battle_damage[pFid] = (cs.pending_battle_damage[pFid] || 0) + dmg.player;
+  cs.pending_battle_damage[eFid] = (cs.pending_battle_damage[eFid] || 0) + dmg.enemy;
+
+  // 페이즈 기록 추가
+  cs.phase_results = [...(cs.phase_results || []), {
+    phase:         cs.phase_number,
+    phase_outcome: outcome,
+    tier:          res.tier,
+  }];
+  cs.phase_number = (cs.phase_number || 1) + 1;
+
+  // UI 갱신 (실제 게임과 동일한 함수 호출)
+  _renderCombatMomentum(cs);
+  _renderCombatLog(cs);
+  _renderCombatScene(_buildMockContent(outcome), res);
+}
+
+function dbgEndCombat(winner) {
+  if (!window._state?.combatState) return;
+  const cs = window._state.combatState;
+  const outcome = winner === 'player' ? 'major_success' : 'major_fail';
+  const pFid = cs.player_faction_id;
+  const eFid = cs.enemy_faction_id;
+
+  cs.ended  = true;
+  cs.active = false;
+  cs.winner = winner;
+  cs.retreat = false;
+  cs.final_tier    = winner === 'player' ? '전술 우세' : '전술 열세';
+  cs.final_tier_en = winner === 'player' ? 'success'   : 'failure';
+  cs.pending_battle_damage = cs.pending_battle_damage || {};
+  cs.pending_battle_damage[pFid] = (cs.pending_battle_damage[pFid] || 0) + (winner === 'player' ? 8 : 20);
+  cs.pending_battle_damage[eFid] = (cs.pending_battle_damage[eFid] || 0) + (winner === 'player' ? 20 : 8);
+
+  _renderCombatEnd(cs, _buildMockContent(outcome), _buildMockResolution(outcome));
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+//  초기 실행
+// ═══════════════════════════════════════════════════════════════════════════
+window.addEventListener('DOMContentLoaded', () => dbgReset());
+</script>
+</body>
+</html>
