@@ -385,3 +385,13 @@ body::before {
   .card-title { font-size: 15px; }
   .card-arrow { display: none; }
 }
+
+/* ─── 터치 기기 (태블릿 포함) ─── */
+@media (hover: none) and (pointer: coarse) {
+  /* 탭 지연 제거 */
+  .card { touch-action: manipulation; }
+
+  /* hover 트랜스폼 — 터치 후 고착 방지 */
+  .card:hover { transform: none; box-shadow: none; }
+  .card:hover .card-icon { transform: none; }
+}

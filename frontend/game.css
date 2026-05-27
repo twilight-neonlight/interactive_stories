@@ -741,3 +741,73 @@ hr.divider { border: none; border-top: 1px solid var(--border-light); margin: 10
   padding: 4px 0; flex-wrap: wrap;
 }
 .dipl-end-result { font-size: 16px; font-weight: 700; flex-shrink: 0; }
+
+/* ══ 터치 / 태블릿 지원 ═══════════════════════════════════════════
+   pointer: coarse = 손가락 터치 기기 (마우스 제외)
+   hover: none     = 호버 없는 기기 (마우스 제외)
+   ─ 가로 모드 태블릿 기준으로 레이아웃은 그대로 유지하고,
+     터치 인식 면적과 스크롤 편의만 보정한다.
+   ═════════════════════════════════════════════════════════════════ */
+@media (hover: none) and (pointer: coarse) {
+
+  /* ── 300ms 탭 지연 제거 ── */
+  .choice-btn,
+  .send-btn, .save-btn,
+  .combat-retreat-btn, .combat-close-btn, .combat-return-btn, .combat-replay-btn,
+  .dipl-withdraw-btn, .dipl-close-btn {
+    touch-action: manipulation;
+  }
+
+  /* ── 선택지 버튼 — 최소 터치 타깃 48px ── */
+  .choice-btn {
+    padding: 12px 14px;
+    min-height: 48px;
+  }
+
+  /* ── 전투·외교 제어 버튼 ── */
+  .combat-retreat-btn,
+  .dipl-withdraw-btn {
+    padding: 7px 16px;
+    min-height: 40px;
+  }
+  .combat-return-btn,
+  .combat-replay-btn {
+    padding: 10px 22px;
+    min-height: 44px;
+  }
+
+  /* ── 닫기(×) 버튼 — 22px → 36px ── */
+  .combat-close-btn,
+  .dipl-close-btn {
+    width: 36px;
+    height: 36px;
+    font-size: 20px;
+    line-height: 36px;
+  }
+
+  /* ── 저장 버튼 ── */
+  .save-btn {
+    padding: 6px 12px;
+    min-height: 34px;
+  }
+
+  /* ── 인물·세력 행 — 터치 여백 ── */
+  .char-row     { padding: 10px 0; }
+  .faction-item { padding: 9px 0; }
+
+  /* ── 지도 핀 — 터치 인식 면적 확보 ── */
+  .pin-dot                                  { width: 13px; height: 13px; }
+  .map-pin[data-tier="metropolis"] .pin-dot  { width: 18px; height: 18px; }
+  .map-pin[data-tier="major_city"]  .pin-dot { width: 15px; height: 15px; }
+  .map-pin[data-tier="small_city"]  .pin-dot { width: 9px;  height: 9px;  }
+  .map-pin[data-tier="town"]        .pin-dot { width: 6px;  height: 6px;  }
+
+  /* ── 스크롤 영역 — iOS 터치 관성 ── */
+  .scroll-inner,
+  .scene-body,
+  .choice-list,
+  .combat-side-log,
+  .dipl-log {
+    -webkit-overflow-scrolling: touch;
+  }
+}
