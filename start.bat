@@ -1,5 +1,5 @@
 @echo off
-chcp 65001 >nul
+%SystemRoot%\System32\chcp.com 65001 >nul 2>nul
 setlocal EnableDelayedExpansion
 cd /d "%~dp0"
 
