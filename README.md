@@ -223,6 +223,7 @@ LLM이 씬 응답 끝에 `[STATE_UPDATE] { ... }` 형식의 구조화된 블록�
 | 인증 | JWT (python-jose) — 게스트 UUID / Google OAuth 2.0 |
 | 상태 저장 | sessionStorage (진행 중 게임 상태) / 서버 JSON 세이브 / localStorage + 쿠키 (인증 토큰·게스트 UUID) |
 | 패키지 관리 | pip / venv |
+| 배포 | Oracle Cloud (Ubuntu 22.04), nginx, systemd, Let's Encrypt (HTTPS) |
 
 ---
 
@@ -304,6 +305,7 @@ interactive_stories/
 ├── deploy/
 │   ├── setup.sh                    # Oracle Cloud Ubuntu 초기 설정 스크립트
 │   ├── update.sh                   # 서버 코드 업데이트 및 서비스 재시작
+│   ├── auto-update.sh              # GitHub 커밋 감지 자동 배포 스크립트 (cron)
 │   ├── nginx.conf                  # nginx reverse proxy 설정
 │   └── interactive-stories.service # systemd 서비스 파일
 ├── tools/
@@ -379,15 +381,10 @@ chmod +x start.sh
 2. **OAuth 2.0 클라이언트 ID 만들기** (유형: 웹 애플리케이션)
 3. **승인된 JavaScript 원본** 추가:
    - 로컬 개발: `http://localhost:8000`
-   - 서버 배포: IP 주소가 아닌 **도메인 형식**이어야 합니다.  
-     공인 도메인이 없으면 [nip.io](https://nip.io)를 사용하세요.  
-     예: IP가 `1.2.3.4`이면 → `http://1-2-3-4.nip.io` 입력  
-     (nip.io는 해당 IP로 자동 라우팅되는 무료 와일드카드 DNS 서비스입니다)
 4. 발급된 클라이언트 ID를 `.env`에 추가:
    ```
    GOOGLE_CLIENT_ID=123456789-xxxx.apps.googleusercontent.com
    ```
-5. 서버는 `http://1-2-3-4.nip.io` URL로 접속해야 Google 로그인이 정상 작동합니다.
 
 #### 수동 실행
 
@@ -401,15 +398,6 @@ cd backend
 uvicorn main:app --reload --port 8000
 # 브라우저에서 http://localhost:8000 접속
 ```
-
-### 지도 SVG 추가 (선택)
-
-시나리오 폴더(`backend/scenarios/{id}/`)에 `map.svg`를 넣으면 게임 화면에 자동으로 표시됩니다.
-
-좌표가 없는 경우 `tools/map-coord-picker.html`을 브라우저에서 열어 좌표를 확인할 수 있습니다:
-1. 도구에서 지도 이미지를 불러옴
-2. 원하는 위치를 클릭하면 x%, y% 좌표 기록
-3. JSON 복사 버튼으로 `locations.json`에 바로 붙여넣기 가능
 
 ---
 
@@ -435,7 +423,8 @@ uvicorn main:app --reload --port 8000
 3. `locations.json`, `factions.json`, `characters.json` 등 필요한 파일 작성
    - `characters.json`의 주요 인물에 `stats` 필드 작성 (`{"통솔": "B+", "지략": "C", ...}`)
 4. 선택형 시나리오라면 `character-select.json`을 작성해 선택 카드, 플레이 가능 여부, 추천 표시 등을 정의
-5. `map.svg` 배치 + `tools/map-coord-picker.html`로 좌표 확보
+5. `map.svg` 배치 — 시나리오 폴더에 넣으면 게임 화면에 자동 표시됨  
+   좌표가 없는 경우 `tools/map-coord-picker.html`을 브라우저에서 열어 이미지를 불러온 뒤 위치를 클릭하면 x/y 좌표가 기록되고, JSON 복사 버튼으로 `locations.json`에 바로 붙여넣기 가능
 6. `prompt.md` 작성 — 시나리오 전역 LLM 지시 (명령형). select 모드는 `prompt_{char_id}.md`도 작성
 7. `scenario-ui.js`의 `CONFIGS`에 시나리오 ID 키로 UI 설정 추가
 8. 백엔드 서버 재시작 시 자동으로 목록에 포함됨
