@@ -290,7 +290,7 @@ async def process_turn(req: TurnRequest, _user: dict = Depends(get_current_user)
 
     messages  = [{"role": "system", "content": full_system}]
     messages += [{"role": m.role, "content": m.content} for m in req.history]
-    messages.append({"role": "user", "content": req.command})
+    messages.append({"role": "user", "content": f"<player_input>\n{req.command}\n</player_input>"})
 
     content = await call_gemini(messages)
     content, extra = extract_state_update(content)

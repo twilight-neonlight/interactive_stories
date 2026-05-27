@@ -1,0 +1,82 @@
+[
+  {
+    "id": "jin",
+    "name": "금나라",
+    "type": "empire",
+    "field_army": 100000,
+    "naval_base": 0,
+    "disposition": "중립",
+    "color": "#C5932A",
+    "notes": "여진족이 세운 왕조. 화북 전역과 만주를 장악한 동아시아 최강의 육군 대국. 금장종이 즉위한 지 얼마 되지 않아 내정 재편이 진행 중이다.",
+    "initial_diplomacy": {
+      "southern-song": -70,
+      "mongols": -40,
+      "western-xia": -20,
+      "goryeo": -30
+    }
+  },
+  {
+    "id": "southern-song",
+    "name": "남송",
+    "type": "empire",
+    "field_army": 80000,
+    "naval_base": 45,
+    "disposition": "중립",
+    "color": "#3a7abf",
+    "notes": "남중국을 지배하는 한족 왕조. 금나라에 화북을 빼앗긴 채 강화를 맺고 공존하고 있으나, 수복의 의지를 완전히 버리지 않았다. 재정과 해상 교역은 풍부하나 육군 전력이 구조적으로 취약하다.",
+    "initial_diplomacy": {
+      "jin": -70,
+      "mongols": 0,
+      "western-xia": 10,
+      "goryeo": 30
+    }
+  },
+  {
+    "id": "mongols",
+    "name": "몽골",
+    "type": "faction",
+    "field_army": 35000,
+    "naval_base": 0,
+    "disposition": "중립",
+    "color": "#5a8a3c",
+    "notes": "대초원의 유목 집단. 테무진이 여러 부족을 규합해가고 있으나 아직 통일에는 이르지 못했다. 기동력과 전투력은 탁월하나 정착 지역 통치 기반이 없다.",
+    "initial_diplomacy": {
+      "jin": -40,
+      "southern-song": 0,
+      "western-xia": -30,
+      "goryeo": 0
+    }
+  },
+  {
+    "id": "western-xia",
+    "name": "서하",
+    "type": "kingdom",
+    "field_army": 50000,
+    "naval_base": 0,
+    "disposition": "중립",
+    "color": "#7F77DD",
+    "notes": "탕구트족이 세운 왕조. 금나라와 남송 사이, 그리고 초원 세력의 남하 방향에 위치한 완충 왕국. 오랜 독립을 유지해왔으나 강대국 사이에서 외교적 균형이 생존의 핵심이다.",
+    "initial_diplomacy": {
+      "jin": -20,
+      "southern-song": 10,
+      "mongols": -30,
+      "goryeo": 0
+    }
+  },
+  {
+    "id": "goryeo",
+    "name": "고려",
+    "type": "kingdom",
+    "field_army": 40000,
+    "naval_base": 20,
+    "disposition": "중립",
+    "color": "#3a8a7a",
+    "notes": "한반도를 지배하는 왕조. 무신정변 이후 실권은 무장들의 손에 넘어가 명종은 허수아비 국왕으로 전락했다. 이의민이 현재 집권하고 있으나 내부 경쟁이 격화되고 있다.",
+    "initial_diplomacy": {
+      "jin": -30,
+      "southern-song": 30,
+      "mongols": 0,
+      "western-xia": 0
+    }
+  }
+]

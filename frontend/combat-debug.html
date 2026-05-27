@@ -61,7 +61,6 @@
   <select id="dbg-scenario" onchange="dbgChangeScenario(this.value)">
     <option value="rome">동로마 vs 서고트 (378)</option>
     <option value="ottoman">오스만 vs 비잔틴 (1402)</option>
-    <option value="deluge">폴란드 vs 스웨덴 (1656)</option>
     <option value="custom">커스텀</option>
   </select>
 
@@ -178,13 +177,6 @@ const _SCENARIOS = {
     playerChar:    { id: 'suleyman',     name: '쉴레이만',       epithet: '오스만의 황자',    faction_id: 'ottoman'   },
     enemyChar:     { id: 'constantine', name: '콘스탄티노스 11세', epithet: '비잔티움의 황제', faction_id: 'byzantine' },
     location: '아드리아노플 교외', year: '1402년', terrain: 'plain', weather: 'clear', tpp: 65,
-  },
-  deluge: {
-    playerFaction: { id: 'poland', name: '폴란드-리투아니아 연방', color: '#DC143C', field_army: 28000 },
-    enemyFaction:  { id: 'sweden', name: '스웨덴 제국',            color: '#006AA7', field_army: 18000 },
-    playerChar:    { id: 'jan',  name: '얀 카지미에시', epithet: '폴란드의 왕',  faction_id: 'poland' },
-    enemyChar:     { id: 'karl', name: '카를 10세',    epithet: '스웨덴의 왕', faction_id: 'sweden' },
-    location: '바르샤바 평원', year: '1656년', terrain: 'plain', weather: 'snow', tpp: 80,
   },
   custom: {
     playerFaction: { id: 'p_faction', name: '아군 세력', color: '#5DBB8B', field_army: 20000 },

@@ -1,0 +1,145 @@
+[
+  {
+    "id": "jin-zhangzong",
+    "name": "완안경",
+    "epithet": "금장종",
+    "title": "금나라 황제",
+    "faction_id": "jin",
+    "disposition": "중립",
+    "status_tag": "확인됨",
+    "desc": "금나라 제6대 황제. 세종의 손자로, 1189년 즉위 직후부터 내정 개혁과 한화 정책을 추진하고 있다. 시문과 예술에 조예가 깊으나 군사적 야심도 적지 않다.",
+    "troops_count": 100000
+  },
+  {
+    "id": "wanyan-xiang",
+    "name": "완안양",
+    "epithet": "금나라 원수",
+    "title": "금군 총원수",
+    "faction_id": "jin",
+    "disposition": "중립",
+    "status_tag": "확인됨",
+    "desc": "금나라의 핵심 군사 지도자. 북방 초원 세력의 움직임을 오랫동안 감시해온 노련한 야전 지휘관.",
+    "troops_count": 80000
+  },
+  {
+    "id": "xin-qiji",
+    "name": "신기질",
+    "epithet": "가헌거사",
+    "title": "남송 무장·시인",
+    "faction_id": "southern-song",
+    "disposition": "중립",
+    "status_tag": "확인됨",
+    "desc": "무장이자 시인. 북벌 의지를 평생 품어왔으나 조정의 주화파에 막혀 번번이 좌절됐다. 현재 지방 안무사로 있으며 군사 개혁을 구상하고 있다.",
+    "troops_count": 40000
+  },
+  {
+    "id": "han-tuozhou",
+    "name": "한탁주",
+    "epithet": "외척 권신",
+    "title": "남송 추밀부사",
+    "faction_id": "southern-song",
+    "disposition": "중립",
+    "status_tag": "추정됨",
+    "desc": "황실 외척 출신의 야심가. 신황제 광종의 즉위를 실질적으로 주도한 배후 인물. 권력 기반을 확대하면서 조정 안팎의 견제를 받고 있다.",
+    "troops_count": 30000
+  },
+  {
+    "id": "zhao-dun",
+    "name": "조돈",
+    "epithet": "광종",
+    "title": "남송 황제",
+    "faction_id": "southern-song",
+    "disposition": "중립",
+    "status_tag": "확인됨",
+    "desc": "1189년 효종의 양위를 받아 즉위한 제3대 황제. 우유부단하다는 평가를 받으나 즉위 초기 개혁 의지를 내비치고 있다.",
+    "troops_count": 60000
+  },
+  {
+    "id": "temujin",
+    "name": "테무진",
+    "epithet": "카마그 몽골의 수장",
+    "title": "카마그 족장",
+    "faction_id": "mongols",
+    "disposition": "중립",
+    "status_tag": "확인됨",
+    "desc": "1189년 몽골 부족들로부터 칸으로 추대된 젊은 지도자. 타타르에 부친을 잃고 극한의 역경을 딛고 일어선 인물. 전술적 직관과 인재 등용에 비범한 능력을 보인다.",
+    "troops_count": 35000
+  },
+  {
+    "id": "jamukha",
+    "name": "자무카",
+    "epithet": "안다(義兄弟)",
+    "title": "자다란부 수장",
+    "faction_id": "mongols",
+    "disposition": "중립",
+    "status_tag": "추정됨",
+    "desc": "테무진의 의형제이자 경쟁자. 전통 몽골 씨족 귀족들의 지지를 받으며, 테무진과는 지배 방식을 두고 근본적 차이를 보인다.",
+    "troops_count": 25000
+  },
+  {
+    "id": "toghrul",
+    "name": "토오릴",
+    "epithet": "왕칸",
+    "title": "케레이트 칸",
+    "faction_id": "mongols",
+    "disposition": "중립",
+    "status_tag": "확인됨",
+    "desc": "케레이트 부족의 지도자로 금나라로부터 '왕칸' 칭호를 받은 실력자. 테무진의 후원자이자 동맹이지만, 두 사람의 관계는 세력이 커질수록 복잡해지고 있다.",
+    "troops_count": 30000
+  },
+  {
+    "id": "xia-renzong",
+    "name": "이인효",
+    "epithet": "서하 인종",
+    "title": "서하 황제",
+    "faction_id": "western-xia",
+    "disposition": "중립",
+    "status_tag": "확인됨",
+    "desc": "서하 제8대 황제. 재위 50년을 넘긴 노련한 군주. 금나라와 공존하며 독립을 지켜왔으나, 북방 초원의 변화가 심상치 않음을 감지하고 있다.",
+    "troops_count": 50000
+  },
+  {
+    "id": "li-anquan",
+    "name": "이안전",
+    "epithet": "서하의 야심가",
+    "title": "서하 황족",
+    "faction_id": "western-xia",
+    "disposition": "중립",
+    "status_tag": "추정됨",
+    "desc": "황실 방계 출신의 야심 있는 황족. 현 황제의 노쇠를 틈타 군부 내 기반을 조성하고 있다. 외교보다 팽창을 선호하는 것으로 알려져 있다.",
+    "troops_count": 20000
+  },
+  {
+    "id": "yi-uimin",
+    "name": "이의민",
+    "epithet": "고려 집권 무장",
+    "title": "고려 중서령",
+    "faction_id": "goryeo",
+    "disposition": "중립",
+    "status_tag": "확인됨",
+    "desc": "천민 출신으로 무신정변의 혼란 속에 권력을 장악한 인물. 강인한 무력을 바탕으로 집권하고 있으나 기반이 협소하고 반발도 크다.",
+    "troops_count": 30000
+  },
+  {
+    "id": "choe-chungheon",
+    "name": "최충헌",
+    "epithet": "고려의 후계자",
+    "title": "고려 장군",
+    "faction_id": "goryeo",
+    "disposition": "중립",
+    "status_tag": "추정됨",
+    "desc": "이의민의 집권에 불만을 품은 고려 무장. 문벌 귀족과 군부 내 불만 세력을 규합하고 있다. 후일 고려 최씨 무신 정권의 창시자가 될 인물.",
+    "troops_count": 20000
+  },
+  {
+    "id": "wang-ho",
+    "name": "왕호",
+    "epithet": "명종",
+    "title": "고려 국왕",
+    "faction_id": "goryeo",
+    "disposition": "중립",
+    "status_tag": "확인됨",
+    "desc": "무신들의 꼭두각시로 전락한 고려 제19대 국왕. 왕권을 실질적으로 행사하지 못하고 있으나, 왕실의 권위를 복원하려는 열망을 은밀히 품고 있다.",
+    "troops_count": 40000
+  }
+]
