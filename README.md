@@ -17,7 +17,7 @@
 - 선택형 시나리오는 `character-select.json`에서 선택 카드 데이터를 관리하고, `characters.json`의 인물 원본 데이터와 조합해 표시
 
 ### AI 내러티브 엔진 (TurnEngine)
-- Google Gemini(`gemini-3-flash-preview`)를 내러티브 생성 모델로 사용
+- Google Gemini(`gemini-3.1-flash-lite`)를 내러티브 생성 모델로 사용
 - 플레이어 입력 → 백엔드 `/api/turn` → AI 응답 → 상태 갱신의 단방향 흐름
 - 선택지는 LLM이 `[attack]`, `[siege]`, `[diplomatic]`, `[intrigue]` 같은 행동 태그를 붙이고, 백엔드는 이 태그와 LLM 행동 분류기(`classifier.py`)를 함께 사용해 판정 유형을 결정
 - 행동 판정 5단계: **대성공 / 성공 / 부분 성공 / 실패 / 대실패**
@@ -219,7 +219,7 @@ LLM이 씬 응답 끝에 `[STATE_UPDATE] { ... }` 형식의 구조화된 블록�
 |---|---|
 | 프론트엔드 | Vanilla HTML / CSS / JavaScript |
 | 백엔드 | Python, FastAPI, Uvicorn |
-| AI 모델 | Google Gemini (`gemini-3-flash-preview`) |
+| AI 모델 | Google Gemini (`gemini-3.1-flash-lite`) |
 | 인증 | JWT (python-jose) — 게스트 UUID / Google OAuth 2.0 |
 | 상태 저장 | sessionStorage (진행 중 게임 상태) / 서버 JSON 세이브 / localStorage + 쿠키 (인증 토큰·게스트 UUID) |
 | 패키지 관리 | pip / venv |

@@ -35,7 +35,7 @@ GOOGLE_CLIENT_ID = os.environ.get("GOOGLE_CLIENT_ID", "")
 # 초대 코드 — 설정 시 로그인 시 검증, 비어있으면 로컬 개발용으로 검증 스킵
 INVITE_CODE = os.environ.get("INVITE_CODE", "")
 
-MODEL       = "gemini-3-flash-preview"
+MODEL       = "gemini-3.1-flash-lite"
 MAX_TOKENS  = 9172
 TEMPERATURE = 0.8
 # GEMINI_URL = "https://factchat-cloud.mindlogic.ai/v1/gateway"
