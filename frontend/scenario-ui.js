@@ -274,6 +274,54 @@ const CONFIGS = {
     },
   },
 
+  // ── 초원의 여명 ──────────────────────────────────────────────────
+  'northeast-asia-1189': {
+    tagExtras: {
+      '부족 통합': ['#eef6ea', '#2e6b1f'],
+      '북벌':      ['#fbeaea', '#9e2020'],
+      '균형 외교': ['#eaf2fb', '#1a5f9e'],
+      '초원':      ['#eef6ea', '#3a6a2c'],
+    },
+
+    commanderInfo: defaultCommanderInfo,
+
+    charDotColor(char, state) {
+      if (char.color) return char.color;
+      const factionId = char.faction_id
+        || (state.factions.has(char.id) ? char.id : null);
+      return state.factions.get(factionId)?.color || '#888780';
+    },
+
+    charRelInfo: defaultCharRelInfo,
+
+    factionBarColor(faction) { return faction.color || '#888780'; },
+    factionBarTag: defaultFactionBarTag,
+
+    mapMarkerStyle: defaultMapMarkerStyle,
+
+    getEvents(state) {
+      return (state.events ?? [])
+        .filter(ev => {
+          if (ev.protagonist_only?.length && state.protagonist &&
+              !ev.protagonist_only.includes(state.protagonist)) return false;
+          return _evStateStr((state.eventStates ?? {})[ev.id]) === 'active';
+        })
+        .map(ev => {
+          const rows = (ev.effects ?? []).map(e => `${e.key}:${e.desc}`).join('|');
+          return { ...ev, rows };
+        });
+    },
+
+    initDispositions(state) {
+      const p = state.protagonist;
+      for (const [id, char] of state.characters) {
+        if (id === p) continue;
+        const factionId = char.faction_id || (state.factions.has(id) ? id : null);
+        const faction   = factionId ? state.factions.get(factionId) : null;
+        if (faction && faction.id !== p) char.disposition = faction.disposition;
+      }
+    },
+  },
 
 };
 

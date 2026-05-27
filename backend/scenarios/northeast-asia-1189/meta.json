@@ -13,6 +13,5 @@
   "protagonistMode": "select",
   "characterSelectPage": "northeast_asia_select.html",
   "troops_per_strength_point": 70,
-  "start_timestamp": "1189년 봄",
-  "status": "wip"
+  "start_timestamp": "1189년 봄"
 }
