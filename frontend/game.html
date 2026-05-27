@@ -5,6 +5,56 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Interactive Stories</title>
 <link rel="stylesheet" href="./game.css">
+<style>
+/* ── 미저장 경고 모달 ─────────────────────────────────────────── */
+.unsaved-backdrop {
+  display: none; position: fixed; inset: 0;
+  background: rgba(0,0,0,0.48);
+  z-index: 9000;
+  align-items: center; justify-content: center;
+}
+.unsaved-backdrop.active { display: flex; }
+.unsaved-modal {
+  background: var(--bg-primary);
+  border: 1px solid var(--border-mid);
+  border-radius: 8px;
+  padding: 24px 26px 20px;
+  max-width: 320px; width: 90%;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.22);
+}
+.unsaved-modal-title {
+  font-size: 14px; font-weight: 600;
+  color: var(--text-primary);
+  margin: 0 0 7px; font-family: sans-serif;
+}
+.unsaved-modal-desc {
+  font-size: 12px; color: var(--text-secondary);
+  margin: 0 0 18px; line-height: 1.65; font-family: sans-serif;
+}
+.unsaved-modal-actions { display: flex; flex-direction: column; gap: 6px; }
+.unsaved-btn-primary {
+  padding: 7px 12px; font-size: 12px; font-family: sans-serif;
+  background: var(--text-primary); color: var(--bg-primary);
+  border: none; border-radius: 5px; cursor: pointer;
+  transition: opacity 0.12s;
+}
+.unsaved-btn-primary:hover { opacity: 0.82; }
+.unsaved-btn-primary:disabled { opacity: 0.45; cursor: default; }
+.unsaved-btn-secondary {
+  padding: 7px 12px; font-size: 12px; font-family: sans-serif;
+  background: transparent; color: var(--text-secondary);
+  border: 1px solid var(--border-mid); border-radius: 5px; cursor: pointer;
+  transition: color 0.12s, border-color 0.12s;
+}
+.unsaved-btn-secondary:hover { color: var(--text-primary); border-color: var(--text-secondary); }
+.unsaved-btn-cancel {
+  padding: 7px 12px; font-size: 12px; font-family: sans-serif;
+  background: transparent; color: var(--text-tertiary);
+  border: 1px solid var(--border-light); border-radius: 5px; cursor: pointer;
+  transition: color 0.12s, border-color 0.12s;
+}
+.unsaved-btn-cancel:hover { color: var(--text-primary); border-color: var(--text-secondary); }
+</style>
 <script src="scenario-loader.js" defer></script>
 <script src="../state/GameState.js" defer></script>
 <script src="../state/StateManager.js" defer></script>
@@ -34,6 +84,19 @@
 <div id="combat-overlay"></div>
 <div id="diplomacy-overlay"></div>
 
+<!-- ── 미저장 경고 모달 ──────────────────────────────────────── -->
+<div id="unsaved-backdrop" class="unsaved-backdrop" onclick="closeUnsavedModal()">
+  <div class="unsaved-modal" onclick="event.stopPropagation()">
+    <p class="unsaved-modal-title">저장하지 않고 끝내시겠습니까?</p>
+    <p class="unsaved-modal-desc">마지막 저장 이후의 진행 내용이 사라질 수 있습니다.</p>
+    <div class="unsaved-modal-actions">
+      <button id="unsaved-save-btn" class="unsaved-btn-primary" onclick="saveAndExit()">저장 후 나가기</button>
+      <button class="unsaved-btn-secondary" onclick="confirmExit()">저장 없이 나가기</button>
+      <button class="unsaved-btn-cancel" onclick="closeUnsavedModal()">취소</button>
+    </div>
+  </div>
+</div>
+
 <div class="shell">
 
   <!-- 좌측 -->
@@ -58,7 +121,7 @@
         <div class="resolution-badge" id="resolution-badge" style="display:none;"></div>
         <div class="save-bar">
           <button class="save-btn" id="save-btn" onclick="saveToServer()" title="현재 상태를 서버에 저장">저장</button>
-          <a class="save-btn" href="main_menu.html" title="메인 메뉴로">메뉴</a>
+          <button class="save-btn" onclick="tryNavigateToMenu()" title="메인 메뉴로">메뉴</button>
         </div>
       </div>
       <div class="time-badge">

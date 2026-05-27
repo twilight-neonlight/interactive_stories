@@ -51,6 +51,11 @@ const NavState = {
   // ── 게임 내비게이션 ──────────────────────────────────────────────────────────
   setScenario(id) {
     sessionStorage.removeItem('is_gameState');
+    // 이전 캐릭터 선택(setCharacter)이 남긴 키도 함께 초기화해
+    // getScenarioId()가 낡은 'scenario' 키를 우선 반환하는 문제를 방지한다.
+    sessionStorage.removeItem('scenario');
+    sessionStorage.removeItem('selectedCharacterId');
+    sessionStorage.removeItem('selectedCharacterName');
     sessionStorage.setItem('scenarioId', id);
   },
 

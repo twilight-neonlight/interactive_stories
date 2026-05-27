@@ -65,9 +65,9 @@ async function loadGameConfig() {
       renderAll(_state);
       const lastAssistant = [..._state.getHistory()].reverse().find(h => h.role === 'assistant');
       if (lastAssistant) {
-        if (_state.diplomacyState?.active) {
-          openDiplomacyOverlay(lastAssistant.content, null);
-        } else if (_state.combatState?.active) {
+        // 외교 UI 미완성 — diplomacyState가 active여도 일반 씬으로 복원
+        // TODO: 외교 시스템 완성 후 openDiplomacyOverlay(lastAssistant.content, null) 로 교체
+        if (_state.combatState?.active) {
           openCombatOverlay(lastAssistant.content, null);
         } else {
           renderSceneBody(markdownToHtml(extractNarrative(lastAssistant.content)));
@@ -150,9 +150,9 @@ async function loadGameConfig() {
     const lastAssistant = [...hist].reverse().find(h => h.role === 'assistant');
 
     if (lastAssistant) {
-      if (_state.diplomacyState?.active) {
-        openDiplomacyOverlay(lastAssistant.content, null);
-      } else if (_state.combatState?.active) {
+      // 외교 UI 미완성 — diplomacyState가 active여도 일반 씬으로 복원
+      // TODO: 외교 시스템 완성 후 openDiplomacyOverlay(lastAssistant.content, null) 로 교체
+      if (_state.combatState?.active) {
         openCombatOverlay(lastAssistant.content, null);
       } else {
         renderSceneBody(markdownToHtml(extractNarrative(lastAssistant.content)));
@@ -190,6 +190,24 @@ async function loadGameConfig() {
   }
   document.getElementById('send-btn').disabled = false;
   rebindTooltips();
+
+  // ── 페이지 이탈 보호 ───────────────────────────────────────────────────────
+  // history 가드 스테이트를 쌓아 뒤로가기를 popstate로 인터셉트한다.
+  history.pushState({ gameGuard: true }, '');
+  window.addEventListener('popstate', function onGamePopstate() {
+    if (!window._serverUnsaved) return;       // 저장된 상태면 그냥 통과
+    history.pushState({ gameGuard: true }, ''); // 한 번 더 쌓아 현 페이지 유지
+    showUnsavedModal('__back__');
+  });
+  // 탭 닫기·새로고침·URL 직접 입력 등 beforeunload 계열 이탈 보호
+  window.addEventListener('beforeunload', function(e) {
+    if (window._serverUnsaved) {
+      e.preventDefault();
+      e.returnValue = '';
+    }
+  });
+  // ──────────────────────────────────────────────────────────────────────────
+
   } catch (err) {
     console.error('[game.html init error]', err);
     renderSceneBody(`<p style="color:var(--text-secondary);font-size:13px;">

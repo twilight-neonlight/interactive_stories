@@ -71,4 +71,6 @@ function commitTurn(cmd, content, su) {
   applyStateUpdates(su);
   _manager._state = _state;
   _manager.save();
+  // 턴이 완료되면 서버 미저장 상태로 전환
+  window._serverUnsaved = true;
 }

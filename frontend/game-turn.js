@@ -1,3 +1,63 @@
+// ── 미저장 상태 추적
+// commitTurn 호출 시 true, 서버 저장 성공 시 false
+window._serverUnsaved = false;
+let _pendingNavTarget = null;
+
+// ── 미저장 경고 모달 ─────────────────────────────────────────────────────────
+
+function showUnsavedModal(target) {
+  _pendingNavTarget = target;
+  const btn = document.getElementById('unsaved-save-btn');
+  if (btn) { btn.textContent = '저장 후 나가기'; btn.disabled = false; }
+  document.getElementById('unsaved-backdrop').classList.add('active');
+}
+
+function closeUnsavedModal() {
+  document.getElementById('unsaved-backdrop').classList.remove('active');
+  _pendingNavTarget = null;
+}
+
+function confirmExit() {
+  window._serverUnsaved = false;  // beforeunload / popstate 재발동 방지
+  closeUnsavedModal();
+  if (_pendingNavTarget === '__back__') {
+    history.go(-2);               // 가드 스테이트 2개를 건너뛰어 이전 페이지로
+  } else {
+    window.location.href = _pendingNavTarget || 'main_menu.html';
+  }
+}
+
+async function saveAndExit() {
+  if (!_state) { confirmExit(); return; }
+  const btn = document.getElementById('unsaved-save-btn');
+  btn.textContent = '저장 중…'; btn.disabled = true;
+  try {
+    await GameAPI.createSave(_state.toJSON());
+    window._serverUnsaved = false;
+    // save-btn 텍스트도 동기화
+    const saveBtn = document.getElementById('save-btn');
+    if (saveBtn) saveBtn.textContent = '저장됨 ✓';
+    closeUnsavedModal();
+    if (_pendingNavTarget === '__back__') {
+      history.go(-2);
+    } else {
+      window.location.href = _pendingNavTarget || 'main_menu.html';
+    }
+  } catch {
+    btn.textContent = '저장 실패';
+    setTimeout(() => { btn.textContent = '저장 후 나가기'; btn.disabled = false; }, 1800);
+  }
+}
+
+/** 메뉴 버튼 클릭 핸들러 — 미저장이면 모달, 아니면 바로 이동 */
+function tryNavigateToMenu() {
+  if (window._serverUnsaved) {
+    showUnsavedModal('main_menu.html');
+  } else {
+    window.location.href = 'main_menu.html';
+  }
+}
+
 // ── 저장
 async function saveToServer() {
   if (!_state) return;
@@ -5,6 +65,7 @@ async function saveToServer() {
   btn.textContent = '저장 중…'; btn.disabled = true;
   try {
     await GameAPI.createSave(_state.toJSON());
+    window._serverUnsaved = false;
     btn.textContent = '저장됨 ✓';
     setTimeout(() => { btn.textContent = '저장'; btn.disabled = false; }, 1800);
   } catch {
@@ -219,12 +280,12 @@ async function submitTurn() {
 
     renderAll(_state);
 
-    // 외교 회담 돌입 감지 → 외교 오버레이 열기
-    // su.diplomacy_state로 체크: 개회 턴에 LLM이 즉시 outcome을 신호해도 오버레이를 연다
-    if (su.diplomacy_state != null) {
-      openDiplomacyOverlay(content, resolution, _debug);
-      return;
-    }
+    // 외교 전용 UI 미완성 — diplomacy_state가 반환되어도 일반 씬으로 렌더링
+    // TODO: 외교 시스템 완성 후 아래 블록으로 교체
+    // if (su.diplomacy_state != null) {
+    //   openDiplomacyOverlay(content, resolution, _debug);
+    //   return;
+    // }
 
     // 전투 돌입 감지 → 전투 오버레이 열기
     if (_state.combatState?.active) {

@@ -90,7 +90,6 @@ function openDiplomacyOverlay(content, resolution, debugData = null) {
   _diplomacyEndContent    = null;
   _diplomacyEndResolution = null;
 
-  const ds = _state.diplomacyState;
   if (ds?.ended) {
     // 개회 턴 즉시 결론 또는 저장 복원 시 already-ended 상태
     _diplomacyEndContent    = content;
