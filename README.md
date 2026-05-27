@@ -368,8 +368,26 @@ chmod +x start.sh
 > GOOGLE_API_KEY=발급받은_Gemini_키
 > SECRET_KEY=랜덤_문자열_64자_이상        # JWT 서명 키 (미설정 시 재시작마다 로그인 초기화)
 > # INVITE_CODE=                         # 로컬 개발 시 비워두면 초대 코드 검증 없음
-> # GOOGLE_CLIENT_ID=OAuth_클라이언트_ID  # Google 로그인 사용 시만 필요 (선택)
+> # GOOGLE_CLIENT_ID=OAuth_클라이언트_ID  # Google 로그인 버튼 활성화 시 필요 (아래 참고)
 > ```
+
+#### Google 로그인 버튼 활성화 (선택)
+
+`GOOGLE_CLIENT_ID`를 설정하면 로그인 화면에 **구글로 계속하기** 버튼이 자동으로 나타납니다.
+
+1. [Google Cloud Console](https://console.cloud.google.com/) → **API 및 서비스 → 사용자 인증 정보**
+2. **OAuth 2.0 클라이언트 ID 만들기** (유형: 웹 애플리케이션)
+3. **승인된 JavaScript 원본** 추가:
+   - 로컬 개발: `http://localhost:8000`
+   - 서버 배포: IP 주소가 아닌 **도메인 형식**이어야 합니다.  
+     공인 도메인이 없으면 [nip.io](https://nip.io)를 사용하세요.  
+     예: IP가 `1.2.3.4`이면 → `http://1-2-3-4.nip.io` 입력  
+     (nip.io는 해당 IP로 자동 라우팅되는 무료 와일드카드 DNS 서비스입니다)
+4. 발급된 클라이언트 ID를 `.env`에 추가:
+   ```
+   GOOGLE_CLIENT_ID=123456789-xxxx.apps.googleusercontent.com
+   ```
+5. 서버는 `http://1-2-3-4.nip.io` URL로 접속해야 Google 로그인이 정상 작동합니다.
 
 #### 수동 실행
 
