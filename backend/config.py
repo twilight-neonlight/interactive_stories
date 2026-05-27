@@ -25,10 +25,11 @@ if not SECRET_KEY:
     )
 
 _root = Path(__file__).parent.parent
-SYSTEM_PROMPT = "\n\n".join(
+_prompt_body = "\n\n".join(
     (_root / "backend" / "prompt" / name).read_text(encoding="utf-8")
     for name in ("prompt_rules.md", "prompt_output_format.md", "prompt_examples.md")
 )
+SYSTEM_PROMPT = f"<System>\n{_prompt_body}\n</System>"
 
 GOOGLE_CLIENT_ID = os.environ.get("GOOGLE_CLIENT_ID", "")
 
