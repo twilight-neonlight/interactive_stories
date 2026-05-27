@@ -15,7 +15,7 @@ router = APIRouter(prefix="/api/auth")
 
 
 def _check_invite(code: str):
-    if INVITE_CODE and code != INVITE_CODE:
+    if INVITE_CODE and code.strip().lower() != INVITE_CODE.lower():
         raise HTTPException(status_code=403, detail="초대 코드가 올바르지 않습니다.")
 
 
