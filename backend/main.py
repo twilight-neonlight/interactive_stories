@@ -42,5 +42,9 @@ def root():
     return RedirectResponse(url="/frontend/main_menu.html")
 
 
+# static 서빙 범위를 공개 디렉터리로 제한
+# backend/ (API 키, 사용자 데이터) 와 saves/ (세이브 파일) 는 절대 포함하지 않는다
 _ROOT_DIR = Path(__file__).parent.parent
-app.mount("/", StaticFiles(directory=str(_ROOT_DIR), html=True), name="static")
+app.mount("/frontend", StaticFiles(directory=str(_ROOT_DIR / "frontend")), name="frontend")
+app.mount("/state",    StaticFiles(directory=str(_ROOT_DIR / "state")),    name="state")
+app.mount("/tools",    StaticFiles(directory=str(_ROOT_DIR / "tools")),    name="tools")
