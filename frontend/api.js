@@ -55,9 +55,10 @@ const GameAPI = {
   async getOpening(stateJson) {
     const r = await fetch(`${this._base()}/api/opening`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', ...this._auth() },
       body: JSON.stringify({ state: stateJson }),
     });
+    if (r.status === 401) { this._handle401(); return null; }
     if (!r.ok) throw new Error(`HTTP ${r.status}`);
     return r.json();
   },
@@ -65,7 +66,7 @@ const GameAPI = {
   async submitTurn(command, stateJson, history, retreat = false, withdraw = false, action_type = null) {
     const r = await fetch(`${this._base()}/api/turn`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', ...this._auth() },
       body: JSON.stringify({ command, state: stateJson, history, retreat, withdraw, action_type }),
     });
     if (!r.ok) {

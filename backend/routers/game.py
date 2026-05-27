@@ -6,8 +6,9 @@ HTTP 요청 수신 → 엔진 호출 → 응답 반환을 담당합니다.
 
 import asyncio
 import copy
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends
 from pydantic import BaseModel
+from auth import get_current_user
 
 from config          import SYSTEM_PROMPT
 from gemini_client   import call_gemini
@@ -116,7 +117,7 @@ class OpeningRequest(BaseModel):
 # ── 엔드포인트 ────────────────────────────────────────────────────────────────
 
 @router.post("/api/opening")
-async def generate_opening(req: OpeningRequest):
+async def generate_opening(req: OpeningRequest, _user: dict = Depends(get_current_user)):
     scenario_prompts = _get_scenario_prompts(req.state)
     full_system = (SYSTEM_PROMPT
                    + build_scenario_context(req.state, scenario_prompts=scenario_prompts)
@@ -139,7 +140,7 @@ async def generate_opening(req: OpeningRequest):
 
 
 @router.post("/api/turn")
-async def process_turn(req: TurnRequest):
+async def process_turn(req: TurnRequest, _user: dict = Depends(get_current_user)):
     state = copy.deepcopy(req.state)
     auto_defeated_at_start = auto_mark_defeated_factions(state)
 

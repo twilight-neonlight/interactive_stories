@@ -3,7 +3,8 @@ routers/quick_battle.py — 빠른 역사적 전투 모드
 역사적 전투를 즉시 시작할 수 있는 독립 전투 모드.
 """
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Depends
+from auth import get_current_user
 
 from config        import SYSTEM_PROMPT
 from gemini_client import call_gemini
@@ -327,7 +328,7 @@ def list_quick_battles():
 
 
 @router.post("/api/quick-battle/{battle_id}/start")
-async def start_quick_battle(battle_id: str):
+async def start_quick_battle(battle_id: str, _user: dict = Depends(get_current_user)):
     """전투 초기 상태 + LLM 개시 장면 반환."""
     battle = QUICK_BATTLES.get(battle_id)
     if not battle:
