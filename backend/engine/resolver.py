@@ -423,13 +423,13 @@ def resolution_prompt(res: dict) -> str:
 # 각 범위는 절댓값 battle_damage 포인트입니다. 비율이 아닌 고정 범위로 두어
 # 전력 크기와 무관하게 1페이즈당 손실을 예측 가능하게 유지합니다.
 _PHASE_OUTCOME_DAMAGE: dict[str, tuple[tuple[int, int], tuple[int, int]]] = {
-    "critical_success": ((1,  2), (12, 20)),
-    "major_success":    ((2,  4), (7, 12)),
-    "minor_success":    ((2,  4), (4,  7)),
-    "stalemate":        ((1,  2), (1,  2)),
-    "minor_fail":       ((4,  7), (2,  4)),
-    "major_fail":       ((7, 12), (2,  4)),
-    "critical_fail":    ((12, 20), (1,  2)),
+    "critical_success": ((1,  3), (12, 20)),
+    "major_success":    ((3,  5), (7, 12)),
+    "minor_success":    ((3,  5), (4,  7)),
+    "stalemate":        ((1,  3), (1,  3)),
+    "minor_fail":       ((4,  7), (3,  5)),
+    "major_fail":       ((7, 12), (3,  5)),
+    "critical_fail":    ((12, 20), (1,  3)),
 }
 _DEFAULT_PHASE_DAMAGE = ((1, 2), (1, 2))
 

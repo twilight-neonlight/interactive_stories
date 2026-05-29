@@ -29,10 +29,6 @@ def _get_scenario_tpp(state: dict) -> int | None:
     return s.get("troops_per_strength_point") if s else None
 
 
-def _get_scenario_reserve_divisor(state: dict) -> int:
-    s = next((s for s in SCENARIOS if s["id"] == state.get("scenarioId", "")), None)
-    return s.get("reserve_tpp_divisor", 5) if s else 5
-
 
 def auto_battle_damage_recovery(state: dict, state_updates: dict) -> None:
     """타임스탬프 경과에 따른 battle_damage 자동 회복.
@@ -191,8 +187,6 @@ def recompute_all_strengths(state: dict, state_updates: dict, tpp: int) -> None:
 
     결과는 state_updates["faction_strength_overrides"] = {fid: score} 로 저장된다.
     """
-    res_div = _get_scenario_reserve_divisor(state)
-
     factions: dict[str, dict] = {
         fid: dict(f) for fid, f in (state.get("factions") or {}).items()
         if isinstance(f, dict)
@@ -203,15 +197,6 @@ def recompute_all_strengths(state: dict, state_updates: dict, tpp: int) -> None:
             factions[fid]["field_army"] = max(
                 0, (factions[fid].get("field_army") or 0) + int(fc["delta"])
             )
-
-    for fc in state_updates.get("faction_reserve_changes") or []:
-        fid = fc.get("id") if isinstance(fc, dict) else None
-        if fid and fid in factions and fc.get("delta") is not None:
-            max_r = compute_max_reserve(factions[fid], fid, state.get("locations", {}), tpp)
-            factions[fid]["reserve_manpower"] = max(0, min(
-                max_r,
-                (factions[fid].get("reserve_manpower") or 0) + int(fc["delta"])
-            ))
 
     locations: dict[str, dict] = {
         lid: dict(loc) for lid, loc in (state.get("locations") or {}).items()
@@ -224,6 +209,6 @@ def recompute_all_strengths(state: dict, state_updates: dict, tpp: int) -> None:
             locations[lid]["controller"] = ctrl
 
     state_updates["faction_strength_overrides"] = {
-        fid: compute_faction_strength(faction, fid, locations, tpp, res_div)
+        fid: compute_faction_strength(faction, fid, locations, tpp)
         for fid, faction in factions.items()
     }

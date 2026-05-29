@@ -516,7 +516,7 @@ def build_scenario_context(state: dict, scenario_prompts: dict | None = None) ->
             if pf:
                 fa = pf.get("field_army")
                 if fa is not None:
-                    troops_str = f" / 상비군 {fa:,}명"
+                    troops_str = f" / 야전군 {fa:,}명"
                 elif pf.get("strength_score") is not None and tpp:
                     s_eff = pf["strength_score"] - pf.get("battle_damage", 0)
                     troops_str = f" / 병력 {_troops_range(int(s_eff), tpp)}"
@@ -533,8 +533,7 @@ def build_scenario_context(state: dict, scenario_prompts: dict | None = None) ->
     # 플레이어 재정 상태 표시
     _scenario    = next((s for s in _SCENARIOS if s["id"] == state.get("scenarioId", "")), None)
     _tpp         = _scenario.get("troops_per_strength_point") if _scenario else None
-    _res_div     = _scenario.get("reserve_tpp_divisor", 5) if _scenario else 5
-    fiscal = compute_player_fiscal(state, _tpp, _res_div) if _tpp else None
+    fiscal = compute_player_fiscal(state, _tpp) if _tpp else None
     if fiscal:
         lines.append(
             f"재정: {fiscal['fiscal_level']} | "
@@ -554,13 +553,11 @@ def build_scenario_context(state: dict, scenario_prompts: dict | None = None) ->
             s_dmg      = f.get("battle_damage", 0)
             s_eff      = (s_base - s_dmg) if s_base is not None else None
             field_army = f.get("field_army")
-            reserve    = f.get("reserve_manpower")
             if field_army is not None:
-                reserve_str = f" / 예비 {reserve:,}명" if reserve else ""
                 if s_base is not None and tpp:
-                    str_str = f" [전력 {_troops_range(int(s_base), tpp)} / 상비군 {field_army:,}명{reserve_str}]"
+                    str_str = f" [전력 {_troops_range(int(s_base), tpp)} / 야전군 {field_army:,}명]"
                 else:
-                    str_str = f" [상비군 {field_army:,}명{reserve_str}]"
+                    str_str = f" [야전군 {field_army:,}명]"
             else:
                 str_str = (f" [병력 {_troops_range(int(s_eff), tpp)}]"
                            if s_eff is not None and tpp else "")

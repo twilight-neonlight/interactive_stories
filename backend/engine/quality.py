@@ -35,9 +35,20 @@ JSON만 출력 (다른 텍스트 절대 금지):
 {"quality": "!!"또는"!"또는"="또는"?"또는"??", "label": "평가 이유 (간략히)"}"""
 
 _SYSTEM_MILITARY = f"""\
-군사 전략 평가자. 플레이어의 군사 행동이 현재 전력 상황에서 얼마나 적절한지 판단한다.
-평가 기준: 아군 대비 적군 전력 우위, 아군 세력의 지원 여부, 기습·타이밍의 적절성,
+군사 전략 평가자. 아래 기준을 순서대로 적용한다.
+
+[적의 예고 행동이 제시된 경우 — 최우선 기준]
+플레이어 행동이 적의 예고 행동을 얼마나 정확하게 역이용하거나 무력화하는지를 평가한다.
+  !! 예고 행동의 핵심 약점을 꿰뚫어 적의 계획 자체를 역전시키는 창의적 대응
+  !  예고 행동을 명시적으로 인식하고 그것을 억제·상쇄하는 선택
+  =  예고 행동과 무관하게 합리적인 군사 행동 (적의 계획을 특별히 활용하지 않음)
+  ?  예고 행동에 취약하거나 적의 계획을 오히려 도와주는 선택
+  ?? 예고 행동에 정면으로 당하는 선택, 또는 상황을 심각하게 악화시키는 블런더
+
+[적의 예고 행동이 없는 경우 — 보조 기준]
+아군 대비 적군 전력 우위, 아군 세력의 지원 여부, 기습·타이밍의 적절성,
 현재 피해 상태, 병력 소모 대비 기대 효과. 지형 이점은 별도 처리되므로 고려하지 않는다.
+
 {_BASE_INSTRUCTIONS}"""
 
 _SYSTEM_DIPLOMATIC = f"""\
@@ -70,8 +81,13 @@ _SYSTEM_BY_TYPE = {
 
 
 def _build_military_context(state: dict, player_faction_id: str | None) -> list[str]:
-    factions = state.get("factions", {})
+    factions     = state.get("factions", {})
+    combat_state = state.get("combatState") or {}
     lines = []
+
+    enemy_next = combat_state.get("enemy_next_action")
+    if enemy_next:
+        lines.append(f"[적의 예고 행동]\n{enemy_next}")
 
     if player_faction_id and player_faction_id in factions:
         pf         = factions[player_faction_id]
@@ -174,9 +190,14 @@ _SIEGE_KW = {"공성", "포위", "공략"}
 
 
 def _build_siege_context(state: dict, player_faction_id: str | None) -> list[str]:
-    factions  = state.get("factions", {})
-    locations = state.get("locations", {})
+    factions     = state.get("factions", {})
+    locations    = state.get("locations", {})
+    combat_state = state.get("combatState") or {}
     lines = []
+
+    enemy_next = combat_state.get("enemy_next_action")
+    if enemy_next:
+        lines.append(f"[적의 예고 행동]\n{enemy_next}")
 
     if player_faction_id and player_faction_id in factions:
         pf         = factions[player_faction_id]

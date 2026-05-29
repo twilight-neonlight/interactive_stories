@@ -327,11 +327,11 @@ let selectedCharacter = null;
 
 // 세력별 표시 순서 및 레이블
 const FACTION_ORDER = [
-  { id: 'jin',           label: '금나라',  color: '#C5932A' },
-  { id: 'southern-song', label: '남송',    color: '#3a7abf' },
-  { id: 'mongols',       label: '몽골',    color: '#5a8a3c' },
-  { id: 'western-xia',   label: '서하',    color: '#7F77DD' },
-  { id: 'goryeo',        label: '고려',    color: '#2a7a6a' },
+  { id: 'jin',           ids: ['jin'],                       label: '금나라',  color: '#C5932A' },
+  { id: 'southern-song', ids: ['southern-song'],             label: '남송',    color: '#3a7abf' },
+  { id: 'steppe',        ids: ['kamag-mongol', 'keraites'],  label: '대초원',  color: '#5a8a3c' },
+  { id: 'western-xia',   ids: ['western-xia'],               label: '서하',    color: '#7F77DD' },
+  { id: 'goryeo',        ids: ['goryeo'],                    label: '고려',    color: '#2a7a6a' },
 ];
 
 async function renderCharacters() {
@@ -347,9 +347,8 @@ async function renderCharacters() {
   characterSelect.forEach(c => {
     const charData = charactersMap[c.character_id] ?? {};
     const factionId = charData.faction_id;
-    if (factionId && groups[factionId]) {
-      groups[factionId].push({ c, charData });
-    }
+    const group = FACTION_ORDER.find(f => f.ids.includes(factionId));
+    if (group) groups[group.id].push({ c, charData });
   });
 
   let sectionDelay = 0.15;

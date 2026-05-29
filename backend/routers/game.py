@@ -17,7 +17,6 @@ from scenarios_loader import (
     GARRISON_POINTS_BY_TIER,
     CONQUEST_DISPOSITIONS,
     get_scenario_tpp,
-    get_scenario_reserve_divisor,
 )
 from engine.resolver import (
     resolve_action, resolution_prompt, classify_action_type,
@@ -29,6 +28,8 @@ from engine.resolver import (
     _get_player_faction_id,
     _MIN_PHASES_BEFORE_VICTOR,
     roll_battle_weather,
+    _classify_terrain,
+    _TERRAIN_TABLE,
 )
 from engine.classifier import classify_action_llm, CLS_TO_RESOLVER
 from engine.quality    import evaluate_action_quality
@@ -317,10 +318,9 @@ async def process_turn(req: TurnRequest, _user: dict = Depends(get_current_user)
 
     # 주둔군 갱신 (controller 변경 → conquered_at 기록, 기존 점령지 시간 경과 회복)
     tpp     = get_scenario_tpp(state)
-    res_div = get_scenario_reserve_divisor(state)
 
     # 재정 상태 계산 (이번 턴 회복·누적에 사용)
-    fiscal_info = compute_player_fiscal(state, tpp, res_div) if tpp else None
+    fiscal_info = compute_player_fiscal(state, tpp) if tpp else None
     fiscal_mult = fiscal_info["fiscal_mult"] if fiscal_info else 1.0
 
     newly_pending: list[dict] = []
@@ -403,7 +403,8 @@ async def process_turn(req: TurnRequest, _user: dict = Depends(get_current_user)
         if isinstance(extra.get("battle_year"), str):
             new_combat_state["battle_year"] = extra["battle_year"]
         if isinstance(extra.get("battle_terrain"), str):
-            terrain = extra["battle_terrain"]
+            raw     = extra["battle_terrain"]
+            terrain = raw if raw in _TERRAIN_TABLE else _classify_terrain(raw)
             new_combat_state["battle_terrain"] = terrain
             if new_combat_state.get("phase_number", 1) == 1 and not isinstance(extra.get("weather"), str):
                 state_updates["weather"] = roll_battle_weather(terrain)

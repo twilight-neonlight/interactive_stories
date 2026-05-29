@@ -38,7 +38,7 @@ def fiscal_level(value: float, thresholds: list) -> tuple[str, float]:
     return "파산", 0.05
 
 
-def compute_player_fiscal(state: dict, tpp: int, res_div: int) -> dict | None:
+def compute_player_fiscal(state: dict, tpp: int) -> dict | None:
     """플레이어 세력의 재정 상태를 계산합니다.
 
     Returns:
@@ -70,14 +70,9 @@ def compute_player_fiscal(state: dict, tpp: int, res_div: int) -> dict | None:
     income_flat  = int(faction.get("income_flat", 0)   or 0)
     income_score = round(territorial * income_mult + income_flat)
 
-    # 지출: 상비군 + 동원 예비군 × 0.2
-    field_army      = faction.get("field_army", 0) or 0
-    reserve         = faction.get("reserve_manpower", 0) or 0
-    mob_rate        = min(1.0, max(0.0, faction.get("mobilization_rate", 1.0)))
-    effective_res   = round(reserve * mob_rate)
-    standing_pts    = round(field_army / tpp)
-    mob_reserve_pts = round(effective_res / (tpp * res_div)) if res_div else 0
-    expense_score   = standing_pts + round(mob_reserve_pts * 0.2)
+    # 지출: 야전군
+    field_army    = faction.get("field_army", 0) or 0
+    expense_score = round(field_army / tpp)
 
     fiscal_balance = income_score - expense_score
     treasury       = int(faction.get("treasury", 0) or 0)
