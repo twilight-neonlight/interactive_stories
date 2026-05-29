@@ -34,7 +34,12 @@ if not exist backend\.env (
 )
 
 :: Create venv and install packages
-if exist ".venv\Scripts\python.exe" goto venv_ready
+if exist ".venv\Scripts\python.exe" (
+    ".venv\Scripts\python.exe" --version >nul 2>&1
+    if not errorlevel 1 goto venv_ready
+    echo [SETUP] Virtual environment is broken (path mismatch^). Recreating...
+    rmdir /s /q .venv
+)
 
 echo [1/2] Installing packages... (first run only)
 python -m venv .venv
@@ -96,7 +101,7 @@ echo.
 :start_server
 
 :: Open browser after 2s delay
-start "" cmd /c "timeout /t 2 /nobreak >nul && start http://localhost:8000/frontend/main_menu.html"
+start "" cmd /c "%SystemRoot%\System32\timeout.exe /t 2 /nobreak >nul && start http://localhost:8000/frontend/main_menu.html"
 
 :: Start server
 echo  Server: http://localhost:8000

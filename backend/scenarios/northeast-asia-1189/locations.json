@@ -9,7 +9,7 @@
     "controller": "jin",
     "tier": "metropolis",
     "terrain": "화북 평원 — 대운하 북단 거점, 방어선 구축 용이",
-    "notes": "금나라 수도. 현재의 베이징 일대. 여진·한족·거란의 다민족 인구가 혼재하며 동북아시아 최대 도시 중 하나다."
+    "notes": "금나라 수도. 현재의 베이징 일대. 여진·한족·거란의 다민족 인구가 혼재한 동북아시아 최대 도시 중 하나다."
   },
   {
     "id": "kaifeng",
@@ -68,7 +68,7 @@
     "continent": "동북아시아",
     "controller": "southern-song",
     "tier": "major_city",
-    "terrain": "양자강 남안 — 도하 방어 거점, 금나라와의 최전선",
+    "terrain": "장강 남안 — 도하 방어 거점, 금나라와의 최전선",
     "notes": "남송 최북단 방어 거점. 양자강을 사이에 두고 금나라와 대치하는 최전선 도시. 북벌론자들이 꿈꾸는 회복의 교두보."
   },
   {
@@ -102,7 +102,7 @@
     "name": "오논강 본영",
     "region": "대초원 동부",
     "continent": "대초원",
-    "controller": "mongols",
+    "controller": "kamag-mongol",
     "tier": "town",
     "terrain": "오논강 유역 초원 — 유목 본진, 기동 방어에 유리",
     "notes": "테무진의 본거지. 정착 도시가 아닌 유목 거점으로, 언제든 이동 가능한 유연한 군사 기지다."
@@ -114,7 +114,7 @@
     "name": "케레이트 본거지",
     "region": "대초원 중부",
     "continent": "대초원",
-    "controller": "mongols",
+    "controller": "keraites",
     "tier": "small_city",
     "terrain": "중앙 초원 — 유목 연맹 거점, 주요 교통로 통제",
     "notes": "왕칸 토오릴이 이끄는 케레이트 부족의 근거지. 테무진의 가장 강력한 동맹이며 초원 중부를 지배한다."

@@ -10,9 +10,11 @@
     "notes": "여진족이 세운 왕조. 화북 전역과 만주를 장악한 동아시아 최강의 육군 대국. 금장종이 즉위한 지 얼마 되지 않아 내정 재편이 진행 중이다.",
     "initial_diplomacy": {
       "southern-song": -70,
-      "mongols": -40,
+      "kamag-mongol": -40,
       "western-xia": -20,
-      "goryeo": -30
+      "goryeo": -30,
+      "tatars": 30,
+      "keraites": 20
     }
   },
   {
@@ -26,25 +28,25 @@
     "notes": "남중국을 지배하는 한족 왕조. 금나라에 화북을 빼앗긴 채 강화를 맺고 공존하고 있으나, 수복의 의지를 완전히 버리지 않았다. 재정과 해상 교역은 풍부하나 육군 전력이 구조적으로 취약하다.",
     "initial_diplomacy": {
       "jin": -70,
-      "mongols": 0,
       "western-xia": 10,
       "goryeo": 30
     }
   },
   {
-    "id": "mongols",
-    "name": "몽골",
+    "id": "kamag-mongol",
+    "name": "카마그 몽골",
     "type": "faction",
     "field_army": 35000,
     "naval_base": 0,
     "disposition": "중립",
     "color": "#5a8a3c",
-    "notes": "대초원의 유목 집단. 테무진이 여러 부족을 규합해가고 있으나 아직 통일에는 이르지 못했다. 기동력과 전투력은 탁월하나 정착 지역 통치 기반이 없다.",
+    "notes": "테무진이 규합한 몽골 씨족 연합. 아직 초원 전체를 통일하지 못했으나 기동력과 전투력은 탁월하다.",
     "initial_diplomacy": {
       "jin": -40,
-      "southern-song": 0,
       "western-xia": -30,
-      "goryeo": 0
+      "keraites": 60,
+      "tatars": -80,
+      "naiman": -30
     }
   },
   {
@@ -59,8 +61,7 @@
     "initial_diplomacy": {
       "jin": -20,
       "southern-song": 10,
-      "mongols": -30,
-      "goryeo": 0
+      "kamag-mongol": -30
     }
   },
   {
@@ -74,9 +75,57 @@
     "notes": "한반도를 지배하는 왕조. 무신정변 이후 실권은 무장들의 손에 넘어가 명종은 허수아비 국왕으로 전락했다. 이의민이 현재 집권하고 있으나 내부 경쟁이 격화되고 있다.",
     "initial_diplomacy": {
       "jin": -30,
-      "southern-song": 30,
-      "mongols": 0,
-      "western-xia": 0
+      "southern-song": 30
     }
+  },
+  {
+    "id": "keraites",
+    "name": "케레이트",
+    "type": "faction",
+    "field_army": 40000,
+    "naval_base": 0,
+    "disposition": "중립",
+    "color": "#8B5E3C",
+    "notes": "초원 중부의 강력한 유목 부족 연합. 네스토리우스교를 믿는 집단으로 왕칸 토오릴의 지도 하에 카마그 몽골과 동맹 관계를 유지하고 있다."
+  },
+  {
+    "id": "naiman",
+    "name": "나이만",
+    "type": "faction",
+    "field_army": 50000,
+    "naval_base": 0,
+    "disposition": "중립",
+    "color": "#CD853F",
+    "notes": "몽골 고원 서부를 장악한 강력한 유목 부족 연합. 자체적인 문자와 행정 체계를 갖추고 있으며, 초원 서부에서 가장 큰 세력 중 하나다."
+  },
+  {
+    "id": "tatars",
+    "name": "타타르",
+    "type": "faction",
+    "field_army": 35000,
+    "naval_base": 0,
+    "disposition": "중립",
+    "color": "#8B2500",
+    "notes": "몽골 고원 동부에 분포한 유목 부족. 금나라와 협력 관계를 유지하며 주변 부족들을 견제해왔고, 테무진의 부족과는 오랜 숙적 관계에 있다."
+  },
+  {
+    "id": "kara-khitai",
+    "name": "서요",
+    "type": "empire",
+    "field_army": 90000,
+    "naval_base": 0,
+    "disposition": "중립",
+    "color": "#4682B4",
+    "notes": "요나라 멸망 후 서쪽으로 이주한 거란족이 중앙아시아에 세운 왕조. 초원 서부와 이슬람 세계의 접점에 위치하며 광대한 영토를 지배하고 있다."
+  },
+  {
+    "id": "dali",
+    "name": "대리국",
+    "type": "kingdom",
+    "field_army": 25000,
+    "naval_base": 0,
+    "disposition": "중립",
+    "color": "#6B8E23",
+    "notes": "운남 지역에 위치한 불교 왕국. 남송과 접하고 있으나 독자적인 정체성을 유지하며 산악 지형을 바탕으로 독립을 지켜오고 있다."
   }
 ]
