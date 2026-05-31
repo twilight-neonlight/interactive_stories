@@ -58,7 +58,7 @@ async function loadGameConfig() {
       const mapContainer = document.getElementById('map-container');
       if (mapContainer) {
         const imgUrl = `${window.API_BASE}/api/scenarios/${data.scenarioId}/map-image`;
-        mapContainer.innerHTML = `<div class="map-inner"><img id="map-img" src="${imgUrl}" alt="지도"><div id="map-markers-layer"></div></div>`;
+        mapContainer.innerHTML = `<div class="map-inner"><img id="map-img" src="${imgUrl}" alt="지도" onerror="this.style.display='none'"><div id="map-markers-layer"></div></div>`;
       }
       _manager._state = _state;
       _manager.save();
@@ -117,6 +117,15 @@ async function loadGameConfig() {
     _state.eventContext   = scenario.event_context ?? {};
     _state.troopsPerPoint = scenario.troops_per_strength_point ?? null;
     _state.events         = scenario.events ?? [];
+    // 세이브 생성 이후 시나리오에 추가된 세력·거점을 상태에 병합한다.
+    for (const f of scenario.factions ?? []) {
+      if (f.protagonist_only?.length && _state.protagonist &&
+          !f.protagonist_only.includes(_state.protagonist)) continue;
+      if (!_state.factions.has(f.id)) _state.factions.set(f.id, structuredClone(f));
+    }
+    for (const loc of scenario.locations ?? []) {
+      if (!_state.locations.has(loc.id)) _state.locations.set(loc.id, structuredClone(loc));
+    }
     // 히스토리가 없으면 아직 게임이 시작되지 않은 상태 — initial_diplomacy를 재적용해
     // 세션스토리지에 오래된 데이터가 남아있어도 올바른 초기값으로 복구된다.
     if (_state.history.length === 0) {
@@ -128,7 +137,7 @@ async function loadGameConfig() {
 
   if (mapContainer) {
     const imgUrl = `${window.API_BASE}/api/scenarios/${scenarioId}/map-image`;
-    mapContainer.innerHTML = `<div class="map-inner"><img id="map-img" src="${imgUrl}" alt="지도"><div id="map-markers-layer"></div></div>`;
+    mapContainer.innerHTML = `<div class="map-inner"><img id="map-img" src="${imgUrl}" alt="지도" onerror="this.style.display='none'"><div id="map-markers-layer"></div></div>`;
   }
 
   if (!_state) {

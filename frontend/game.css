@@ -228,6 +228,7 @@ body {
 /* ── 지도 ── */
 .map-wrap {
   width: 100%;
+  min-height: 120px;
   background: var(--bg-secondary);
   border-radius: var(--radius-md);
   border: 1px solid var(--border-light);
