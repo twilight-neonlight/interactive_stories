@@ -14,7 +14,7 @@
   },
   {
     "character_id": "wanyan-xiang",
-    "icon": "⚔",
+    "icon": "⚔️",
     "location": "금나라\n북방 군영",
     "birth_label": "금군 총원수",
     "traits": ["야전 지휘", "북방 감시", "군부 기반"],
@@ -136,7 +136,7 @@
   },
   {
     "character_id": "choe-chungheon",
-    "icon": "⚔",
+    "icon": "⚔️",
     "location": "고려\n개경 군영",
     "birth_label": "문벌 출신 무장",
     "traits": ["군부 결집", "정치 공작", "장기 집권 설계"],
