@@ -85,3 +85,30 @@ const NavState = {
   getCharacterId() { return sessionStorage.getItem('selectedCharacterId') || sessionStorage.getItem('selectedCharacter'); },
 };
 window.NavState = NavState;
+
+// ── 디버그 모드 배지 (모든 페이지 공통) ───────────────────────────────────────
+function _showDebugBadge() {
+  if (document.getElementById('debugModeBadge')) return;
+  const el = document.createElement('div');
+  el.id = 'debugModeBadge';
+  el.textContent = 'DEBUG MODE';
+  el.style.cssText = [
+    'position:fixed', 'top:8px', 'left:50%', 'transform:translateX(-50%)',
+    'z-index:9999', 'pointer-events:none',
+    'background:rgba(245,158,11,0.13)', 'border:1px solid rgba(245,158,11,0.45)',
+    'color:#f59e0b', 'font-family:monospace', 'font-size:10px', 'font-weight:700',
+    'letter-spacing:0.16em', 'padding:3px 10px', 'border-radius:4px',
+    'user-select:none',
+  ].join(';');
+  document.body.appendChild(el);
+}
+
+function _hideDebugBadge() {
+  document.getElementById('debugModeBadge')?.remove();
+}
+
+window.NavDebug = { show: _showDebugBadge, hide: _hideDebugBadge };
+
+document.addEventListener('DOMContentLoaded', function () {
+  if (sessionStorage.getItem('is_debugMode') === '1') _showDebugBadge();
+});

@@ -8,6 +8,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from pathlib import Path
+from starlette.middleware.base import BaseHTTPMiddleware
+from starlette.requests import Request
 
 from routers.scenarios    import router as scenarios_router
 from routers.saves        import router as saves_router
@@ -16,7 +18,18 @@ from routers.auth         import router as auth_router
 from routers.quick_battle import router as quick_battle_router
 from routers.client_config import router as config_router
 
+_NO_CACHE_EXTS = ('.js', '.css', '.html')
+
+class _NoCacheMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request: Request, call_next):
+        response = await call_next(request)
+        path = request.url.path.split('?')[0]
+        if path.endswith(_NO_CACHE_EXTS):
+            response.headers['Cache-Control'] = 'no-cache'
+        return response
+
 app = FastAPI(title="Interactive Stories API")
+app.add_middleware(_NoCacheMiddleware)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],

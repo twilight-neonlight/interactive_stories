@@ -1,15 +1,16 @@
-// ── 디버그 모드 (?debug URL 파라미터로 활성화)
-const _debugMode = new URLSearchParams(window.location.search).has('debug');
+// ── 디버그 모드 (?debug URL 파라미터 또는 메인 메뉴 비밀번호 인증으로 활성화)
+const _debugMode = new URLSearchParams(window.location.search).has('debug') || sessionStorage.getItem('is_debugMode') === '1';
 
 function renderDebugPanel(container, resolution, debugData) {
   if (!_debugMode || !container) return;
 
   container.querySelector('.debug-panel')?.remove();
 
-  const res   = resolution  || {};
-  const extra = debugData?.state_update || {};
-  const qm    = debugData?.quality_mod;
+  const res    = resolution || {};
+  const extra  = debugData?.state_update || {};
+  const qm     = debugData?.quality_mod;
 
+  // ── 판정 요약 ────────────────────────────────────────────────────────────
   let resLines;
   if (res.tier_en === 'phase_dice') {
     const detail = res.roll_detail || {};
@@ -43,35 +44,99 @@ function renderDebugPanel(container, resolution, debugData) {
     resLines = ['판정 없음'];
   }
 
+  // ── 헬퍼 ─────────────────────────────────────────────────────────────────
+  const _esc = s => String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  const _section = (label, content, open = false) => `
+    <details ${open ? 'open' : ''} style="margin-top:8px;">
+      <summary style="cursor:pointer;color:#6a8a60;font-size:10px;letter-spacing:0.08em;
+        user-select:none;list-style:none;padding:2px 0;">${label}</summary>
+      ${content}
+    </details>`;
+  const _pre = (text, color = '#888') =>
+    `<pre style="margin:4px 0 0;color:${color};white-space:pre-wrap;font-size:10px;
+      background:#111;padding:8px;border-radius:4px;overflow-x:auto;max-height:400px;overflow-y:auto;">${_esc(text)}</pre>`;
+  const _json = (obj, color) => _pre(JSON.stringify(obj, null, 2), color);
+
+  // ── 적 예고 행동 ─────────────────────────────────────────────────────────
   const enemyAction = extra.enemy_next_action;
-  const filtered = Object.fromEntries(
+  const enemyHtml = enemyAction
+    ? _section('적 예고 행동 (비공개)', _pre(enemyAction, '#c87a3a'), true)
+    : '';
+
+  // ── LLM STATE_UPDATE (enemy_next_action 제외) ────────────────────────────
+  const filteredExtra = Object.fromEntries(
     Object.entries(extra).filter(([k, v]) => {
-      if (k === 'enemy_next_action') return false; // 별도 섹션으로 표시
+      if (k === 'enemy_next_action') return false;
       return Array.isArray(v) ? v.length > 0 : v != null && v !== '';
     })
   );
 
-  const enemyActionHtml = enemyAction
-    ? `<div style="color:#8a6a20;margin-bottom:2px;margin-top:10px;">적 예고 행동 (비공개)</div>
-       <pre style="margin:0 0 10px;color:#c87a3a;white-space:pre-wrap;background:#1a1200;padding:6px;border-radius:4px;">${enemyAction}</pre>`
-    : '';
+  // ── 최종 state_updates (빈 배열 제외) ────────────────────────────────────
+  const finalUpdates = Object.fromEntries(
+    Object.entries(debugData?.state_updates_final || {}).filter(([, v]) =>
+      Array.isArray(v) ? v.length > 0 : v != null
+    )
+  );
 
   const el = document.createElement('details');
   el.className = 'debug-panel';
   el.open = true;
   el.style.cssText = 'margin-top:16px;border-top:1px solid #2a2a2a;padding-top:8px;';
   el.innerHTML = `
-    <summary style="cursor:pointer;font-size:11px;font-family:monospace;color:#555;user-select:none;list-style:none;">🛠 DEBUG</summary>
+    <summary style="cursor:pointer;font-size:11px;font-family:monospace;color:#555;
+      user-select:none;list-style:none;">🛠 DEBUG</summary>
     <div style="margin-top:6px;font-family:monospace;font-size:11px;line-height:1.7;">
-      <div style="color:#8a6a20;margin-bottom:2px;">판정</div>
-      <pre style="margin:0 0 10px;color:#888;white-space:pre-wrap;">${resLines.join('\n')}</pre>
-      ${enemyActionHtml}
-      <div style="color:#8a6a20;margin-bottom:2px;">STATE_UPDATE</div>
-      <pre style="margin:0;color:#888;white-space:pre-wrap;">${JSON.stringify(filtered, null, 2)}</pre>
+      ${_section('판정', _pre(resLines.join('\n')), true)}
+      ${enemyHtml}
+      ${_section('LLM STATE_UPDATE', _json(filteredExtra), true)}
+      ${_section('최종 state_updates', _json(finalUpdates, '#7a9a88'), true)}
+      ${_section('LLM 원본 응답', _pre(debugData?.llm_raw ?? '—', '#aaa'))}
+      ${_section('시스템 프롬프트', _pre(debugData?.system_prompt ?? '—', '#777'))}
     </div>`;
   container.appendChild(el);
 }
 window.renderDebugPanel = renderDebugPanel;
+
+// ── 영토 레이어 색상 갱신 ─────────────────────────────────────────────────────
+function _hexToRgba(hex, alpha) {
+  const h = hex.replace('#', '');
+  const r = parseInt(h.slice(0, 2), 16);
+  const g = parseInt(h.slice(2, 4), 16);
+  const b = parseInt(h.slice(4, 6), 16);
+  return `rgba(${r},${g},${b},${alpha})`;
+}
+
+function renderTerritoryLayer(state) {
+  const svg = document.querySelector('#territory-layer svg');
+  if (!svg) return;
+
+  svg.querySelectorAll('[data-id]').forEach(path => {
+    // data-locations="id1,id2,..." 또는 단일 data-id
+    const ids = path.dataset.locations
+      ? path.dataset.locations.split(',').map(s => s.trim()).filter(Boolean)
+      : [path.dataset.id];
+
+    const controllers = new Set(
+      ids.map(id => state.locations.get(id)?.controller).filter(Boolean)
+    );
+
+    if (controllers.size === 0) return;
+
+    const isSplit = controllers.size > 1 || controllers.has('contested');
+    if (isSplit) {
+      path.style.fill   = 'rgba(255,200,50,0.13)';
+      path.style.stroke = 'rgba(255,200,50,0.45)';
+      path.dataset.territoryStatus = '분할 지배 중';
+    } else {
+      const controller = [...controllers][0];
+      const color = state.factions.get(controller)?.color ?? '#888888';
+      path.style.fill   = _hexToRgba(color, 0.2);
+      path.style.stroke = _hexToRgba(color, 0.5);
+      path.dataset.territoryStatus = state.factions.get(controller)?.name ?? controller;
+    }
+    path.style.strokeWidth = '0.3';
+  });
+}
 
 function renderTimestamp(progress) {
   const span = document.getElementById('timestamp-text');
@@ -123,15 +188,26 @@ function renderCharacterList(state) {
     container.innerHTML = '<div class="char-row" style="color:var(--text-tertiary);font-size:12px;padding:8px 4px;">등록된 인물이 없습니다.</div>';
     rebindTooltips(); return;
   }
+  const _injuryCls   = { '경상': 'light', '중상': 'moderate', '극도': 'critical' };
+  const _statusLabel = { '포로': '포로', '실종': '실종' };
   container.innerHTML = chars.map(c => {
     const dotColor         = _ui.charDotColor(c, state);
     const { cls, label }   = _ui.charRelInfo(c, state);
     const body = c.desc || c.notes || '';
     const tag  = c.status_tag || '';
+    const injuryBadge = c.injury
+      ? `<span class="injury-badge injury-badge--${_injuryCls[c.injury] || 'light'}">${c.injury}</span>`
+      : '';
+    const rawStatus = c.status && c.status !== 'alive' ? c.status : null;
+    const statusLabel = rawStatus === '실종' && c.id === state.protagonist ? '은둔' : rawStatus;
+    const statusBadge = statusLabel
+      ? `<span class="char-status-badge char-status--${rawStatus === '포로' ? 'prisoner' : 'missing'}">${statusLabel}</span>`
+      : '';
     return `<div class="char-row">
       <div class="char-dot" style="background:${dotColor};"></div>
       <div class="char-name-wrap">
         <span class="char-name" data-name="${c.name}" data-sub="${c.epithet||''}" data-body="${body}" data-tags="${tag}">${c.name}</span>
+        ${injuryBadge}${statusBadge}
       </div>
       <div class="rel-badge ${cls}">${label}</div>
     </div>`;
@@ -346,6 +422,7 @@ function renderMapMarkers(state) {
   }
 
   rebindTooltips();
+  renderTerritoryLayer(state);
 }
 
 // ── 동시 진행 사건
@@ -363,9 +440,6 @@ function renderEventList(state) {
     <div class="event-header">
       <div class="event-dot" style="background:${ev.dot};"></div>
       <div class="event-title">${ev.name}</div>
-    </div>
-    <div class="event-meta">
-      <span class="event-region">${ev.region}</span>
     </div>
   </div>`;
   }).join('');
@@ -426,3 +500,23 @@ function showLoading() {
   renderSceneBody('<div class="scene-loading">생성 중…</div>');
   renderChoices([]);
 }
+
+// ── 게임 오버 오버레이
+function renderGameOver(type, message) {
+  document.getElementById('choice-list').innerHTML  = '';
+  document.getElementById('cmd').disabled           = true;
+  document.querySelector('.send-btn')?.setAttribute('disabled', '');
+
+  const isVictory = type === 'victory';
+  const overlay   = document.createElement('div');
+  overlay.id        = 'game-over-overlay';
+  overlay.innerHTML = `
+    <div class="game-over-box ${isVictory ? 'game-over--victory' : 'game-over--defeat'}">
+      <div class="game-over-icon">${isVictory ? '👑' : '☠'}</div>
+      <div class="game-over-title">${isVictory ? '승리' : '패배'}</div>
+      <div class="game-over-message">${message}</div>
+      <button class="game-over-btn" onclick="location.href='main_menu.html'">메인 메뉴로</button>
+    </div>`;
+  document.getElementById('scene-body').appendChild(overlay);
+}
+window.renderGameOver = renderGameOver;

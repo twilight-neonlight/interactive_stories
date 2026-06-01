@@ -1,18 +1,13 @@
 [
   {
     "id": "steppe_unification",
-    "default_active": true,
     "name": "대초원의 통일 움직임",
     "sub": "1189년~ · 몽골 고원",
     "body": "1189년 테무진이 카마그 몽골의 칸으로 추대되며 초원 통일 작업을 본격화하고 있다. 나이만·타타르·케레이트가 각자의 세력권을 유지하는 가운데, 초원의 힘의 균형이 서서히 기울기 시작했다. 정착 왕조들에게 이 변화는 아직 먼 이야기처럼 보인다.",
     "end_condition": "keraites_defeated and tatars_defeated and naiman_defeated and kamag-mongol_strength >= 200",
     "on_end_prompt": "1206년, 쿠릴타이에서 테무진이 칭기즈칸으로 추대됐다는 소식이 전해진다. 이번 서술에서 초원 통일의 완성이 동북아시아 전체에 어떤 충격을 주는지 각 세력의 반응을 통해 반영하라.",
-    "dot": "#5a8a3c",
-    "region": "몽골 고원",
-    "badge": "badge-ongoing",
-    "badgeText": "진행 중"
+    "dot": "#5a8a3c"
   },
-
   {
     "id": "tatar_campaign",
     "name": "금나라의 타타르 토벌",
@@ -22,18 +17,16 @@
     "on_trigger_prompt": "금나라가 타타르 토벌에 나섰다는 소식이 전해졌다. 이번 서술에서 동부 초원에서 금-타타르 간 군사적 충돌이 벌어지고 있음을 배경으로 반영하라.",
     "end_condition": "tatars_defeated",
     "on_end_prompt": "타타르가 궤멸됐다. 이번 서술에서 수십 년간 동부 초원을 위협하던 타타르 세력이 소멸했다는 소식이 퍼지며, 대초원 동부의 세력 지형이 근본적으로 바뀌었음을 묘사하라.",
-    "dot": "#8B2500",
-    "region": "대초원 동부",
-    "badge": "badge-active",
-    "badgeText": "토벌 중"
+    "dot": "#8B2500"
   },
-
   {
     "id": "jamukha_gurkhan",
     "name": "자무카의 구르칸 선언",
     "sub": "1190년~ · 몽골 고원 중부",
     "trigger_condition": "year >= 1190",
-    "protagonist_only": ["temujin"],
+    "protagonist_only": [
+      "temujin"
+    ],
     "body": "테무진의 의형제 자무카가 씨족 귀족들의 지지를 모아 '구르칸(만민의 칸)'을 자칭했다. 귀족 세습을 중시하는 씨족 보수파가 자무카 편에 결집하고 있으며, 두 사람의 공존은 더 이상 불가능해졌다. 초원을 통일하려면 의형제와의 결전을 피할 수 없다.",
     "on_trigger_prompt": "자무카가 구르칸을 자처하며 반테무진 연합을 결성했다는 보고가 들어왔다. 이번 서술에서 테무진 진영이 이 선언을 접하며 느끼는 배신감과 긴장감을 묘사하라. 씨족 귀족들이 자무카 편으로 이탈하는 분위기를 반영하라.",
     "end_pathways": [
@@ -48,18 +41,15 @@
         "on_end_prompt": "15년 넘는 경쟁이 마침내 결말을 향해가고 있다. 이번 서술에서 자무카가 마지막 추종 세력마저 잃고 고립되는 장면을 묘사하고, 테무진이 이 오래된 라이벌과 어떻게 마지막을 마주하는지 표현하라."
       }
     ],
-    "dot": "#3a6a2c",
-    "region": "몽골 고원 중부",
-    "badge": "badge-active",
-    "badgeText": "경쟁 중"
+    "dot": "#3a6a2c"
   },
-
   {
     "id": "temujin_shadow",
-    "default_active": true,
     "name": "테무진의 그림자",
     "sub": "1189년~ · 몽골 고원",
-    "protagonist_only": ["jamukha"],
+    "protagonist_only": [
+      "jamukha"
+    ],
     "body": "테무진이 칸으로 추대됐다. 의형제이자 라이벌인 그의 성장 속도가 예상보다 빠르다. 귀족 씨족 체계를 수호하는 명분으로 세력을 결집하지 않으면, 머지않아 테무진의 새로운 질서가 초원 전체를 삼켜버릴 것이다.",
     "end_pathways": [
       {
@@ -74,18 +64,15 @@
         "chain_trigger": "last_stand_jamukha"
       }
     ],
-    "dot": "#3a6a2c",
-    "region": "몽골 고원",
-    "badge": "badge-ongoing",
-    "badgeText": "위협 증가"
+    "dot": "#3a6a2c"
   },
-
   {
     "id": "last_stand_jamukha",
-    "chain_only": true,
     "name": "자무카의 마지막 결전",
     "sub": "테무진 우위 이후 · 대초원",
-    "protagonist_only": ["jamukha"],
+    "protagonist_only": [
+      "jamukha"
+    ],
     "body": "추종 세력이 줄어든 자무카에게 남은 선택은 둘뿐이다. 나이만 등 외부 세력과 손잡아 역전을 노리거나, 테무진과의 최후 결전에서 명예롭게 승부를 결판짓는 것. 이 싸움의 결과가 초원의 운명을 결정한다.",
     "on_trigger_prompt": "자무카의 최후 결전이 다가왔다. 이번 서술에서 자무카가 남은 전력을 집결하며 최후의 승부를 준비하는 장면을 묘사하라. 테무진과의 최종 대결이 불가피해졌음을 인식시켜라.",
     "end_pathways": [
@@ -101,15 +88,15 @@
       }
     ],
     "dot": "#3a6a2c",
-    "region": "대초원"
+    "trigger_condition": "temujin_shadow_ended"
   },
-
   {
     "id": "kerait_alliance",
-    "default_active": true,
     "name": "테무진과의 동맹, 그 균형",
     "sub": "1189년~ · 초원 중부",
-    "protagonist_only": ["toghrul"],
+    "protagonist_only": [
+      "toghrul"
+    ],
     "body": "왕칸 토오릴과 테무진의 동맹은 초원 중부의 안정을 보장한다. 그러나 테무진의 세력이 성장할수록 두 사람 사이의 주도권이 미묘하게 이동하고 있다. 케레이트의 독자성을 지키면서 동맹의 이점을 살리는 균형이 토오릴의 핵심 과제다.",
     "end_pathways": [
       {
@@ -124,18 +111,15 @@
         "chain_trigger": "kerait_crossroads"
       }
     ],
-    "dot": "#8B5E3C",
-    "region": "초원 중부",
-    "badge": "badge-ongoing",
-    "badgeText": "동맹 유지"
+    "dot": "#8B5E3C"
   },
-
   {
     "id": "kerait_crossroads",
-    "chain_only": true,
     "name": "케레이트의 기로",
     "sub": "동맹 균열 이후 · 대초원",
-    "protagonist_only": ["toghrul"],
+    "protagonist_only": [
+      "toghrul"
+    ],
     "body": "몽골의 팽창에 위협을 느낀 케레이트 귀족들이 나이만과의 연대를 주장하며 반테무진 전선을 요구하고 있다. 테무진과 계속 동맹을 유지하느냐, 선제적으로 대립하느냐 — 이 결정이 케레이트의 운명을 가른다.",
     "on_trigger_prompt": "케레이트 귀족들이 테무진과의 관계를 재검토해야 한다고 압박하고 있다. 이번 서술에서 이 내부 논쟁의 긴장감을 묘사하고, 토오릴이 어느 방향으로 결정해야 할지 압박받는 상황을 조성하라.",
     "end_pathways": [
@@ -151,15 +135,16 @@
       }
     ],
     "dot": "#8B5E3C",
-    "region": "대초원"
+    "trigger_condition": "kerait_alliance_ended"
   },
-
   {
     "id": "jin_steppe_containment",
-    "default_active": true,
     "name": "북방 분열 공작",
     "sub": "1189년~ · 금-초원 접경",
-    "protagonist_only": ["jin-zhangzong", "wanyan-xiang"],
+    "protagonist_only": [
+      "jin-zhangzong",
+      "wanyan-xiang"
+    ],
     "body": "금나라는 전통적으로 북방 유목 세력이 통합되는 것을 막기 위해 부족 간 갈등을 조장하고 순종적 세력을 후원하는 외교 공작을 펼쳐왔다. 타타르를 이용해 몽골을 견제하는 것이 현재 전략이나, 테무진의 성장 속도가 예상을 뛰어넘고 있어 정책 재검토가 시급하다.",
     "active_chains": [
       {
@@ -179,18 +164,16 @@
         "on_end_prompt": "1206년 초원 통일이 완성됐다. 이번 서술에서 금나라 조정이 분열 공작의 실패를 직시하고 전혀 다른 차원의 위협에 직면했음을 묘사하라."
       }
     ],
-    "dot": "#C5932A",
-    "region": "금-초원 접경",
-    "badge": "badge-ongoing",
-    "badgeText": "공작 중"
+    "dot": "#C5932A"
   },
-
   {
     "id": "jin_mongol_tension",
-    "chain_only": true,
     "name": "금나라-몽골 전략적 긴장",
     "sub": "분열 공작 실패 이후 · 금-몽골 국경",
-    "protagonist_only": ["jin-zhangzong", "wanyan-xiang"],
+    "protagonist_only": [
+      "jin-zhangzong",
+      "wanyan-xiang"
+    ],
     "body": "타타르를 통한 간접 견제가 한계에 달하자, 금나라는 몽골의 성장을 직접 억제해야 하는 상황에 놓였다. 군사적 원정, 외교적 압박, 혹은 다른 초원 세력과의 연대 — 어떤 선택이든 자원과 결단이 필요하다.",
     "on_trigger_prompt": "몽골의 성장이 금나라의 직접 대응을 촉구하는 수준에 이르렀다. 이번 서술에서 조정 대신들이 북방 전략을 두고 논쟁하는 장면을 묘사하고, 테무진의 팽창이 이제 금나라 안보의 핵심 의제임을 반영하라.",
     "end_pathways": [
@@ -206,15 +189,17 @@
       }
     ],
     "dot": "#C5932A",
-    "region": "금-몽골 국경"
+    "trigger_condition": "kamag-mongol_strength >= 300"
   },
-
   {
     "id": "song_northern_ambition",
-    "default_active": true,
     "name": "북벌론의 부상",
     "sub": "1189년~ · 임안",
-    "protagonist_only": ["xin-qiji", "han-tuozhou", "zhao-dun"],
+    "protagonist_only": [
+      "xin-qiji",
+      "han-tuozhou",
+      "zhao-dun"
+    ],
     "body": "남송 조정에서는 금나라와의 평화를 유지해야 한다는 주화파와 화북을 탈환해야 한다는 주전파가 충돌하고 있다. 신기질 같은 무장들은 군비 확장을 주창하나 문신 관료들은 재정 부담을 이유로 반대한다. 초원의 변화가 금나라를 약화시킨다면 기회가 열릴 수도 있다.",
     "end_pathways": [
       {
@@ -234,18 +219,17 @@
         "on_end_prompt": "20년 넘게 북벌과 주화의 갈등이 이어졌다. 이번 서술에서 조정의 노선 다툼이 소모전으로 흐르며 어느 쪽도 결정적 행동에 나서지 못한 상황이 됐음을 묘사하라."
       }
     ],
-    "dot": "#3a7abf",
-    "region": "임안",
-    "badge": "badge-ongoing",
-    "badgeText": "논쟁 중"
+    "dot": "#3a7abf"
   },
-
   {
     "id": "kaiyuan_war",
-    "chain_only": true,
     "name": "개희 북벌",
     "sub": "1206년 이후 · 금-남송 국경",
-    "protagonist_only": ["xin-qiji", "han-tuozhou", "zhao-dun"],
+    "protagonist_only": [
+      "xin-qiji",
+      "han-tuozhou",
+      "zhao-dun"
+    ],
     "body": "남송이 금나라에 선전포고하고 북벌을 개시했다. 주전파가 오랫동안 꿈꿔온 화북 수복의 기회이지만, 금나라의 군사력은 여전히 막강하다. 준비 부족이 화가 될 수도 있다.",
     "on_trigger_prompt": "남송이 금나라에 대한 군사 행동을 개시했다. 이번 서술에서 전선이 형성되고 전쟁의 초반 국면이 어떻게 전개되는지 묘사하라. 북벌의 열망과 전쟁의 냉엄한 현실이 충돌하는 분위기를 표현하라.",
     "end_pathways": [
@@ -261,15 +245,17 @@
       }
     ],
     "dot": "#3a7abf",
-    "region": "금-남송 국경"
+    "trigger_condition": "song_northern_ambition_ended"
   },
-
   {
     "id": "goryeo_power_struggle",
-    "default_active": true,
     "name": "무신 정권의 내부 균열",
     "sub": "1189년~ · 개경",
-    "protagonist_only": ["yi-uimin", "choe-chungheon", "wang-ho"],
+    "protagonist_only": [
+      "yi-uimin",
+      "choe-chungheon",
+      "wang-ho"
+    ],
     "body": "이의민 집권 이래 고려 무신 정권은 겉으로는 안정을 유지하고 있으나, 출신 차별과 이익 분배 문제로 내부 균열이 심화되고 있다. 최충헌을 비롯한 무장들의 불만이 표면 아래에서 끓어오르고 있으며, 집권 구도 변화가 언제 폭발할지 예측하기 어렵다.",
     "end_pathways": [
       {
@@ -285,32 +271,32 @@
         "chain_trigger": "choe_rise"
       }
     ],
-    "dot": "#3a8a7a",
-    "region": "개경",
-    "badge": "badge-ongoing",
-    "badgeText": "균열 진행"
+    "dot": "#3a8a7a"
   },
-
   {
     "id": "choe_rise",
-    "chain_only": true,
     "name": "최충헌의 부상",
     "sub": "이의민 이후 · 개경",
-    "protagonist_only": ["yi-uimin", "choe-chungheon", "wang-ho"],
+    "protagonist_only": [
+      "yi-uimin",
+      "choe-chungheon",
+      "wang-ho"
+    ],
     "body": "이의민 체제가 붕괴한 자리를 최충헌이 빠르게 채우고 있다. 군부 내 광범위한 지지와 귀족층과의 연대를 기반으로, 최충헌은 기존 무신 정권과는 다른 방식의 안정적 군사 독재를 구축하려 한다.",
     "on_trigger_prompt": "최충헌이 실권을 장악하기 위해 움직이고 있다. 이번 서술에서 최충헌이 군부와 귀족층의 지지를 규합하며 개경의 권력 중심으로 부상하는 장면을 묘사하라. 그의 등장이 기존 질서에 어떤 파장을 일으키는지 반영하라.",
     "end_condition": "year >= 1210",
     "on_end_prompt": "최충헌의 집권이 확고해졌다. 이번 서술에서 최씨 무신 정권의 기틀이 자리잡히며 고려 정치가 새로운 안정 국면에 들어섰음을 묘사하라.",
     "dot": "#3a8a7a",
-    "region": "개경"
+    "trigger_condition": "goryeo_power_struggle_ended"
   },
-
   {
     "id": "xia_survival_balance",
-    "default_active": true,
     "name": "강대국 사이의 생존 외교",
     "sub": "1189년~ · 흥경부",
-    "protagonist_only": ["xia-renzong", "li-anquan"],
+    "protagonist_only": [
+      "xia-renzong",
+      "li-anquan"
+    ],
     "body": "금나라와 남송, 북방 초원 세력 사이에 끼인 서하는 오랜 시간 정교한 균형 외교로 독립을 지켜왔다. 그러나 초원의 통일 움직임은 이 균형을 근본적으로 흔들 수 있다. 어느 한쪽에 치우치는 순간 다른 강대국의 압박이 쏟아진다.",
     "end_pathways": [
       {
@@ -325,18 +311,16 @@
         "on_end_prompt": "서하가 20년 넘게 독립을 유지했다. 이번 서술에서 강대국들 사이에서 살아남은 서하의 생존 외교가 한 고비를 넘겼음을 묘사하라. 그러나 초원의 위협이 완전히 사라진 것은 아님을 암시하라."
       }
     ],
-    "dot": "#7F77DD",
-    "region": "흥경부",
-    "badge": "badge-ongoing",
-    "badgeText": "균형 유지"
+    "dot": "#7F77DD"
   },
-
   {
     "id": "xia_under_pressure",
-    "chain_only": true,
     "name": "몽골의 서하 압박",
     "sub": "1200년 이후 · 서하 북부 국경",
-    "protagonist_only": ["xia-renzong", "li-anquan"],
+    "protagonist_only": [
+      "xia-renzong",
+      "li-anquan"
+    ],
     "body": "몽골 기병이 서하 북부 국경을 압박하기 시작했다. 금나라는 서하를 직접 지원할 여력이 없고, 남송은 거리가 너무 멀다. 서하는 단독으로 이 위협에 맞서거나 복속과 저항 사이에서 선택해야 한다.",
     "on_trigger_prompt": "몽골의 서하 압박이 시작됐다. 이번 서술에서 몽골 기병이 북부 국경 거점을 위협하며 서하 방어선이 흔들리는 장면을 묘사하라. 서하 조정이 어떻게 대응해야 할지 선택의 기로에 선 긴장감을 반영하라.",
     "end_pathways": [
@@ -357,6 +341,6 @@
       }
     ],
     "dot": "#7F77DD",
-    "region": "서하 북부 국경"
+    "trigger_condition": "xia_survival_balance_ended"
   }
 ]

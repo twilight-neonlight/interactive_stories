@@ -82,7 +82,7 @@ def auto_battle_damage_recovery(state: dict, state_updates: dict) -> None:
 
 
 def auto_reserve_recovery(
-    state: dict, state_updates: dict, fiscal_mult: float = 1.0
+    state: dict, state_updates: dict
 ) -> None:
     """타임스탬프 경과에 따른 reserve_manpower 자동 회복.
 
@@ -115,7 +115,7 @@ def auto_reserve_recovery(
     }
 
     admin_mult = calc_admin_recovery_multiplier(state)
-    eff_rate   = min(1.0, RESERVE_RECOVERY_RATE * admin_mult * fiscal_mult)
+    eff_rate   = min(1.0, RESERVE_RECOVERY_RATE * admin_mult)
 
     for fid, faction in factions.items():
         if not isinstance(faction, dict) or faction.get("defeated"):
@@ -133,6 +133,41 @@ def auto_reserve_recovery(
         state_updates["faction_reserve_changes"] = [
             {"id": fid, "delta": round(amt)} for fid, amt in existing.items()
         ]
+
+
+_INJURY_RECOVERY_MONTHS: dict[str, int] = {"경상": 2, "중상": 3, "극도": 4}
+_INJURY_DOWNGRADE: dict[str, str | None] = {"극도": "중상", "중상": "경상", "경상": None}
+
+
+def auto_injury_recovery(state: dict, state_updates: dict) -> None:
+    """부상 자동 감쇠: 경상 2개월, 중상→경상 3개월, 극도→중상 4개월."""
+    new_ts = state_updates.get("timestamp") or state.get("progress", {}).get("timestamp", "")
+    new_ym = parse_ym(new_ts)
+    if not new_ym:
+        return
+
+    chars = state.get("characters", {})
+    existing: dict[str, dict] = {
+        ic["id"]: ic
+        for ic in (state_updates.get("character_injury_changes") or [])
+        if isinstance(ic, dict) and ic.get("id")
+    }
+
+    for cid, char in chars.items():
+        if not isinstance(char, dict):
+            continue
+        injury = char.get("injury")
+        if not injury or cid in existing:
+            continue
+        since_ym = parse_ym(char.get("injury_since", ""))
+        if not since_ym:
+            continue
+        elapsed = (new_ym[0] - since_ym[0]) * 12 + (new_ym[1] - since_ym[1])
+        if elapsed >= _INJURY_RECOVERY_MONTHS.get(injury, 999):
+            existing[cid] = {"id": cid, "injury": _INJURY_DOWNGRADE.get(injury)}
+
+    if existing:
+        state_updates["character_injury_changes"] = list(existing.values())
 
 
 def auto_intel_decay(state: dict, state_updates: dict) -> None:

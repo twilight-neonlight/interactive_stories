@@ -39,12 +39,13 @@ from engine.context    import (
     compute_event_states, detect_event_transitions, build_event_transition_prompt,
     collect_transition_effects, strip_event_states,
 )
-from engine.fiscal  import compute_player_fiscal, auto_treasury_update
-from engine.conquest import classify_conquest_disposition, apply_garrison_updates
+from engine.conquest  import classify_conquest_disposition, apply_garrison_updates
+from engine.endgame   import check_game_over
 from engine.tick    import (
     auto_battle_damage_recovery,
     auto_reserve_recovery,
     auto_intel_decay,
+    auto_injury_recovery,
     recompute_all_strengths,
 )
 from engine.defeat  import (
@@ -294,6 +295,7 @@ async def process_turn(req: TurnRequest, _user: dict = Depends(get_current_user)
     messages.append({"role": "user", "content": f"<player_input>\n{req.command}\n</player_input>"})
 
     content = await call_gemini(messages)
+    llm_raw = content
     content, extra = extract_state_update(content)
     state_updates  = turn_engine(content, state)
     merge_defeated_factions_update(state_updates, auto_defeated_at_start)
@@ -305,7 +307,8 @@ async def process_turn(req: TurnRequest, _user: dict = Depends(get_current_user)
                 "character_troop_changes", "character_disposition_changes", "character_title_changes",
                 "faction_intel_changes", "new_locations", "location_changes",
                 "player_location_id",
-                "faction_income_changes", "treasury_changes"):
+                "character_injury_changes", "character_status_changes",
+                ):
         if extra.get(key):
             state_updates[key] = extra[key]
 
@@ -319,10 +322,6 @@ async def process_turn(req: TurnRequest, _user: dict = Depends(get_current_user)
     # 주둔군 갱신 (controller 변경 → conquered_at 기록, 기존 점령지 시간 경과 회복)
     tpp     = get_scenario_tpp(state)
 
-    # 재정 상태 계산 (이번 턴 회복·누적에 사용)
-    fiscal_info = compute_player_fiscal(state, tpp) if tpp else None
-    fiscal_mult = fiscal_info["fiscal_mult"] if fiscal_info else 1.0
-
     newly_pending: list[dict] = []
     if tpp:
         new_ts = state_updates.get("timestamp") or state.get("progress", {}).get("timestamp", "")
@@ -331,7 +330,7 @@ async def process_turn(req: TurnRequest, _user: dict = Depends(get_current_user)
         }
         admin_mult    = calc_admin_recovery_multiplier(state)
         newly_pending = apply_garrison_updates(
-            state, new_ts, tpp, loc_change_map, admin_mult, fiscal_mult
+            state, new_ts, tpp, loc_change_map, admin_mult
         )
         if loc_change_map:
             state_updates["location_changes"] = list(loc_change_map.values())
@@ -341,7 +340,6 @@ async def process_turn(req: TurnRequest, _user: dict = Depends(get_current_user)
     if pending_dispositions:
         if disposition_type:
             info           = CONQUEST_DISPOSITIONS[disposition_type]
-            new_mod        = info["base"]
             recovery_ratio = info["recovery_ratio"]
 
             existing_lcs: dict[str, dict] = {
@@ -354,12 +352,15 @@ async def process_turn(req: TurnRequest, _user: dict = Depends(get_current_user)
                 lid      = pd["id"]
                 tier     = pd.get("tier", "")
                 base_pts = GARRISON_POINTS_BY_TIER.get(tier, 0)
+                pre_mod  = pd.get("pre_conquest_modifier", 1.0)
+                actual_base = round(pre_mod * info["base"], 4)
                 if lid not in existing_lcs:
                     existing_lcs[lid] = {"id": lid}
-                existing_lcs[lid]["garrison_modifier"]    = new_mod
-                existing_lcs[lid]["conquest_disposition"] = disposition_type
+                existing_lcs[lid]["garrison_modifier"]     = actual_base
+                existing_lcs[lid]["garrison_conquest_base"] = actual_base
+                existing_lcs[lid]["conquest_disposition"]  = disposition_type
                 if tpp:
-                    existing_lcs[lid]["garrison"] = round(base_pts * new_mod * tpp)
+                    existing_lcs[lid]["garrison"] = round(base_pts * actual_base * tpp)
                 total_recovery += round(base_pts * recovery_ratio)
 
             state_updates["location_changes"] = list(existing_lcs.values())
@@ -374,9 +375,9 @@ async def process_turn(req: TurnRequest, _user: dict = Depends(get_current_user)
     state_updates["pending_conquest_dispositions"] = unresolved + newly_pending
 
     auto_battle_damage_recovery(state, state_updates)
-    auto_reserve_recovery(state, state_updates, fiscal_mult)
-    auto_treasury_update(state, state_updates, fiscal_info)
+    auto_reserve_recovery(state, state_updates)
     auto_intel_decay(state, state_updates)
+    auto_injury_recovery(state, state_updates)
     if tpp:
         recompute_all_strengths(state, state_updates, tpp)
 
@@ -449,12 +450,19 @@ async def process_turn(req: TurnRequest, _user: dict = Depends(get_current_user)
     merge_defeated_factions_update(state_updates, auto_defeated_after_updates)
     state_updates["event_state_changes"] = strip_event_states(current_event_states)
 
+    _scenario = next((s for s in SCENARIOS if s["id"] == state.get("scenarioId", "")), None)
+    game_over = check_game_over(state, _scenario or {}, state_updates)
+
     return {
         "content":      content,
         "state_updates": state_updates,
         "resolution":   resolution,
+        "game_over":    game_over,
         "_debug": {
-            "state_update": extra,
-            "quality_mod":  quality_mod,
+            "system_prompt":      full_system,
+            "llm_raw":            llm_raw,
+            "state_update":       extra,
+            "state_updates_final": state_updates,
+            "quality_mod":        quality_mod,
         },
     }

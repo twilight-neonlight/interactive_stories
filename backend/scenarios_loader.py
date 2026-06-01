@@ -69,9 +69,9 @@ def compute_faction_strength(faction: dict, fid: str, locations, tpp: int) -> in
 # base: 점령 직후 garrison_modifier 초기값
 # recovery_ratio: base_pts 기준 야전군 battle_damage 회복 비율
 CONQUEST_DISPOSITIONS: dict[str, dict] = {
-    "초토화":      {"base": 0.1, "recovery_ratio": 0.30},
-    "약탈":        {"base": 0.2, "recovery_ratio": 0.15},
-    "피해 최소화": {"base": 0.3, "recovery_ratio": 0.05},
+    "초토화":      {"base": 0.3, "recovery_ratio": 0.30, "recovery_delay": 12},
+    "약탈":        {"base": 0.5, "recovery_ratio": 0.15, "recovery_delay":  6},
+    "피해 최소화": {"base": 0.7, "recovery_ratio": 0.05, "recovery_delay":  3},
 }
 
 GARRISON_RECOVERY_PER_MONTH = 0.03
@@ -154,20 +154,26 @@ def load_scenarios() -> list[dict]:
             scenario["troops_per_strength_point"] = _estimate_troops_per_point(scenario)
         tpp      = scenario["troops_per_strength_point"]
         start_ts = scenario.get("start_timestamp", "")
+        nomad_fids = {f["id"] for f in scenario["factions"] if f.get("type") == "nomad"}
         for loc in scenario["locations"]:
             # conquered_at + conquest_disposition이 있으면 garrison_modifier를 자동 계산
             if ("garrison_modifier" not in loc
                     and "conquered_at" in loc
                     and "conquest_disposition" in loc
                     and start_ts):
-                base = CONQUEST_DISPOSITIONS.get(loc["conquest_disposition"], {}).get("base", 0.3)
+                disp_cfg = CONQUEST_DISPOSITIONS.get(loc["conquest_disposition"], {})
+                base  = disp_cfg.get("base", 0.3)
+                delay = disp_cfg.get("recovery_delay", 0)
                 m1 = re.search(r'(\d{3,4})년\s*(\d{1,2})월', loc["conquered_at"])
                 m2 = re.search(r'(\d{3,4})년\s*(\d{1,2})월', start_ts)
                 if m1 and m2:
                     elapsed = (int(m2.group(1)) - int(m1.group(1))) * 12 + (int(m2.group(2)) - int(m1.group(2)))
-                    loc["garrison_modifier"] = round(min(1.0, base + max(0, elapsed) * GARRISON_RECOVERY_PER_MONTH), 4)
+                    loc["garrison_modifier"] = round(min(1.0, base + max(0, elapsed - delay) * GARRISON_RECOVERY_PER_MONTH), 4)
                 else:
                     loc["garrison_modifier"] = base
+            # nomad 세력 통제 거점: 별도 modifier가 없으면 기본 0.5 적용
+            if "garrison_modifier" not in loc and loc.get("controller") in nomad_fids:
+                loc["garrison_modifier"] = 0.5
             loc["garrison"] = _resolve_garrison(loc, tpp)
             if "controlling_faction" in loc and "controller" not in loc:
                 loc["controller"] = loc.pop("controlling_faction")
@@ -188,6 +194,8 @@ def load_scenarios() -> list[dict]:
         scenario["event_context"] = json.loads(event_context_path.read_text(encoding="utf-8-sig")) if event_context_path.exists() else {}
         map_path = scenario_dir / "map.svg"
         scenario["map_svg"] = map_path.read_text(encoding="utf-8-sig") if map_path.exists() else ""
+        territory_path = scenario_dir / "territory.svg"
+        scenario["territory_svg"] = territory_path.read_text(encoding="utf-8-sig") if territory_path.exists() else ""
         scenarios.append(scenario)
     return scenarios
 

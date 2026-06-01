@@ -3,6 +3,18 @@ let _manager = null;
 let _state   = null;
 let _ui      = null;
 
+// ── 지도 컨테이너 HTML 생성
+function _buildMapHtml(imgUrl, territorySvg) {
+  const territoryLayer = territorySvg
+    ? `<div id="territory-layer">${territorySvg}</div>`
+    : '';
+  return `<div class="map-inner">
+    <img id="map-img" src="${imgUrl}" alt="지도" onerror="this.style.display='none'">
+    ${territoryLayer}
+    <div id="map-markers-layer"></div>
+  </div>`;
+}
+
 // ── 백엔드 메타 설정 로드 (/api/config)
 // game.html 로드 초기에 한 번만 호출. 실패해도 게임은 동작하나 weather/terrain 배지 fallback 사용.
 async function loadGameConfig() {
@@ -33,6 +45,7 @@ async function loadGameConfig() {
     _state.troopsPerPoint = qb.troopsPerPoint;
     _state.eventContext   = {};
     _state.mapSvg         = '';
+    _state.territorySvg   = '';
     _ui = window.getScenarioUI('ottoman-interregnum');
     tagStyle = { ...BASE_TAG_STYLE, ..._ui.tagExtras };
     _manager._state = _state;
@@ -52,13 +65,14 @@ async function loadGameConfig() {
       _ui = window.getScenarioUI(data.scenarioId);
       tagStyle = { ...BASE_TAG_STYLE, ..._ui.tagExtras };
       _state = GameState.fromJSON(data);
-      _state.eventContext   = scenario.event_context ?? {};
-      _state.mapSvg         = scenario.map_svg       ?? '';
+      _state.eventContext   = scenario.event_context  ?? {};
+      _state.mapSvg         = scenario.map_svg        ?? '';
+      _state.territorySvg   = scenario.territory_svg  ?? '';
       _state.troopsPerPoint = scenario.troops_per_strength_point ?? null;
       const mapContainer = document.getElementById('map-container');
       if (mapContainer) {
         const imgUrl = `${window.API_BASE}/api/scenarios/${data.scenarioId}/map-image`;
-        mapContainer.innerHTML = `<div class="map-inner"><img id="map-img" src="${imgUrl}" alt="지도" onerror="this.style.display='none'"><div id="map-markers-layer"></div></div>`;
+        mapContainer.innerHTML = _buildMapHtml(imgUrl, _state.territorySvg);
       }
       _manager._state = _state;
       _manager.save();
@@ -116,6 +130,7 @@ async function loadGameConfig() {
   if (_state) {
     _state.eventContext   = scenario.event_context ?? {};
     _state.troopsPerPoint = scenario.troops_per_strength_point ?? null;
+    _state.territorySvg   = scenario.territory_svg ?? '';
     _state.events         = scenario.events ?? [];
     // 세이브 생성 이후 시나리오에 추가된 세력·거점을 상태에 병합한다.
     for (const f of scenario.factions ?? []) {
@@ -137,7 +152,7 @@ async function loadGameConfig() {
 
   if (mapContainer) {
     const imgUrl = `${window.API_BASE}/api/scenarios/${scenarioId}/map-image`;
-    mapContainer.innerHTML = `<div class="map-inner"><img id="map-img" src="${imgUrl}" alt="지도" onerror="this.style.display='none'"><div id="map-markers-layer"></div></div>`;
+    mapContainer.innerHTML = _buildMapHtml(imgUrl, scenario?.territory_svg ?? '');
   }
 
   if (!_state) {

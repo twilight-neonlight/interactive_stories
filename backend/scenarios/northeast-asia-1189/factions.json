@@ -35,7 +35,7 @@
   {
     "id": "kamag-mongol",
     "name": "카마그 몽골",
-    "type": "faction",
+    "type": "nomad",
     "field_army": 35000,
     "naval_base": 0,
     "disposition": "중립",
@@ -81,7 +81,7 @@
   {
     "id": "keraites",
     "name": "케레이트",
-    "type": "faction",
+    "type": "nomad",
     "field_army": 40000,
     "naval_base": 0,
     "disposition": "중립",
@@ -91,7 +91,7 @@
   {
     "id": "naiman",
     "name": "나이만",
-    "type": "faction",
+    "type": "nomad",
     "field_army": 50000,
     "naval_base": 0,
     "disposition": "중립",
@@ -99,9 +99,19 @@
     "notes": "몽골 고원 서부를 장악한 강력한 유목 부족 연합. 자체적인 문자와 행정 체계를 갖추고 있으며, 초원 서부에서 가장 큰 세력 중 하나다."
   },
   {
+    "id": "merkits",
+    "name": "메르키트",
+    "type": "nomad",
+    "field_army": 25000,
+    "naval_base": 0,
+    "disposition": "중립",
+    "color": "#4A7FA5",
+    "notes": "셀렝게 강 유역 북방 초원을 거점으로 하는 유목 부족. 테무진과 오랜 숙적 관계에 있으며, 과거 테무진의 아내 보르테를 납치한 사건 이후 양측의 적대는 회복 불가능한 수준으로 깊어졌다."
+  },
+  {
     "id": "tatars",
     "name": "타타르",
-    "type": "faction",
+    "type": "nomad",
     "field_army": 35000,
     "naval_base": 0,
     "disposition": "중립",

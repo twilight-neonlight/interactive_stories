@@ -7,7 +7,6 @@ engine/context.py — LLM 시나리오 컨텍스트 빌더
 
 import re
 from scenarios_loader import GARRISON_POINTS_BY_TIER, SCENARIOS as _SCENARIOS
-from engine.fiscal import compute_player_fiscal
 
 
 OPENING_INSTRUCTION = """
@@ -52,63 +51,83 @@ def _parse_year_month(ts: str) -> tuple[int | None, int | None]:
 
 
 def _event_condition_context(state: dict, current_year: int | None, current_month: int | None = None) -> dict:
-    """이벤트 trigger_condition 평가에 쓰일 컨텍스트를 구성합니다."""
+    """이벤트 trigger_condition 평가에 쓰일 컨텍스트를 구성합니다.
+
+    선언 없이 사용 가능한 변수 (모든 시나리오 공통):
+      세력: {fid}_defeated, {fid}_strength, {fid}_score, {fid}_location_count
+      캐릭터: {cid}_dead, {cid}_alive
+      거점: {lid}_contested, {lid}_player_controlled
+      전투: lost_to_{fid}
+      기타: year, month, player_strength, active_princes, living_princes, has_exiled_prince
+    """
     locs        = state.get("locations", {})
     facs        = state.get("factions", {})
+    chars       = state.get("characters", {})
+    protagonist = state.get("protagonist")
+
+    # ── 플레이어 세력 id ──────────────────────────────────────────────────────
+    _pfid: str | None = None
+    if protagonist:
+        pc    = chars.get(protagonist, {})
+        _pfid = pc.get("faction_id") or (protagonist if protagonist in facs else None)
+
+    # ── 세력별 보유 거점 수 사전 계산 ────────────────────────────────────────
+    faction_loc_count: dict[str, int] = {}
+    for loc in locs.values():
+        ctrl = loc.get("controller")
+        if ctrl and ctrl != "contested":
+            faction_loc_count[ctrl] = faction_loc_count.get(ctrl, 0) + 1
+
+    # ── 기본 변수 ─────────────────────────────────────────────────────────────
     prince_ids  = {fid for fid, f in facs.items() if f.get("type") == "faction"}
     controllers = {loc.get("controller") for loc in locs.values()}
 
     ctx: dict = {
-        "year": current_year,
+        "year":  current_year,
         "month": current_month,
         "has_exiled_prince": any(
             pid not in controllers and (facs.get(pid, {}).get("battle_damage", 0) > 0)
             for pid in prince_ids
         ),
     }
-    protagonist = state.get("protagonist")
     if prince_ids:
         ctx["active_princes"] = sum(1 for pid in prince_ids if pid != protagonist)
+        ctx["living_princes"] = sum(
+            1 for pid in prince_ids
+            if pid != protagonist and not facs.get(pid, {}).get("defeated")
+        )
 
-    # faction_vars 세력: {id}_defeated, {id}_strength 변수 추가
-    faction_vars = (state.get("eventContext") or {}).get("faction_vars", [])
-    for fid in faction_vars:
-        f = facs.get(fid, {})
-        ctx[f"{fid}_defeated"] = bool(f.get("defeated", False))
-        ctx[f"{fid}_strength"] = max(0, (f.get("strength_score") or 0) - (f.get("battle_damage") or 0))
-
-    # 플레이어 세력 id (location_vars 처리에도 필요하므로 먼저 계산)
-    _pfid: str | None = None
-    if protagonist:
-        chars = state.get("characters", {})
-        pc    = chars.get(protagonist, {})
-        _pfid = pc.get("faction_id") or (protagonist if protagonist in facs else None)
-
-    # location_vars 거점: {id}_contested, {id}_player_controlled 변수 추가
-    location_vars = (state.get("eventContext") or {}).get("location_vars", [])
-    for lid in location_vars:
-        loc        = locs.get(lid, {})
-        controller = loc.get("controller", "")
-        ctx[f"{lid}_contested"]        = (controller == "contested")
-        ctx[f"{lid}_player_controlled"] = (controller == _pfid) if _pfid else False
-
-    # 플레이어 세력 유효 전력
+    # ── 플레이어 세력 유효 전력 ───────────────────────────────────────────────
     if _pfid:
         pf = facs.get(_pfid, {})
         ctx["player_strength"] = max(0, (pf.get("strength_score") or 0) - (pf.get("battle_damage") or 0))
 
-    # 모든 세력의 외교 수치: {fid}_score
+    # ── 모든 세력 변수: {fid}_defeated, _strength, _score, _location_count ───
     for fid, f in facs.items():
+        ctx[f"{fid}_defeated"]       = bool(f.get("defeated", False))
+        ctx[f"{fid}_strength"]       = max(0, (f.get("strength_score") or 0) - (f.get("battle_damage") or 0))
+        ctx[f"{fid}_location_count"] = faction_loc_count.get(fid, 0)
         score = f.get("diplomacy_score")
-        if score is not None:
-            ctx[f"{fid}_score"] = int(score)
+        ctx[f"{fid}_score"] = int(score) if score is not None else 0
 
-    # lost_to_{fid} — 해당 세력과의 전투 패배 이력
+    # ── 모든 캐릭터 변수: {cid}_dead, {cid}_alive ────────────────────────────
+    for cid, c in chars.items():
+        is_dead = c.get("status") == "dead"
+        ctx[f"{cid}_dead"]  = is_dead
+        ctx[f"{cid}_alive"] = not is_dead
+
+    # ── 모든 거점 변수: {lid}_contested, {lid}_player_controlled ─────────────
+    for lid, loc in locs.items():
+        controller = loc.get("controller", "")
+        ctx[f"{lid}_contested"]        = (controller == "contested")
+        ctx[f"{lid}_player_controlled"] = (controller == _pfid) if _pfid else False
+
+    # ── 전투 패배 이력: lost_to_{fid} ────────────────────────────────────────
     lost_battles = state.get("lostBattles", {})
     for fid, lost in lost_battles.items():
         ctx[f"lost_to_{fid}"] = bool(lost)
 
-    # 저장된 이벤트 상태에서 trigger_year/trigger_month 변수, months_since_trigger 추가
+    # ── 이벤트 상태: trigger_year, months_since_trigger, _active, _ended ─────
     stored_event_states = state.get("eventStates", {})
     current_total_months = (
         current_year * 12 + (current_month - 1)
@@ -125,13 +144,17 @@ def _event_condition_context(state: dict, current_year: int | None, current_mont
             trigger_total = ty * 12 + ((tm - 1) if tm is not None else 0)
             ctx[f"{eid}_months_since_trigger"] = current_total_months - trigger_total
 
-    # 이벤트 상태 플래그: {event_id}_active, {event_id}_ended
     for ev in state.get("events", []):
         eid = ev.get("id")
         if not eid:
             continue
         triggered = _evaluate_event_condition(_event_condition_expr(ev), ctx)
-        ended     = bool(ev.get("end_condition")) and _evaluate_event_condition(ev["end_condition"], ctx)
+        stored_ev = stored_event_states.get(eid)
+        stored_st = stored_ev.get("state") if isinstance(stored_ev, dict) else None
+        ended = (
+            (bool(ev.get("end_condition")) and _evaluate_event_condition(ev["end_condition"], ctx))
+            or stored_st == "ended"
+        )
         ctx[f"{eid}_active"] = triggered and not ended
         ctx[f"{eid}_ended"]  = ended
 
@@ -288,7 +311,7 @@ def compute_event_states(state: dict) -> dict:
         prev_ty = _prev_trigger_year(eid)
         prev_tm = _prev_trigger_month(eid)
 
-        triggered = is_forced or (not ev.get("chain_only") and _evaluate_event_condition(_event_condition_expr(ev), cond_ctx))
+        triggered = is_forced or _evaluate_event_condition(_event_condition_expr(ev), cond_ctx)
         if not triggered:
             return
 
@@ -524,21 +547,13 @@ def build_scenario_context(state: dict, scenario_prompts: dict | None = None) ->
                     troops_str = ""
             else:
                 troops_str = ""
+        injury = c.get("injury")
+        injury_str = f" / 부상: {injury}" if injury else ""
         lines.append(
             f"플레이어: {c.get('name', protagonist_id)}"
             + (f" / {c.get('title') or c.get('epithet', '')}" if c.get('title') or c.get('epithet') else "")
             + troops_str
-        )
-
-    # 플레이어 재정 상태 표시
-    _scenario    = next((s for s in _SCENARIOS if s["id"] == state.get("scenarioId", "")), None)
-    _tpp         = _scenario.get("troops_per_strength_point") if _scenario else None
-    fiscal = compute_player_fiscal(state, _tpp) if _tpp else None
-    if fiscal:
-        lines.append(
-            f"재정: {fiscal['fiscal_level']} | "
-            f"월수입 {fiscal['income_score']} / 월지출 {fiscal['expense_score']} "
-            f"(수지 {fiscal['fiscal_balance']:+d}, {fiscal['ratio_str']}) | 비축 {fiscal['treasury_str']}"
+            + injury_str
         )
 
     active_factions = {fid: f for fid, f in factions.items() if not f.get("defeated")}
@@ -620,6 +635,33 @@ def build_scenario_context(state: dict, scenario_prompts: dict | None = None) ->
                 + (f"\n    {text_short}" if text_short else "")
             )
 
+    # 부상·특수 상태 인물 (주인공 팩션 소속 또는 첩보 확인된 세력)
+    protagonist_faction_id = chars.get(protagonist_id, {}).get("faction_id") if protagonist_id else None
+    def _is_trackable(char: dict) -> bool:
+        return (
+            char.get("faction_id") == protagonist_faction_id
+            or (factions.get(char.get("faction_id"), {}).get("intel_level") or 0) > 0
+        )
+
+    status_lines: list[str] = []
+    for cid, char in chars.items():
+        if not isinstance(char, dict) or cid == protagonist_id:
+            continue
+        if not _is_trackable(char):
+            continue
+        parts: list[str] = []
+        if char.get("injury"):
+            parts.append(f"부상 {char['injury']}")
+        st = char.get("status", "alive")
+        if st not in ("alive", "dead"):
+            parts.append(st)
+        if parts:
+            status_lines.append(f"  - {char.get('name', cid)}: {', '.join(parts)}")
+
+    if status_lines:
+        lines.append("\n상태 이상 인물:")
+        lines.extend(status_lines)
+
     weather = state.get("weather")
     if weather and weather != "clear":
         _WEATHER_LABELS = {
@@ -635,10 +677,13 @@ def build_scenario_context(state: dict, scenario_prompts: dict | None = None) ->
     if player_loc_id:
         loc_entry = locations.get(player_loc_id, {})
         player_loc_label = f"플레이어 거점: {loc_entry.get('name', player_loc_id)} ({player_loc_id})"
+    _SEASON_MAP = {3:"봄",4:"봄",5:"봄",6:"여름",7:"여름",8:"여름",
+                   9:"가을",10:"가을",11:"가을",12:"겨울",1:"겨울",2:"겨울"}
+    season = _SEASON_MAP.get(current_month, "") if current_month else ""
     if ts or player_loc_label:
         lines.append(
             "\n현재 시점: "
-            + (ts if ts else "미상")
+            + (ts + (f" ({season})" if season else "") if ts else "미상")
             + (f" | {player_loc_label}" if player_loc_label else "")
         )
 

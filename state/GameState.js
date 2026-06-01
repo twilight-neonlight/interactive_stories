@@ -204,11 +204,11 @@ class GameState {
   }
 
   /**
-   * status가 'alive'인 캐릭터만 반환합니다.
+   * dead가 아닌 캐릭터(alive·포로·실종 포함)를 반환합니다.
    * @returns {StateCharacter[]}
    */
   getActiveCharacters() {
-    return Array.from(this.characters.values()).filter(c => c.status === 'alive');
+    return Array.from(this.characters.values()).filter(c => c.status !== 'dead');
   }
 
   // ── 세력 ──────────────────────────────────

@@ -29,7 +29,6 @@ def apply_garrison_updates(
     tpp: int,
     loc_change_map: dict,
     admin_mult: float = 1.0,
-    fiscal_mult: float = 1.0,
 ) -> list[dict]:
     """garrison 관련 location_changes를 loc_change_map에 in-place로 병합합니다.
 
@@ -50,16 +49,20 @@ def apply_garrison_updates(
                 and new_ctrl != old_ctrl
                 and old_ctrl != "contested"
                 and new_ctrl != "contested"):
-            lc["garrison_modifier"] = 0.3  # 처분 확정 전 임시값
+            old_loc      = old_locations.get(lid, {})
+            prev_mod     = old_loc.get("garrison_modifier", 1.0)
+            temp_mod     = round(prev_mod * 0.3, 4)  # 처분 확정 전 임시값 (기존 피해 반영)
+            lc["garrison_modifier"] = temp_mod
             lc["conquered_at"]      = ts_ym_only(new_ts)
-            tier     = old_locations.get(lid, {}).get("tier", "")
+            tier     = old_loc.get("tier", "")
             base_pts = GARRISON_POINTS_BY_TIER.get(tier, 0)
-            lc["garrison"] = round(base_pts * 0.3 * tpp)
+            lc["garrison"] = round(base_pts * temp_mod * tpp)
             newly_pending.append({
-                "id":           lid,
-                "tier":         tier,
-                "name":         old_locations.get(lid, {}).get("name", lid),
-                "conquered_at": lc["conquered_at"],
+                "id":                    lid,
+                "tier":                  tier,
+                "name":                  old_loc.get("name", lid),
+                "conquered_at":          lc["conquered_at"],
+                "pre_conquest_modifier": prev_mod,
             })
 
     # 2. 처분 확정 점령 거점 시간 경과 회복
@@ -76,8 +79,11 @@ def apply_garrison_updates(
         if not cym or not new_ym:
             continue
         elapsed  = (new_ym[0] - cym[0]) * 12 + (new_ym[1] - cym[1])
-        base     = CONQUEST_DISPOSITIONS.get(conquest_disposition, {}).get("base", 0.3)
-        new_mod  = min(1.0, base + max(0, elapsed) * GARRISON_RECOVERY_PER_MONTH * admin_mult * fiscal_mult)
+        disp_cfg = CONQUEST_DISPOSITIONS.get(conquest_disposition, {})
+        # garrison_conquest_base: 처분 확정 시 저장된 실제 시작값 (중첩 반영). 없으면 table 기본값
+        base     = loc.get("garrison_conquest_base") or disp_cfg.get("base", 0.3)
+        delay    = disp_cfg.get("recovery_delay", 0)
+        new_mod  = min(1.0, base + max(0, elapsed - delay) * GARRISON_RECOVERY_PER_MONTH * admin_mult)
         tier     = loc.get("tier", "")
         base_pts = GARRISON_POINTS_BY_TIER.get(tier, 0)
         change: dict = {
@@ -86,9 +92,10 @@ def apply_garrison_updates(
             "garrison":          round(base_pts * new_mod * tpp),
         }
         if new_mod >= 1.0:
-            change["conquered_at"]         = None
-            change["conquest_disposition"] = None
-            change["garrison_modifier"]    = 1.0
+            change["conquered_at"]          = None
+            change["conquest_disposition"]  = None
+            change["garrison_modifier"]     = 1.0
+            change["garrison_conquest_base"] = None
         loc_change_map[lid] = change
 
     return newly_pending

@@ -91,9 +91,9 @@ combat_victor / enemy_next_action / diplomacy_outcome / opponent_next_stance
   - 간단한 부탁·협조: ±5~10 / 중요한 협력·배신: ±15~25 / 결정적 사건(동맹 결성·선전포고): ±30~50
 - `character_disposition_changes`: 이번 응답에서 인물의 플레이어에 대한 태도가 바뀐 경우.
 - `character_title_changes`: 인물의 직위·칭호가 바뀐 경우 (예: 왕위 주장자 → 술탄, 장군 → 총사령관). 즉위·승진·폐위 등 서사적으로 명확한 전환점에서만 사용.
+- `character_injury_changes`: 인물의 부상 상태 변화. `{"id": "인물id", "injury": "경상"|"중상"|"극도"|null}`. `null`은 완전 회복. 시스템이 시간 경과에 따라 자동 감쇠(경상 2개월, 중상→경상 3개월, 극도→중상 4개월)하므로 LLM은 부여·악화·즉각 회복에만 사용.
+- `character_status_changes`: 인물의 생존·특수 상태 변화. `{"id": "인물id", "status": "alive"|"포로"|"실종"}`. `dead_characters`로 처리하는 사망과 별개. 탈출·석방 시 `"alive"` 복귀. 주인공의 `"실종"`은 UI에서 `"은둔"`으로 표기됨.
 - `faction_intel_changes`: 플레이어의 해당 세력에 대한 첩보 수준 변화. `delta`: +1(침투 부분 성공·성공), +2(대성공), -1(대실패).
-- `faction_income_changes`: 세력의 수입 수정치 변경. `income_mult_delta`(비율 수정 — 교역 조약 +0.1, 봉쇄 -0.2 등) 또는 `income_flat_delta`(절대 수입 증감 — 보조금 삭감 등) 중 하나 또는 둘 다 포함. `{"id": "faction-id", "income_mult_delta": 0.1}` 형식.
-- `treasury_changes`: 플레이어 세력의 일회성 재정 수입·지출. `delta` 양수 = 수입(약탈·몸값·배상금), 음수 = 지출(용병 고용·뇌물·배상 지급). `{"id": "faction-id", "delta": 120, "reason": "카르타고 창고 약탈"}` 형식. 자연적 월간 수지 누적은 시스템이 자동 처리하므로 별도 출력 불필요.
 - `new_locations`: 이번 응답에서 새롭게 등장하는 거점. 이미 등록된 거점은 생략.
 - `location_changes`: 이번 응답에서 지배 세력이 바뀐 거점. `id`는 기존 locations의 id를 사용. `controller`는 반드시 현재 등록된 **factions의 id** 중 하나여야 하며, 인물 id·세력명·임의 문자열을 사용하면 안 된다.
 - `player_location_id`: 이번 응답에서 플레이어의 현재 거점이 바뀌거나 처음 확정된 경우. 반드시 현재 등록된 **locations의 id** 중 하나여야 한다. 변화 없으면 null.

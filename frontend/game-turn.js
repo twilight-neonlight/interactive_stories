@@ -219,20 +219,25 @@ function applyStateUpdates(su) {
       if (ic.id && ic.delta != null) _state.updateFactionIntel(ic.id, ic.delta);
     }
   }
-  if (Array.isArray(su.faction_income_changes)) {
-    for (const ic of su.faction_income_changes) {
-      const faction = _state.factions.get(ic.id);
-      if (!faction) continue;
-      if (ic.income_mult_delta != null)
-        faction.income_mult = Math.max(0, (faction.income_mult ?? 1.0) + ic.income_mult_delta);
-      if (ic.income_flat_delta != null)
-        faction.income_flat = (faction.income_flat ?? 0) + ic.income_flat_delta;
+  if (Array.isArray(su.character_status_changes)) {
+    for (const sc of su.character_status_changes) {
+      const char = _state.characters.get(sc.id);
+      if (char && sc.status) char.status = sc.status;
     }
   }
-  if (su.treasury_update && typeof su.treasury_update === 'object') {
-    const faction = _state.factions.get(su.treasury_update.id);
-    if (faction && su.treasury_update.value != null)
-      faction.treasury = su.treasury_update.value;
+  if (Array.isArray(su.character_injury_changes)) {
+    const ts = su.timestamp || _state.progress?.timestamp || '';
+    for (const ic of su.character_injury_changes) {
+      const char = _state.characters.get(ic.id);
+      if (!char) continue;
+      if (ic.injury == null) {
+        delete char.injury;
+        delete char.injury_since;
+      } else {
+        char.injury       = ic.injury;
+        char.injury_since = ts;
+      }
+    }
   }
   if (typeof su.player_location_id === 'string' && _state.locations.has(su.player_location_id)) {
     _state.progress.playerLocationId = su.player_location_id;
@@ -273,12 +278,18 @@ async function submitTurn() {
   showLoading();
 
   try {
-    const { content, state_updates: su, resolution, _debug } = await GameAPI.submitTurn(cmd, _state.toJSON(), _state.getHistory(), false, false, actionType);
+    const { content, state_updates: su, resolution, game_over, _debug } = await GameAPI.submitTurn(cmd, _state.toJSON(), _state.getHistory(), false, false, actionType);
     renderResolution(resolution);
 
     commitTurn(cmd, content, su);
 
     renderAll(_state);
+
+    if (game_over) {
+      renderSceneBody(markdownToHtml(extractNarrative(content)));
+      renderGameOver(game_over.type, game_over.message);
+      return;
+    }
 
     // 외교 전용 UI 미완성 — diplomacy_state가 반환되어도 일반 씬으로 렌더링
     // TODO: 외교 시스템 완성 후 아래 블록으로 교체

@@ -13,5 +13,7 @@
 "protagonistMode": "select",
   "characterSelectPage": "prince_select.html",
   "troops_per_strength_point": 65,
-  "start_timestamp": "1403년 3월"
+  "start_timestamp": "1403년 3월",
+  "victory_condition": "year >= 1415 and living_princes == 0",
+  "victory_message": "모든 경쟁자를 제거하고 오스만 왕위를 확립했습니다. 제국이 다시 하나로 통합됩니다."
 }

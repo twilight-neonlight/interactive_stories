@@ -100,6 +100,41 @@
     font-family: sans-serif; font-size: 13px; color: var(--text-tertiary);
   }
 
+  /* 디버그 모드 진입 */
+  .debug-entry { position: fixed; bottom: 14px; left: 14px; z-index: 10; }
+  .debug-entry-btn {
+    background: none; border: none; cursor: pointer;
+    font-size: 15px; color: var(--text-tertiary); opacity: 0.25;
+    padding: 4px 6px; font-family: monospace; transition: opacity 0.15s;
+    line-height: 1;
+  }
+  .debug-entry-btn:hover { opacity: 0.6; }
+  .debug-entry-btn.active { opacity: 0.75; color: #f59e0b; }
+  .debug-pw-form {
+    display: none; position: absolute; bottom: 26px; left: 0;
+    background: var(--bg-primary); border: 1px solid var(--border-strong);
+    border-radius: 8px; padding: 10px 12px;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.18);
+    white-space: nowrap;
+  }
+  .debug-pw-form.visible { display: block; animation: fadeUp 0.15s ease; }
+  .debug-pw-label {
+    font-size: 10px; font-family: monospace; color: var(--text-tertiary);
+    margin-bottom: 6px;
+  }
+  .debug-pw-input {
+    display: block; width: 130px;
+    background: var(--bg-secondary); border: 1px solid var(--border-mid);
+    border-radius: 5px; padding: 5px 8px;
+    font-size: 12px; font-family: monospace; color: var(--text-primary);
+    outline: none; box-sizing: border-box;
+  }
+  .debug-pw-input:focus { border-color: var(--border-strong); }
+  .debug-pw-err {
+    font-size: 10px; color: #ef4444; margin-top: 5px; display: none;
+    font-family: sans-serif;
+  }
+
 </style>
 </head>
 <body>
@@ -129,6 +164,17 @@
     <button class="menu-btn menu-btn-primary" onclick="goNewGame()">새 게임</button>
     <button class="menu-btn menu-btn-secondary" id="loadBtn" onclick="openSaveList()" disabled>불러오기</button>
     <button class="menu-btn menu-btn-secondary" onclick="goQuickBattle()">빠른 역사적 전투</button>
+  </div>
+</div>
+
+<!-- 디버그 모드 진입 버튼 -->
+<div class="debug-entry">
+  <button class="debug-entry-btn" id="debugEntryBtn" onclick="toggleDebugForm()" title="debug">⚙</button>
+  <div class="debug-pw-form" id="debugPwForm">
+    <div class="debug-pw-label">DEBUG PASSWORD</div>
+    <input class="debug-pw-input" id="debugPwInput" type="password" placeholder="비밀번호"
+           onkeydown="handleDebugPwKey(event)" autocomplete="off">
+    <div class="debug-pw-err" id="debugPwErr">틀렸습니다.</div>
   </div>
 </div>
 
@@ -218,6 +264,51 @@ async function deleteSave(e, filename) {
 function loadSave(filename) {
   NavState.setSaveFile(filename);
   window.location.href = 'game.html';
+}
+
+// ── 디버그 모드 진입 ──────────────────────────────────
+(function initDebugBtn() {
+  if (sessionStorage.getItem('is_debugMode') === '1')
+    document.getElementById('debugEntryBtn').classList.add('active');
+})();
+
+function toggleDebugForm() {
+  if (sessionStorage.getItem('is_debugMode') === '1') {
+    sessionStorage.removeItem('is_debugMode');
+    document.getElementById('debugEntryBtn').classList.remove('active');
+    NavDebug.hide();
+    return;
+  }
+  const form = document.getElementById('debugPwForm');
+  if (form.classList.contains('visible')) {
+    form.classList.remove('visible');
+  } else {
+    form.classList.add('visible');
+    document.getElementById('debugPwInput').focus();
+  }
+}
+
+function handleDebugPwKey(e) {
+  if (e.key === 'Escape') {
+    document.getElementById('debugPwForm').classList.remove('visible');
+    document.getElementById('debugPwInput').value = '';
+    document.getElementById('debugPwErr').style.display = 'none';
+    return;
+  }
+  if (e.key !== 'Enter') return;
+  const val = document.getElementById('debugPwInput').value;
+  if (val === 'Kangchi') {
+    sessionStorage.setItem('is_debugMode', '1');
+    document.getElementById('debugEntryBtn').classList.add('active');
+    document.getElementById('debugPwForm').classList.remove('visible');
+    document.getElementById('debugPwInput').value = '';
+    document.getElementById('debugPwErr').style.display = 'none';
+    NavDebug.show();
+  } else {
+    document.getElementById('debugPwErr').style.display = 'block';
+    document.getElementById('debugPwInput').value = '';
+    document.getElementById('debugPwInput').focus();
+  }
 }
 </script>
 </body>

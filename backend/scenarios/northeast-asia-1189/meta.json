@@ -12,6 +12,6 @@
   "iconBg": "rgba(139,26,26,0.09)",
   "protagonistMode": "select",
   "characterSelectPage": "northeast_asia_select.html",
-  "troops_per_strength_point": 300,
+  "troops_per_strength_point": 200,
   "start_timestamp": "1189년 봄"
 }
