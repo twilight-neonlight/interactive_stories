@@ -442,5 +442,77 @@
     "tier": "small_city",
     "terrain": "남한강 유역 — 한반도 내륙 교통 요충, 개경 방어 후방",
     "notes": "고려 내륙 교통의 요지. 남한강을 따라 개경과 남부를 연결하는 군사 물자 이동로다."
+  },
+  {
+    "id": "kirgiz-capital",
+    "x": 47.2,
+    "y": 5.9,
+    "name": "키르기즈 본거지",
+    "subcontinent": "대초원",
+    "region": "남시베리아",
+    "controller": "kirghiz",
+    "tier": "town",
+    "terrain": "예니세이 강 상류 초원 — 타이가 남방 유목 거점, 외몽골 북방 경계",
+    "notes": "예니세이 강 상류에 거점을 두는 키르기즈 유목민의 본진. 9세기 위구르 제국을 무너뜨린 강성한 과거에 비해 세력이 크게 약화되었으나, 남시베리아 초원을 독자적으로 지배한다."
+  },
+  {
+    "id": "jiangling",
+    "x": 69.6,
+    "y": 63.9,
+    "name": "강릉 (江陵)",
+    "subcontinent": "동북아시아",
+    "region": "화남",
+    "controller": "southern-song",
+    "tier": "regional_city",
+    "terrain": "장강 중류 평원 — 사천과 강남을 잇는 물류 요충, 한수 합류 지점",
+    "notes": "남송 형호 지역의 중심 도시. 장강 물류를 통제하며 사천과 강남을 연결하는 전략 요충으로, 삼국시대부터 형주의 중심지로 알려진 곳이다."
+  },
+  {
+    "id": "xingyuan",
+    "x": 61.1,
+    "y": 58.1,
+    "name": "흥원부 (興元府)",
+    "subcontinent": "동북아시아",
+    "region": "화남",
+    "controller": "southern-song",
+    "tier": "regional_city",
+    "terrain": "한중 분지 — 진령·대파 산맥 사이 분지, 사천 북방 방어 관문",
+    "notes": "남송 사천 방어선의 북방 관문. 사방이 산악으로 둘러싸인 한중 분지에 위치해 서북 방면에서의 침공을 차단한다."
+  },
+  {
+    "id": "kumul",
+    "x": 42,
+    "y": 31,
+    "name": "쿠물 (哈密)",
+    "subcontinent": "서역",
+    "region": "천산 동로",
+    "controller": "kara-khitai",
+    "tier": "small_city",
+    "terrain": "천산 동쪽 오아시스 — 하서 회랑과 타림 분지의 동쪽 연결 거점",
+    "notes": "하서 회랑과 서역을 연결하는 오아시스 도시. 서요의 영향권 하에 있으며 동서 실크로드 교역의 동쪽 관문이다."
+  },
+  {
+    "id": "samarkand",
+    "x": 5.7,
+    "y": 25.4,
+    "name": "사마르칸트 (撒馬爾罕)",
+    "subcontinent": "서역",
+    "region": "중앙아시아",
+    "controller": "khwarezm",
+    "tier": "major_city",
+    "terrain": "자라프샨 강 유역 — 중앙아시아 최대 도시, 동서 실크로드 교차점",
+    "notes": "중앙아시아 최대 도시이자 이슬람 문명의 중심지. 호라즘 샤 세력권 내에서 동서 교역의 핵심 거점으로 기능한다."
+  },
+  {
+    "id": "lhasa",
+    "x": 35.2,
+    "y": 63.9,
+    "name": "라싸 (拉薩)",
+    "subcontinent": "서역",
+    "region": "티베트",
+    "controller": "tibet",
+    "tier": "regional_city",
+    "terrain": "티베트 고원 — 해발 3,600m 라싸강 유역, 고지대 방어 지형",
+    "notes": "티베트 고원의 종교 중심지. 토번 왕국 붕괴 이후 분열된 티베트 제후들이 명목상 종주권을 인정하는 성지다."
   }
 ]
