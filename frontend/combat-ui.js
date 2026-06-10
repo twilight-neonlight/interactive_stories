@@ -2,6 +2,8 @@
 
 let _combatEndContent    = null;
 let _combatEndResolution = null;
+// 전투 중 게임오버 발생 시 보관 — 오버레이를 닫을 때(closeCombatOverlay) 표시
+let _pendingGameOver     = null;
 
 // ── 날씨·지형 색상 (UI 전용) — 수치·레이블·effect는 /api/config에서 수신 ─────
 // 백엔드에 없는 color만 여기서 관리한다.
@@ -326,9 +328,14 @@ function closeCombatOverlay() {
     renderResolution(_combatEndResolution);
     const content = _combatEndContent;
     renderSceneBody(markdownToHtml(extractNarrative(content)));
-    renderChoices(extractChoices(content));
+    if (_pendingGameOver) {
+      renderGameOver(_pendingGameOver.type, _pendingGameOver.message);
+    } else {
+      renderChoices(extractChoices(content));
+    }
     _combatEndContent    = null;
     _combatEndResolution = null;
+    _pendingGameOver     = null;
   }
 }
 
@@ -534,7 +541,7 @@ async function submitCombatTurn() {
   if (sendBtn) sendBtn.disabled = true;
 
   try {
-    const { content, state_updates: su, resolution, _debug } =
+    const { content, state_updates: su, resolution, game_over, _debug } =
       await GameAPI.submitTurn(cmd, _state.toJSON(), _state.getHistory(), false, false, actionType);
 
     commitTurn(cmd, content, su);
@@ -545,10 +552,12 @@ async function submitCombatTurn() {
       _renderCombatLog(cs);
     }
 
-    if (cs?.ended) {
+    if (game_over) _pendingGameOver = game_over;
+
+    if (cs?.ended || game_over) {
       _combatEndContent    = content;
       _combatEndResolution = resolution;
-      _renderCombatEnd(cs, content, resolution);
+      _renderCombatEnd(cs || { winner: 'enemy', final_tier: '패배', pending_battle_damage: {} }, content, resolution);
     } else {
       _renderCombatScene(content, resolution);
     }
@@ -576,10 +585,12 @@ async function combatRetreat() {
   if (scene) scene.innerHTML = '<div class="scene-loading">후퇴 중…</div>';
 
   try {
-    const { content, state_updates: su, resolution, _debug } =
+    const { content, state_updates: su, resolution, game_over, _debug } =
       await GameAPI.submitTurn('후퇴', _state.toJSON(), _state.getHistory(), true);
 
     commitTurn('후퇴', content, su);
+
+    if (game_over) _pendingGameOver = game_over;
 
     const cs = _state.combatState;
     if (cs) { _renderCombatMomentum(cs); _renderCombatLog(cs); }

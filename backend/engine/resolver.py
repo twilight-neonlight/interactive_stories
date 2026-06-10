@@ -370,10 +370,6 @@ def _resolve_intrigue_action(extra_modifiers: list[tuple[str, int]] | None = Non
     return _graded_resolution("intrigue", roll, modifiers)
 
 
-def needs_resolution(command: str) -> bool:
-    return classify_action_type(command) not in {"passive", "general"}
-
-
 def resolve_action(command: str, state: dict,
                    extra_modifiers: list[tuple[str, int]] | None = None,
                    action_type: str | None = None) -> dict:
@@ -1123,6 +1119,6 @@ def combat_end_prompt(cs: dict, resolution: dict) -> str:
         "사상자 서술 시 총 손실의 약 1/4은 전사자, 3/4은 중상자·탈영자·낙오자로 구성된다. "
         "부상자 다수는 시간이 지나면 전열에 복귀할 수 있다.\n"
         "패배한 세력이 반군·잔당 계열(rebels/remnant 유형)이고 지배 거점이 없으며 잔존 전력이 "
-        "impotent 수준(strength_score 100 미만)이라면, STATE_UPDATE의 defeated_factions에 해당 세력 id를 반드시 포함하시오.\n"
+        "impotent 수준(strength_score 30 미만)이라면, STATE_UPDATE의 defeated_factions에 해당 세력 id를 반드시 포함하시오.\n"
         "전투 후 다음 행동 선택지를 제시하시오."
     )

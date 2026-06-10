@@ -11,7 +11,7 @@ engine/tick.py — 턴 자동 갱신 (시간 경과 효과)
 from engine.turn     import parse_ym
 from engine.resolver import _get_player_faction_id, calc_admin_recovery_multiplier
 from scenarios_loader import (
-    SCENARIOS,
+    get_scenario_tpp,
     compute_max_reserve,
     compute_faction_strength,
 )
@@ -22,12 +22,6 @@ BATTLE_DAMAGE_RECOVERY_PER_MONTH = 25
 
 # 예비 인력 월간 회복률 (부족분의 X% / 월)
 RESERVE_RECOVERY_RATE = 0.08
-
-
-def _get_scenario_tpp(state: dict) -> int | None:
-    s = next((s for s in SCENARIOS if s["id"] == state.get("scenarioId", "")), None)
-    return s.get("troops_per_strength_point") if s else None
-
 
 
 def auto_battle_damage_recovery(state: dict, state_updates: dict) -> None:
@@ -101,7 +95,7 @@ def auto_reserve_recovery(
     if elapsed <= 0:
         return
 
-    tpp = _get_scenario_tpp(state)
+    tpp = get_scenario_tpp(state)
     if not tpp:
         return
 

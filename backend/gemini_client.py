@@ -29,7 +29,18 @@ async def call_gemini(messages: list[dict]) -> str:
         raise HTTPException(status_code=502, detail=f"Gemini API 오류: {e.response.text}")
     except Exception as e:
         raise HTTPException(status_code=502, detail=f"Gemini API 오류: {e}")
-    return resp.json()["choices"][0]["message"]["content"]
+
+    # 안전필터 등으로 choices가 비거나 content가 null이면 graceful 502로 변환
+    try:
+        content = resp.json()["choices"][0]["message"]["content"]
+    except (KeyError, IndexError, TypeError):
+        content = None
+    if not content:
+        raise HTTPException(
+            status_code=502,
+            detail="Gemini API가 빈 응답을 반환했습니다 (안전필터 또는 응답 형식 오류).",
+        )
+    return content
 
 
 async def call_gemini_json(messages: list[dict],

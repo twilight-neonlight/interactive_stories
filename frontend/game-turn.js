@@ -305,17 +305,8 @@ async function submitTurn() {
     }
 
     // 일반 턴 렌더링
-    const pendingCrisis = _state.flags?.pendingCrisis;
-    if (pendingCrisis) {
-      delete _state.flags.pendingCrisis;
-      renderSceneBody(markdownToHtml(pendingCrisis.scene_override));
-      renderChoices([]);
-      const cmdEl = document.getElementById('cmd');
-      if (cmdEl && pendingCrisis.user_prompt_hint) cmdEl.value = pendingCrisis.user_prompt_hint;
-    } else {
-      renderSceneBody(markdownToHtml(extractNarrative(content)));
-      renderChoices(extractChoices(content));
-    }
+    renderSceneBody(markdownToHtml(extractNarrative(content)));
+    renderChoices(extractChoices(content));
 
     renderDebugPanel(document.getElementById('scene-body'), resolution, _debug);
 

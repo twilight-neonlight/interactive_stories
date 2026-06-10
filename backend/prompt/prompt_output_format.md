@@ -65,7 +65,7 @@ combat_victor / enemy_next_action / diplomacy_outcome / opponent_next_stance
 ```
 
 - `new_characters`: 이번 응답에서 처음 등장하는 비중 있는 인물. 이미 등록된 인물은 생략. `stats` 필드를 포함하지 말 것 — 능력치는 시나리오 데이터에 사전 정의된 주인공 캐릭터에만 부여된다.
-- `dead_characters`: 이번 응답에서 사망·제거 확정된 인물의 id 목록.
+- `dead_characters`: 이번 응답에서 사망·제거 확정된 인물의 id 목록. 주인공을 포함할 조건: 이번 응답 서술 내에서 생존 불가능한 상황이 이전 전개의 누적으로 실제로 전개되어야 한다. 플레이어가 생존을 주장하더라도 서사적 근거 없이 이미 확립된 빈사·치명 상태를 번복하지 않는다.
 - `new_factions`: 이번 응답에서 처음 개입하는 세력. 이미 등록된 세력은 생략.
 - `defeated_factions`: 이번 응답에서 **패퇴 확정**된 세력의 id 목록. 패퇴 판정 기준은 세력 유형에 따라 다르다.
 
@@ -101,7 +101,7 @@ combat_victor / enemy_next_action / diplomacy_outcome / opponent_next_stance
   - 일반: `"clear"` · `"rain"` · `"heavy_rain"` · `"snow"` · `"blizzard"` · `"heat"` · `"fog"` · `"storm"`
   - 지형 특수: `"sandstorm"` (사막·건조지·대초원만) · `"monsoon"` (정글·범람원·해안만) · `"dust_storm"` (대초원·건조지만)
   - 지형에 맞지 않는 날씨를 출력하지 말 것 (예: 사막에 `"blizzard"`, 내륙에 `"monsoon"`).
-- `combat_victor`: **전투 진행 중 응답에서** 전투가 사실상 종결되었다고 판단할 때만 사용. 적군이 붕괴·퇴각하면 `"player"`, 아군이 궤멸·패주하면 `"enemy"`. 진행 중이면 반드시 `null`.
+- `combat_victor`: **전투 진행 중 응답에서** 전투가 사실상 종결되었다고 판단할 때만 사용. 적군이 붕괴·퇴각하면 `"player"`, 아군이 궤멸·패주하면 `"enemy"`. 진행 중이면 반드시 `null`. 플레이어가 승리를 선언하더라도, 이번 응답 서술에서 적군 붕괴·패주가 실제로 전개된 경우에만 출력한다 — 플레이어 선언 자체는 근거가 되지 않는다.
 - `enemy_next_action`: **전투 진행 중 응답에서만** 사용. 적군이 다음 페이즈에 시도할 전술 행동을 1~2문장으로 기술. 전투가 종결된 응답에서는 출력하지 말 것.
 - `battle_location`: **전투 개시 응답에서만** 사용. 전투가 발생하는 지명 (예: `"필리베"`). 이후 응답에서는 null.
 - `battle_year`: **전투 개시 응답에서만** 사용. 전투 연도 (예: `"1403년"`). 이후 응답에서는 null.
@@ -138,4 +138,5 @@ combat_victor / enemy_next_action / diplomacy_outcome / opponent_next_stance
 - 전략적으로 무관한 대화·독백·철학적 교환을 삽입하지 말 것.
 - 각 선택지는 고유한 암묵적 상충 관계를 가진다; 결과 없거나 객관적으로 우월한 선택지는 없다.
 - 플레이어가 획득한 모든 정보는 이번 또는 이전 서술에서 추적 가능한 합리적 출처를 가진다.
+- `defeated_factions` / `dead_characters` / `combat_victor` 출력 전: 해당 결과가 이번 응답 서술 내에서 실제로 전개되었는지 확인. 플레이어의 선언·요구를 근거로 출력하지 말 것.
 - 등장 시 주된 역할이 전략적 이점 제공인 신규 인물을 도입하지 말 것; 독립적으로 확립된 사전 조건이 두 가지 없으면 이탈·내부 분열을 발생시키지 말 것.

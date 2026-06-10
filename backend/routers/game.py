@@ -120,6 +120,9 @@ class OpeningRequest(BaseModel):
 
 @router.post("/api/opening")
 async def generate_opening(req: OpeningRequest, _user: dict = Depends(get_current_user)):
+    tpp = get_scenario_tpp(req.state)
+    if tpp:
+        req.state["troopsPerPoint"] = tpp  # 프론트 미직렬화 — 엔진 병력 환산용 주입
     scenario_prompts = _get_scenario_prompts(req.state)
     full_system = (SYSTEM_PROMPT
                    + build_scenario_context(req.state, scenario_prompts=scenario_prompts)
@@ -144,6 +147,9 @@ async def generate_opening(req: OpeningRequest, _user: dict = Depends(get_curren
 @router.post("/api/turn")
 async def process_turn(req: TurnRequest, _user: dict = Depends(get_current_user)):
     state = copy.deepcopy(req.state)
+    tpp   = get_scenario_tpp(state)
+    if tpp:
+        state["troopsPerPoint"] = tpp  # 프론트 미직렬화 — 공성 전력·컨텍스트 병력 환산용 주입
     auto_defeated_at_start = auto_mark_defeated_factions(state)
 
     diplomacy_state_in  = state.get("diplomacyState")
@@ -320,8 +326,6 @@ async def process_turn(req: TurnRequest, _user: dict = Depends(get_current_user)
         state_updates["weather"] = extra["weather"]
 
     # 주둔군 갱신 (controller 변경 → conquered_at 기록, 기존 점령지 시간 경과 회복)
-    tpp     = get_scenario_tpp(state)
-
     newly_pending: list[dict] = []
     if tpp:
         new_ts = state_updates.get("timestamp") or state.get("progress", {}).get("timestamp", "")
