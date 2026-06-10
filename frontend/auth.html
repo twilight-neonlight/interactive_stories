@@ -141,6 +141,7 @@
 <!-- Google Identity Services — src는 initGoogleAuth()에서 동적 삽입 -->
 <script>
 const BASE = window.API_BASE || '';
+const IS_LOCAL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
 
 // ── 초기화 ──────────────────────────────────────────────────────────────────
 (async function init() {
@@ -154,7 +155,7 @@ const BASE = window.API_BASE || '';
     const r = await fetch(`${BASE}/api/auth/config`);
     const data = await r.json();
     if (data.google_client_id) initGoogleAuth(data.google_client_id);
-    if (data.invite_required) {
+    if (data.invite_required && !IS_LOCAL) {
       document.getElementById('inviteWrap').style.display = '';
     }
   } catch { /* 서버 미응답 시 버튼만 표시 */ }
